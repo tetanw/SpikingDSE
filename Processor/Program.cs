@@ -69,13 +69,6 @@ namespace SpikingDSE
         {
             var result = Parser.Default.ParseArguments<SimOptions, VCDOptions, AnalyzeOptions, ToTensorOptions>(args);
             var ret = result.MapResult(
-                (SimOptions opts) =>
-                {
-                    Console.WriteLine($"Trace file: '{opts.TracePath}'");
-                    var sim = new Simulator(opts);
-                    sim.Simulate();
-                    return 0;
-                },
                 (VCDOptions opts) =>
                 {
                     var vcd = new TraceNeuronVCD(opts.Input, opts.Output);
