@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { CoreReport, FullReport, TimestepReport } from "./data";
+  import type { CoreReport, SimReport, TimestepReport } from "./data";
   import CoreViewer from "./CoreViewer.svelte";
   import TimestepViewer from "./TimestepViewer.svelte";
   import SimViewer from "./SimViewer.svelte";
@@ -22,8 +22,6 @@
     reader.readAsText(selectedFile);
   }
 
-  function onTimestepChanged() {}
-
   function onTabSelected(name) {
     selectedTab = name;
   }
@@ -36,8 +34,7 @@
 
   let selectedTab = tabNames[0];
   let selectedFile: File;
-  let report: FullReport;
-  let timesteps = ["-"];
+  let report: SimReport;
 </script>
 
 <main>

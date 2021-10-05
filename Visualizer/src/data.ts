@@ -4,18 +4,13 @@ export interface EnergyMetric {
   Total: number;
 }
 
-export interface LatencyMetric {
-  Cycles: number;
-  Secs: number;
-}
-
 export interface Latency {
-  Input: LatencyMetric;
-  Internal: LatencyMetric;
-  Output: LatencyMetric;
-  Compute: LatencyMetric;
-  Total: LatencyMetric;
-  TotalSecs: LatencyMetric;
+  Input: number;
+  Internal: number;
+  Output: number;
+  Compute: number;
+  Total: number;
+  TotalSecs: number;
 }
 
 export interface Energy {
@@ -48,7 +43,6 @@ export interface Memory {
 }
 
 export interface CoreReport {
-  Type: "PE";
   CoreID: number;
   TS: number;
 
@@ -59,77 +53,44 @@ export interface CoreReport {
 }
 
 export interface TimestepReport {
-  Type: "Timestep";
   TS: number;
   Latency: Latency;
   Energy: Energy;
   SpikeRoutes: SpikeRoute[];
+  Cores: CoreReport[];
 }
 
 export interface SimReport {
-  Type: "Sim";
+  Mapping: MappingReport;
   Latency: Latency;
   Energy: Energy;
+  Timesteps: TimestepReport[];
 }
 
 export interface MappingReport {
-  Type: "Mapping";
   Mapping: number[];
 }
 
-export type Report = CoreReport | TimestepReport | SimReport | MappingReport;
-
-export interface FullReport {
-  Reports: Report[];
-}
-
 export function findCoreReport(
-  report: FullReport,
+  report: SimReport,
   coreID: number,
   timestep: number
 ): CoreReport {
-  const results = report.Reports.filter(
-    (analysis) =>
-      analysis.Type == "PE" &&
-      analysis.CoreID == coreID &&
-      analysis.TS == timestep
-  );
-
-  return results[0] as CoreReport;
+  return report.Timesteps[timestep].Cores[coreID];
 }
 
-export function coreReports(report: FullReport): CoreReport[] {
-  return report.Reports.filter(e => e.Type == "PE") as CoreReport[];
+export function findPossibleTimesteps(report: SimReport) {
+  return report.Timesteps.map(ts => ts.TS);
 }
 
-export function findPossibleTimesteps(report: FullReport) {
-  return coreReports(report).map(r => r.TS);
+export function findPossibleCores(report: SimReport, timestep: number) {
+  return report.Timesteps[timestep].Cores.map(c => c.CoreID);
 }
 
-export function findPossibleCores(report: FullReport, timestep: number) {
-  return coreReports(report).filter(r => r.TS == timestep).map(c => c.CoreID);
+export function findTimestep(report: SimReport, timestep: number) {
+  return report.Timesteps[timestep];
 }
 
-export function timestepReports(report: FullReport): TimestepReport[] {
-  return report.Reports.filter(e => e.Type == "Timestep") as TimestepReport[];
-}
-
-export function findTimestep(report: FullReport, timestep: number) {
-  return timestepReports(report).find(ts => ts.TS == timestep);
-}
-
-export function simReports(report: FullReport): SimReport[] {
-  return report.Reports.filter(e => e.Type == "Sim") as SimReport[];
-}
-
-export function findSim(report: FullReport) {
-  return simReports(report)[0];
-}
-
-export function mappingReports(report: FullReport): MappingReport[] {
-  return report.Reports.filter(e => e.Type == "Mapping") as MappingReport[];
-}
-
-export function findMapping(report: FullReport) {
-  return mappingReports(report)[0];
+export function findMapping(report: SimReport) {
+  return report.Mapping;
 }

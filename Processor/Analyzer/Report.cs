@@ -2,28 +2,21 @@ using System.Collections.Generic;
 
 namespace SpikingDSE
 {
-    public class PEReport
+    public class CoreReport
     {
-        public PEReport(int coreID, int TS, SpikeMap spikes, Memory memory, Latency latency, Energy energy)
+        public CoreReport(int coreID, int TS)
         {
             this.CoreID = coreID;
             this.TS = TS;
-            Type = "PE";
-
-            this.Spikes = spikes;
-            this.Memory = memory;
-            this.Latency = latency;
-            this.Energy = energy;
         }
 
         public int CoreID { get; private set; }
         public int TS { get; private set; }
-        public string Type { get; private set; }
 
-        public SpikeMap Spikes { get; private set; }
-        public Memory Memory { get; private set; }
-        public Latency Latency { get; private set; }
-        public Energy Energy { get; private set; }
+        public SpikeMap Spikes { get; set; }
+        public Memory Memory { get; set; }
+        public Latency Latency { get; set; }
+        public Energy Energy { get; set; }
 
     }
 
@@ -33,28 +26,24 @@ namespace SpikingDSE
         public TimestepReport(int TS)
         {
             this.TS = TS;
-            this.Type = "Timestep";
         }
-
-        public string Type { get; private set; }
         public int TS { get; private set; }
 
         public Latency Latency { get; set; } = new Latency();
         public Energy Energy { get; set; } = new Energy();
         public List<SpikeRoute> SpikeRoutes { get; set; }
+        public List<CoreReport> Cores { get; set; } = new List<CoreReport>();
     }
 
     public class SimReport
     {
-        public SimReport()
-        {
-            this.Type = "Sim";
-        }
-
-        public string Type { get; private set; }
+        public int Frequency { get; set; }
 
         public Latency Latency { get; set; } = new Latency();
         public Energy Energy { get; set; } = new Energy();
+
+        public MappingReport Mapping { get; set; }
+        public List<TimestepReport> Timesteps { get; set; } = new List<TimestepReport>();
     }
 
     public class MappingReport
@@ -66,10 +55,5 @@ namespace SpikingDSE
 
         public string Type { get; set; }
         public int[] Mapping { get; set; }
-    }
-
-    public class Analysis
-    {
-        public List<object> Reports { get; set; } = new List<object>();
     }
 }

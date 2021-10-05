@@ -4,12 +4,12 @@
     findCoreReport,
     findPossibleCores,
     findPossibleTimesteps,
-    FullReport,
+SimReport,
   } from "./data";
   import EnergyTable from "./EnergyTable.svelte";
   import LatencyTable from "./LatencyTable.svelte";
 
-  export let report: FullReport;
+  export let report: SimReport;
 
   let selectedCore: CoreReport;
   let possibleTimesteps = [];

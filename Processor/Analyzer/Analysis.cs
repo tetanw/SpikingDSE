@@ -76,43 +76,14 @@ namespace SpikingDSE
         public int SynWrites { get; set; }
     }
 
-    public struct LatencyMetric
-    {
-        public LatencyMetric(int cycles, double secs)
-        {
-            this.Cycles = cycles;
-            this.Secs = secs;
-        }
-
-        public int Cycles { get; }
-        public double Secs { get; }
-
-        public static LatencyMetric operator +(LatencyMetric a, LatencyMetric b)
-        {
-            return new LatencyMetric(
-                a.Cycles + b.Cycles,
-                a.Secs + b.Secs
-            );
-        }
-    }
-
     public class Latency
     {
-        public static Latency InCycles(int input, int intern, int output, int compute, long frequency)
-        {
-            var latency = new Latency();
-            latency.Input = new LatencyMetric(input, (double)input / frequency);
-            latency.Internal = new LatencyMetric(input, (double)intern / frequency);
-            latency.Output = new LatencyMetric(input, (double)output / frequency);
-            latency.Compute = new LatencyMetric(input, (double)compute / frequency);
-            return latency;
-        }
 
-        public LatencyMetric Input { get; private set; }
-        public LatencyMetric Internal { get; private set; }
-        public LatencyMetric Output { get; private set; }
-        public LatencyMetric Compute { get; private set; }
-        public LatencyMetric Total { get => Input + Internal + Output + Compute; }
+        public int Input { get; set; }
+        public int Internal { get; set; }
+        public int Output { get; set; }
+        public int Compute { get; set; }
+        public int Total { get => Input + Internal + Output + Compute; }
 
         public static Latency operator +(Latency a, Latency b)
         {

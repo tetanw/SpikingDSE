@@ -2,12 +2,12 @@
   import {
     findPossibleTimesteps,
     findTimestep,
-    FullReport,
+    SimReport,
     TimestepReport,
   } from "./data";
   import EnergyTable from "./EnergyTable.svelte";
 
-  export let report: FullReport;
+  export let report: SimReport;
   let possibleTimesteps = [];
   let selectedTimestepID: number = -1;
   let selectedTimestep: TimestepReport;

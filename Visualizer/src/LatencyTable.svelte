@@ -9,32 +9,26 @@
     <tr>
       <td></td>
       <td>Latency (cycles)</td>
-      <td>Latency (secs)</td>
     </tr>
       <tr>
         <td>Input</td>
-        <td>{formatSI(latency.Input.Cycles)}</td>
-        <td>{formatSI(latency.Input.Secs)}S</td>
+        <td>{latency.Input}</td>
       </tr>
       <tr>
         <td>Internal</td>
-        <td>{formatSI(latency.Internal.Cycles)}</td>
-        <td>{formatSI(latency.Internal.Secs)}S</td>
+        <td>{latency.Internal}</td>
       </tr>
       <tr>
         <td>Output</td>
-        <td>{formatSI(latency.Output.Cycles)}</td>
-        <td>{formatSI(latency.Output.Secs)}S</td>
+        <td>{latency.Output}</td>
       </tr>
       <tr>
         <td>Compute</td>
-        <td>{formatSI(latency.Compute.Cycles)}</td>
-        <td>{formatSI(latency.Compute.Secs)}S</td>
+        <td>{latency.Compute}</td>
       </tr>
       <tr>
         <td>Total</td>
-        <td>{formatSI(latency.Total.Cycles)}</td>
-        <td>{formatSI(latency.Total.Secs)}S</td>
+        <td>{latency.Total}</td>
       </tr>
   </table>
   

@@ -1,19 +1,10 @@
 <script lang="ts">
-  import {
-    findPossibleTimesteps,
-    findSim,
-    findTimestep,
-    FullReport,
-    SimReport,
-    TimestepReport,
-  } from "./data";
+  import { SimReport } from "./data";
   import EnergyTable from "./EnergyTable.svelte";
 
-  export let report: FullReport;
-  let selectedReport: SimReport;
-  $: selectedReport = findSim(report);
+  export let report: SimReport;
 </script>
 
-{#if selectedReport}
-  <EnergyTable energy={selectedReport.Energy} />
+{#if report}
+  <EnergyTable energy={report.Energy} />
 {/if}
