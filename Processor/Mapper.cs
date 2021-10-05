@@ -23,7 +23,6 @@ namespace SpikingDSE
                 coreTable[i] = -1;
             }
 
-            targetCoreTable = new bool[snn.NrNeurons, hw.NrPEs];
         }
 
         public int GetCore(int neuronID)
@@ -38,6 +37,7 @@ namespace SpikingDSE
 
         protected void Construct()
         {
+            targetCoreTable = new bool[snn.NrNeurons, hw.NrPEs];
             for (int i = 0; i < snn.NrNeurons; i++)
             {
                 var inputLayer = snn.GetLayerByNeuron(i);
@@ -61,10 +61,10 @@ namespace SpikingDSE
         public List<int> GetOutputCores(int neuronID)
         {
             List<int> outputCores = new List<int>();
-            for (int i = 0; i < hw.NrPEs; i++)
+            for (int core = 0; core < hw.NrPEs; core++)
             {
-                if (targetCoreTable[neuronID, i])
-                    outputCores.Add(i);
+                if (targetCoreTable[neuronID, core])
+                    outputCores.Add(core);
             }
 
             if (snn.isOutputNeuron(neuronID))
@@ -155,6 +155,7 @@ namespace SpikingDSE
                     throw new Exception("No layer found!");
                 }
             }
+            Construct();
         }
     }
 
