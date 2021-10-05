@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { CoreReport, Report, TimestepReport } from "./data";
+  import type { CoreReport, FullReport, TimestepReport } from "./data";
   import CoreViewer from "./CoreViewer.svelte";
   import TimestepViewer from "./TimestepViewer.svelte";
   import SimViewer from "./SimViewer.svelte";
@@ -36,7 +36,7 @@
 
   let selectedTab = tabNames[0];
   let selectedFile: File;
-  let report: Report;
+  let report: FullReport;
   let timesteps = ["-"];
 </script>
 

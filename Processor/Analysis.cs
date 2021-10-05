@@ -248,9 +248,9 @@ namespace SpikingDSE
         }
     }
 
-    public class PEAnalysis
+    public class PEReport
     {
-        public PEAnalysis(int coreID, int TS, SpikeMap spikes, Memory memory, Latency latency, Energy energy)
+        public PEReport(int coreID, int TS, SpikeMap spikes, Memory memory, Latency latency, Energy energy)
         {
             this.CoreID = coreID;
             this.TS = TS;
@@ -274,9 +274,9 @@ namespace SpikingDSE
     }
 
 
-    public class TimestepAnalysis
+    public class TimestepReport
     {
-        public TimestepAnalysis(int TS)
+        public TimestepReport(int TS)
         {
             this.TS = TS;
             this.Type = "Timestep";
@@ -290,9 +290,9 @@ namespace SpikingDSE
         public List<SpikeRoute> SpikeRoutes { get; set; }
     }
 
-    public class SimAnalysis
+    public class SimReport
     {
-        public SimAnalysis()
+        public SimReport()
         {
             this.Type = "Sim";
         }
@@ -314,8 +314,8 @@ namespace SpikingDSE
         public int[] Mapping { get; set; }
     }
 
-    public class AnalysisReport
+    public class Analysis
     {
-        public List<object> Analyses { get; set; } = new List<object>();
+        public List<object> Reports { get; set; } = new List<object>();
     }
 }

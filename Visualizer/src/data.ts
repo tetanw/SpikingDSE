@@ -77,18 +77,18 @@ export interface MappingReport {
   Mapping: number[];
 }
 
-export type Anylisis = CoreReport | TimestepReport | SimReport | MappingReport;
+export type Report = CoreReport | TimestepReport | SimReport | MappingReport;
 
-export interface Report {
-  Analyses: Anylisis[];
+export interface FullReport {
+  Reports: Report[];
 }
 
 export function findCoreReport(
-  report: Report,
+  report: FullReport,
   coreID: number,
   timestep: number
 ): CoreReport {
-  const results = report.Analyses.filter(
+  const results = report.Reports.filter(
     (analysis) =>
       analysis.Type == "PE" &&
       analysis.CoreID == coreID &&
@@ -98,38 +98,38 @@ export function findCoreReport(
   return results[0] as CoreReport;
 }
 
-export function coreReports(report: Report): CoreReport[] {
-  return report.Analyses.filter(e => e.Type == "PE") as CoreReport[];
+export function coreReports(report: FullReport): CoreReport[] {
+  return report.Reports.filter(e => e.Type == "PE") as CoreReport[];
 }
 
-export function findPossibleTimesteps(report: Report) {
+export function findPossibleTimesteps(report: FullReport) {
   return coreReports(report).map(r => r.TS);
 }
 
-export function findPossibleCores(report: Report, timestep: number) {
+export function findPossibleCores(report: FullReport, timestep: number) {
   return coreReports(report).filter(r => r.TS == timestep).map(c => c.CoreID);
 }
 
-export function timestepReports(report: Report): TimestepReport[] {
-  return report.Analyses.filter(e => e.Type == "Timestep") as TimestepReport[];
+export function timestepReports(report: FullReport): TimestepReport[] {
+  return report.Reports.filter(e => e.Type == "Timestep") as TimestepReport[];
 }
 
-export function findTimestep(report: Report, timestep: number) {
+export function findTimestep(report: FullReport, timestep: number) {
   return timestepReports(report).find(ts => ts.TS == timestep);
 }
 
-export function simReports(report: Report): SimReport[] {
-  return report.Analyses.filter(e => e.Type == "Sim") as SimReport[];
+export function simReports(report: FullReport): SimReport[] {
+  return report.Reports.filter(e => e.Type == "Sim") as SimReport[];
 }
 
-export function findSim(report: Report) {
+export function findSim(report: FullReport) {
   return simReports(report)[0];
 }
 
-export function mappingReports(report: Report): MappingReport[] {
-  return report.Analyses.filter(e => e.Type == "Mapping") as MappingReport[];
+export function mappingReports(report: FullReport): MappingReport[] {
+  return report.Reports.filter(e => e.Type == "Mapping") as MappingReport[];
 }
 
-export function findMapping(report: Report) {
+export function findMapping(report: FullReport) {
   return mappingReports(report)[0];
 }

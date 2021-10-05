@@ -3,13 +3,13 @@
     findPossibleTimesteps,
     findSim,
     findTimestep,
-    Report,
+    FullReport,
     SimReport,
     TimestepReport,
   } from "./data";
   import EnergyTable from "./EnergyTable.svelte";
 
-  export let report: Report;
+  export let report: FullReport;
   let selectedReport: SimReport;
   $: selectedReport = findSim(report);
 </script>

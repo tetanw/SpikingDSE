@@ -111,13 +111,13 @@ namespace SpikingDSE
             InitMapping();
 
             Console.WriteLine("Start analyzing");
-            var report = new AnalysisReport();
-            report.Analyses.Add(new MappingReport()
+            var report = new Analysis();
+            report.Reports.Add(new MappingReport()
             {
                 Mapping = mapper.coreTable
             });
-            var sim = new SimAnalysis();
-            report.Analyses.Add(sim);
+            var sim = new SimReport();
+            report.Reports.Add(sim);
             int TS = 0;
             while (!input.NextTimestep() && TS < maxTimesteps)
             {
@@ -125,8 +125,8 @@ namespace SpikingDSE
                 var allSpikeRoutes = mapper.GetAllSpikeRoutes(allSpikes);
                 var coreSpikeMap = GetCoreSpikeMap(allSpikeRoutes);
 
-                var timestep = new TimestepAnalysis(TS);
-                report.Analyses.Add(timestep);
+                var timestep = new TimestepReport(TS);
+                report.Reports.Add(timestep);
                 timestep.SpikeRoutes = allSpikeRoutes;
                 for (int i = 0; i < hwConf.NrPEs; i++)
                 {
@@ -134,8 +134,8 @@ namespace SpikingDSE
                     var memory = new MemoryModel(coreSpikes, hwConf).Calculate();
                     var latency = new LatencyModel(coreSpikes, hwConf).Calculate();
                     var energy = new EnergyModel(coreSpikes, hwConf, costConf, memory, latency).Calculate();
-                    var core = new PEAnalysis(i, TS, coreSpikes, memory, latency, energy);
-                    report.Analyses.Add(core);
+                    var core = new PEReport(i, TS, coreSpikes, memory, latency, energy);
+                    report.Reports.Add(core);
                     timestep.Energy += core.Energy;
                     timestep.Latency += core.Latency;
                 }

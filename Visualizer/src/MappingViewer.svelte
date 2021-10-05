@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { findMapping, MappingReport, Report } from "./data";
+  import { findMapping, MappingReport, FullReport } from "./data";
 
-  export let report: Report;
+  export let report: FullReport;
   let selectedReport: MappingReport;
   $: selectedReport = findMapping(report);
 </script>
