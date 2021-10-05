@@ -4,13 +4,18 @@ export interface EnergyMetric {
   Total: number;
 }
 
+export interface LatencyMetric {
+  Cycles: number;
+  Secs: number;
+}
+
 export interface Latency {
-  Input: number;
-  Internal: number;
-  Output: number;
-  Compute: number;
-  Total: number;
-  TotalSecs: number;
+  Input: LatencyMetric;
+  Internal: LatencyMetric;
+  Output: LatencyMetric;
+  Compute: LatencyMetric;
+  Total: LatencyMetric;
+  TotalSecs: LatencyMetric;
 }
 
 export interface Energy {
@@ -35,17 +40,20 @@ export interface SpikeRoute {
   Dest: number[];
 }
 
+export interface Memory {
+  NeuronReads: number;
+  NeuronWrites: number;
+  SynReads: number;
+  SynWrites: number;
+}
+
 export interface CoreReport {
   Type: "PE";
   CoreID: number;
   TS: number;
-  NrSOPs: number;
-  NeuronMemReads: number;
-  NeuronMemWrites: number;
-  SynMemReads: number;
-  SynMemWrites: number;
 
   Spikes: SpikeMap;
+  Memory: Memory;
   Latency: Latency;
   Energy: Energy;
 }

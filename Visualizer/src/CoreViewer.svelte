@@ -53,12 +53,11 @@
 {#if selectedCore}
   <div><b>CoreID:</b> {selectedCore.CoreID}</div>
   <div><b>TS:</b> {selectedCore.TS}</div>
-  <div><b>#SOPs:</b> {selectedCore.NrSOPs}</div>
   <div />
-  <div><b>#NeuronMemReads:</b> {selectedCore.NeuronMemReads}</div>
-  <div><b>#NeuronMemWrites:</b> {selectedCore.NeuronMemWrites}</div>
-  <div><b>#SynMemReads:</b> {selectedCore.SynMemReads}</div>
-  <div><b>#SynMemWrites:</b> {selectedCore.SynMemWrites}</div>
+  <div><b>#NeuronMemReads:</b> {selectedCore.Memory.NeuronReads}</div>
+  <div><b>#NeuronMemWrites:</b> {selectedCore.Memory.NeuronWrites}</div>
+  <div><b>#SynMemReads:</b> {selectedCore.Memory.SynReads}</div>
+  <div><b>#SynMemWrites:</b> {selectedCore.Memory.SynWrites}</div>
   <div />
   <div><b>Input spikes:</b>{selectedCore.Spikes.Input.join(", ")}</div>
   <div><b>Internal spikes:</b>{selectedCore.Spikes.Internal.join(", ")}</div>

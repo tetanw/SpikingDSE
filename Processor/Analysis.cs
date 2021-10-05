@@ -35,16 +35,15 @@ namespace SpikingDSE
 
         public override String ToString()
         {
-            return $"Leakage: {Measurements.FormatSI(Leakage, "J")} Dynamic: {Measurements.FormatSI(Dynamic, "J")}, Total: {Measurements.FormatSI(Total, "J")}";
+            return $"Leakage: {Measurements.FormatSI(Leakage, "W")}"
+            + $"Dynamic: {Measurements.FormatSI(Dynamic, "W")}"
+            + $"Total: {Measurements.FormatSI(Total, "W")}";
         }
 
     }
 
     public class Energy
     {
-        [JsonIgnore]
-        public double Time { get; set; }
-
         public EnergyMetric Core { get; set; }
         public EnergyMetric Router { get; set; }
         public EnergyMetric Scheduler { get; set; }
@@ -55,20 +54,10 @@ namespace SpikingDSE
         {
             get => Core + Router + Scheduler + Controller + NeuronMem + SynMem;
         }
-        public double Power
-        {
-            get
-            {
-                double value = Total.Total / Time;
-                value = double.IsInfinity(value) ? double.NaN : value;
-                return value;
-            }
-        }
 
         public static Energy operator +(Energy a, Energy b)
         {
             var res = new Energy();
-            res.Time = a.Time;
             res.Core = a.Core + b.Core;
             res.Router = a.Router + b.Router;
             res.Scheduler = a.Scheduler + b.Scheduler;
@@ -79,38 +68,57 @@ namespace SpikingDSE
         }
     }
 
-    public class Latency
+    public class Memory
     {
-        [JsonIgnore]
-        public double Frequency { get; set; }
+        public int NeuronReads { get; set; }
+        public int NeuronWrites { get; set; }
+        public int SynReads { get; set; }
+        public int SynWrites { get; set; }
+    }
 
-        public int Input { get; set; }
-        public int Internal { get; set; }
-        public int Output { get; set; }
-        public int Compute { get; set; }
-        public int Total { get => Input + Internal + Output + Compute; }
-        public double TotalSecs { get => Total / Frequency; }
+    public abstract class Model<T>
+    {
+        public abstract T Calculate();
+    }
 
-        public static Latency operator +(Latency a, Latency b)
+    public class MemoryModel : Model<Memory>
+    {
+        private SpikeMap spikes;
+        private HWConfig hw;
+
+        public MemoryModel(SpikeMap spikes, HWConfig hw)
         {
-            var res = new Latency();
-            res.Frequency = a.Frequency;
-            res.Input = a.Input + b.Input;
-            res.Internal = a.Internal + b.Internal;
-            res.Output = a.Output + b.Output;
-            res.Compute = a.Compute + b.Compute;
-            return res;
+            this.spikes = spikes;
+            this.hw = hw;
+        }
+
+        public override Memory Calculate()
+        {
+            int NrSOPs = hw.NrNeurons * (spikes.Input.Count + spikes.Internal.Count);
+
+            // Memory
+            var memory = new Memory();
+            memory.NeuronReads = NrSOPs / hw.MemNeuronBatchSize;
+            memory.NeuronWrites = NrSOPs / hw.MemNeuronBatchSize;
+            memory.SynReads = NrSOPs / hw.MemSynapseBatchSize;
+            memory.SynWrites = NrSOPs / hw.MemSynapseBatchSize;
+            return memory;
         }
     }
 
-    public class PEAnalysis
+    public class LatencyModel : Model<Latency>
     {
-        public PEAnalysis(int coreID, int TS, SpikeMap spikes, HWConfig hw, CostConfig cost)
-        {
-            this.CoreID = coreID;
-            this.TS = TS;
-            Type = "PE";
+        private SpikeMap spikes;
+        private HWConfig hw;
 
+        public LatencyModel(SpikeMap spikes, HWConfig hw)
+        {
+            this.spikes = spikes;
+            this.hw = hw;
+        }
+
+        public override Latency Calculate()
+        {
             int pipeII = 0, pipeLat = 0;
             if (hw.PipelineII != 0 && hw.PipelineLat != 0)
             {
@@ -122,71 +130,144 @@ namespace SpikingDSE
                 throw new Exception("Can not determine pipeline latency and II");
             }
 
-            // General
-            this.Spikes = spikes;
-            NrSOPs = hw.NrNeurons * (spikes.Input.Count + spikes.Internal.Count);
-
-            // Memory
-            NeuronMemReads = NrSOPs / hw.MemNeuronBatchSize;
-            NeuronMemWrites = NrSOPs / hw.MemNeuronBatchSize;
-            SynMemReads = NrSOPs / hw.MemSynapseBatchSize;
-            SynMemWrites = NrSOPs / hw.MemSynapseBatchSize;
-
             // Latency
-            Latency = new Latency();
-            Latency.Frequency = hw.Frequency;
-            Latency.Input = hw.InputLatency * spikes.Input.Count;
-            Latency.Output = hw.OutputLatency * spikes.Output.Count;
-            Latency.Compute = pipeII * NrSOPs + (spikes.Input.Count + spikes.Internal.Count) * (pipeLat - pipeII);
-            Latency.Internal = hw.InternalLatency * spikes.Internal.Count;
+            int NrSOPs = hw.NrNeurons * (spikes.Input.Count + spikes.Internal.Count);
+            int Input = hw.InputLatency * spikes.Input.Count;
+            int Output = hw.OutputLatency * spikes.Output.Count;
+            int Compute = pipeII * NrSOPs + (spikes.Input.Count + spikes.Internal.Count) * (pipeLat - pipeII);
+            int Internal = hw.InternalLatency * spikes.Internal.Count;
+            return Latency.InCycles(Input, Internal, Output, Compute, hw.Frequency);
+        }
+    }
 
+    public class EnergyModel : Model<Energy>
+    {
+        private SpikeMap spikes;
+        private HWConfig hw;
+        private CostConfig cost;
+        private Memory memory;
+        private Latency latency;
+
+        public EnergyModel(SpikeMap spikes, HWConfig hw, CostConfig cost, Memory memory, Latency latency)
+        {
+            this.spikes = spikes;
+            this.hw = hw;
+            this.cost = cost;
+            this.memory = memory;
+            this.latency = latency;
+        }
+
+        public override Energy Calculate()
+        {
             // Energy
-            Energy = new Energy();
-            Energy.Time = Latency.TotalSecs;
+            var energy = new Energy();
+            int NrSOPs = hw.NrNeurons * (spikes.Input.Count + spikes.Internal.Count);
 
-            Energy.Core = new EnergyMetric(
-                leakage: Latency.TotalSecs * hw.NrCores * cost.CoreLeakage,
+            double timeActive = latency.Total.Secs;
+            energy.Core = new EnergyMetric(
+                leakage: timeActive * hw.NrCores * cost.CoreLeakage,
                 dynamic: NrSOPs * cost.CoreDynamic
             );
 
-            Energy.Router = new EnergyMetric(
-                leakage: Latency.TotalSecs * cost.RouterLeakage,
+            energy.Router = new EnergyMetric(
+                leakage: timeActive * cost.RouterLeakage,
                 dynamic: (spikes.Input.Count + spikes.Output.Count) * cost.RouterDynamic
             );
 
-            Energy.Scheduler = new EnergyMetric(
-                leakage: Latency.TotalSecs * hw.SchedulerBufferSize * cost.BufferLeakage,
+            energy.Scheduler = new EnergyMetric(
+                leakage: timeActive * hw.SchedulerBufferSize * cost.BufferLeakage,
                 dynamic: (spikes.Input.Count + spikes.Internal.Count) * hw.SchedulerBufferSize * cost.BufferDynamic
             );
 
-            Energy.Controller = new EnergyMetric(
-                leakage: Latency.TotalSecs * cost.ControllerLeakage,
+            energy.Controller = new EnergyMetric(
+                leakage: timeActive * cost.ControllerLeakage,
                 dynamic: 0.0
             );
 
-            Energy.NeuronMem = new EnergyMetric(
-                leakage: Latency.TotalSecs * cost.MemNeuronLeakage,
-                dynamic: NeuronMemReads * cost.MemNeuronReadEnergy
-                + NeuronMemWrites * cost.MemNeuronWriteEnergy
+            energy.NeuronMem = new EnergyMetric(
+                leakage: timeActive * cost.MemNeuronLeakage,
+                dynamic: memory.NeuronReads * cost.MemNeuronReadEnergy
+                + memory.NeuronWrites * cost.MemNeuronWriteEnergy
             );
 
-            Energy.SynMem = new EnergyMetric(
-                leakage: Latency.TotalSecs * cost.MemSynapseLeakage,
-                dynamic: SynMemReads * cost.MemSynReadEnergy
-                + SynMemWrites * cost.MemSynWriteEnergy
+            energy.SynMem = new EnergyMetric(
+                leakage: timeActive * cost.MemSynapseLeakage,
+                dynamic: memory.SynReads * cost.MemSynReadEnergy
+                + memory.SynWrites * cost.MemSynWriteEnergy
             );
+            return energy;
+        }
+    }
+
+    public struct LatencyMetric
+    {
+        public LatencyMetric(int cycles, double secs)
+        {
+            this.Cycles = cycles;
+            this.Secs = secs;
+        }
+
+        public int Cycles { get; }
+        public double Secs { get; }
+
+        public static LatencyMetric operator +(LatencyMetric a, LatencyMetric b)
+        {
+            return new LatencyMetric(
+                a.Cycles + b.Cycles,
+                a.Secs + b.Secs
+            );
+        }
+    }
+
+    public class Latency
+    {
+        public static Latency InCycles(int input, int intern, int output, int compute, long frequency)
+        {
+            var latency = new Latency();
+            latency.Input = new LatencyMetric(input, (double)input / frequency);
+            latency.Internal = new LatencyMetric(input, (double)intern / frequency);
+            latency.Output = new LatencyMetric(input, (double)output / frequency);
+            latency.Compute = new LatencyMetric(input, (double)compute / frequency);
+            return latency;
+        }
+
+        public LatencyMetric Input { get; private set; }
+        public LatencyMetric Internal { get; private set; }
+        public LatencyMetric Output { get; private set; }
+        public LatencyMetric Compute { get; private set; }
+        public LatencyMetric Total { get => Input + Internal + Output + Compute; }
+
+        public static Latency operator +(Latency a, Latency b)
+        {
+            var res = new Latency();
+            res.Input = a.Input + b.Input;
+            res.Internal = a.Internal + b.Internal;
+            res.Output = a.Output + b.Output;
+            res.Compute = a.Compute + b.Compute;
+            return res;
+        }
+    }
+
+    public class PEAnalysis
+    {
+        public PEAnalysis(int coreID, int TS, SpikeMap spikes, Memory memory, Latency latency, Energy energy)
+        {
+            this.CoreID = coreID;
+            this.TS = TS;
+            Type = "PE";
+
+            this.Spikes = spikes;
+            this.Memory = memory;
+            this.Latency = latency;
+            this.Energy = energy;
         }
 
         public int CoreID { get; private set; }
         public int TS { get; private set; }
         public string Type { get; private set; }
-        public int NrSOPs { get; private set; }
-        public int NeuronMemReads { get; private set; }
-        public int NeuronMemWrites { get; private set; }
-        public int SynMemReads { get; private set; }
-        public int SynMemWrites { get; private set; }
 
         public SpikeMap Spikes { get; private set; }
+        public Memory Memory { get; private set; }
         public Latency Latency { get; private set; }
         public Energy Energy { get; private set; }
 

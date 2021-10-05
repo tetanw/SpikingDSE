@@ -131,22 +131,19 @@ namespace SpikingDSE
                 for (int i = 0; i < hwConf.NrPEs; i++)
                 {
                     var coreSpikes = coreSpikeMap[i];
-                    var core = new PEAnalysis(i, TS, coreSpikes, hwConf, costConf);
+                    var memory = new MemoryModel(coreSpikes, hwConf).Calculate();
+                    var latency = new LatencyModel(coreSpikes, hwConf).Calculate();
+                    var energy = new EnergyModel(coreSpikes, hwConf, costConf, memory, latency).Calculate();
+                    var core = new PEAnalysis(i, TS, coreSpikes, memory, latency, energy);
                     report.Analyses.Add(core);
                     timestep.Energy += core.Energy;
                     timestep.Latency += core.Latency;
-                    // TODO: Solve this in a nicer way
-                    timestep.Latency.Frequency = hwConf.Frequency;
-                    timestep.Energy.Time = timestep.Latency.TotalSecs;
                 }
                 sim.Energy += timestep.Energy;
                 sim.Latency += timestep.Latency;
 
                 TS++;
             }
-            // TODO: This is not elegant
-            sim.Latency.Frequency = hwConf.Frequency;
-            sim.Energy.Time = sim.Latency.TotalSecs;
             Console.WriteLine("Done analyzing");
 
             var reportPath = "res/report.json";
