@@ -7,7 +7,7 @@ export function formatSI(n) {
     "f",
     "p",
     "n",
-    "u",
+    "μ",
     "m",
     "",
     "k",
@@ -28,7 +28,7 @@ export function formatSI(n) {
     u = 0;
   }
   return (
-    formatNumber(nn[0] * Math.pow(10, +nn[1] - (u - zeroIndex) * 3)) +
+    formatNumber(nn[0] * Math.pow(10, +nn[1] - (u - zeroIndex) * 3)) + " " +
     unitList[u]
   );
 }

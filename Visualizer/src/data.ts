@@ -10,7 +10,6 @@ export interface Latency {
   Output: number;
   Compute: number;
   Total: number;
-  TotalSecs: number;
 }
 
 export interface Energy {
@@ -60,7 +59,12 @@ export interface TimestepReport {
   Cores: CoreReport[];
 }
 
+export interface HWConfig {
+  Frequency: number;
+}
+
 export interface SimReport {
+  HW: HWConfig;
   Mapping: MappingReport;
   Latency: Latency;
   Energy: Energy;

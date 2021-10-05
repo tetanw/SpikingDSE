@@ -4,7 +4,7 @@
     findCoreReport,
     findPossibleCores,
     findPossibleTimesteps,
-SimReport,
+    SimReport,
   } from "./data";
   import EnergyTable from "./EnergyTable.svelte";
   import LatencyTable from "./LatencyTable.svelte";
@@ -18,8 +18,10 @@ SimReport,
   let selectedCoreID: number = -1;
   $: {
     possibleTimesteps = findPossibleTimesteps(report);
-    if (selectedTimestepID == -1 || possibleTimesteps.indexOf(selectedTimestepID) == -1)
-    {
+    if (
+      selectedTimestepID == -1 ||
+      possibleTimesteps.indexOf(selectedTimestepID) == -1
+    ) {
       selectedTimestepID = possibleTimesteps[0];
     }
   }
@@ -34,16 +36,15 @@ SimReport,
 
 <div>
   <label for="timesteps">Timestep:</label>
-  <select id="timesteps" bind:value={selectedTimestepID}>
+  <select class="form-select" id="timesteps" bind:value={selectedTimestepID}>
     {#each possibleTimesteps as timestep}
       <option value={timestep}>{timestep}</option>
     {/each}
   </select>
 </div>
-
 <div>
   <label for="cores">Cores:</label>
-  <select id="cores" bind:value={selectedCoreID}>
+  <select class="form-select" id="cores" bind:value={selectedCoreID}>
     {#each possibleCores as core}
       <option value={core}>{core}</option>
     {/each}
@@ -51,18 +52,15 @@ SimReport,
 </div>
 
 {#if selectedCore}
-  <div><b>CoreID:</b> {selectedCore.CoreID}</div>
-  <div><b>TS:</b> {selectedCore.TS}</div>
-  <div />
   <div><b>#NeuronMemReads:</b> {selectedCore.Memory.NeuronReads}</div>
   <div><b>#NeuronMemWrites:</b> {selectedCore.Memory.NeuronWrites}</div>
   <div><b>#SynMemReads:</b> {selectedCore.Memory.SynReads}</div>
   <div><b>#SynMemWrites:</b> {selectedCore.Memory.SynWrites}</div>
   <div />
-  <div><b>Input spikes:</b>{selectedCore.Spikes.Input.join(", ")}</div>
-  <div><b>Internal spikes:</b>{selectedCore.Spikes.Internal.join(", ")}</div>
-  <div><b>Output spikes:</b>{selectedCore.Spikes.Output.join(", ")}</div>
+  <div><b>Input spikes:</b> {selectedCore.Spikes.Input.join(", ")}</div>
+  <div><b>Internal spikes:</b> {selectedCore.Spikes.Internal.join(", ")}</div>
+  <div><b>Output spikes:</b> {selectedCore.Spikes.Output.join(", ")}</div>
 
-  <EnergyTable energy={selectedCore.Energy} />
-  <LatencyTable latency={selectedCore.Latency} />
+  <EnergyTable energy={selectedCore.Energy} time={selectedCore.Latency.Total / report.HW.Frequency} />
+  <LatencyTable latency={selectedCore.Latency} frequency={report.HW.Frequency} />
 {/if}

@@ -165,7 +165,8 @@ namespace SpikingDSE
                 + memory.SynWrites * cost.MemSynWriteEnergy
             );
 
-            return new CoreReport(coreID, ts) {
+            return new CoreReport(coreID, ts)
+            {
                 Memory = memory,
                 Latency = latency,
                 Energy = energy,
@@ -184,7 +185,11 @@ namespace SpikingDSE
             InitMapping();
 
             Console.WriteLine("Start analyzing");
-            var simReport = new SimReport();
+            var simReport = new SimReport()
+            {
+                HW = hw,
+                Cost = cost
+            };
             simReport.Mapping = new MappingReport()
             {
                 Mapping = mapper.coreTable

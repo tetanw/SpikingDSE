@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { findMapping, MappingReport, FullReport } from "./data";
+  import { findMapping, MappingReport } from "./data";
 
   export let report: FullReport;
   let selectedReport: MappingReport;
@@ -7,7 +7,6 @@
 </script>
 
 {#if selectedReport}
-  <div><b>Mapping: </b></div>
   {#each selectedReport.Mapping as coreID, neuronID}
     <div>{neuronID} -> {coreID}</div>
   {/each}

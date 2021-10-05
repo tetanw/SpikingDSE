@@ -33,7 +33,7 @@
 </div>
 
 {#if selectedTimestep}
-  <EnergyTable energy={selectedTimestep.Energy} />
+  <EnergyTable energy={selectedTimestep.Energy} time={selectedTimestep.Latency.Total / report.HW.Frequency} />
 
   {#each selectedTimestep.SpikeRoutes as route}
     <div>

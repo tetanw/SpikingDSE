@@ -37,24 +37,31 @@
   let report: SimReport;
 </script>
 
-<main>
-  <label for="report-file">Choose the report file:</label>
-  <input
-    type="file"
-    id="report-file"
-    accept="application/json"
-    on:change={onFileChange}
-  />
-
-  <div class="tab">
-    {#each tabNames as name}
-      <button class="tablinks" on:click={() => onTabSelected(name)}
-        >{name}</button
-      >
-    {/each}
+<main class="container">
+  <h1>SpikingSNN Visualizer</h1>
+  <div class="mb-3">
+    <label for="report-file" class="form-label">Choose report file:</label>
+    <input
+      class="form-control"
+      type="file"
+      id="report-file"
+      on:change={onFileChange}
+    />
   </div>
 
   {#if report}
+    <ul class="nav nav-tabs">
+      {#each tabNames as name}
+        <li class="nav-item" on:click={() => onTabSelected(name)}>
+          {#if name == selectedTab}
+            <a class="nav-link active">{name}</a>
+          {:else}
+            <a class="nav-link">{name}</a>
+          {/if}
+        </li>
+      {/each}
+    </ul>
+
     {#if selectedTab == CoreTab}
       <CoreViewer {report} />
     {:else if selectedTab == TimestepTab}

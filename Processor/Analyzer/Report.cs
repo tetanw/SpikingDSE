@@ -37,7 +37,8 @@ namespace SpikingDSE
 
     public class SimReport
     {
-        public int Frequency { get; set; }
+        public HWConfig HW { get; set; }
+        public CostConfig Cost { get; set; }
 
         public Latency Latency { get; set; } = new Latency();
         public Energy Energy { get; set; } = new Energy();

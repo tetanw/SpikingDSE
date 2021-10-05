@@ -6,5 +6,8 @@
 </script>
 
 {#if report}
-  <EnergyTable energy={report.Energy} />
+  <EnergyTable
+    energy={report.Energy}
+    time={report.Latency.Total / report.HW.Frequency}
+  />
 {/if}
