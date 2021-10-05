@@ -111,13 +111,13 @@ namespace SpikingDSE
             InitMapping();
 
             Console.WriteLine("Start analyzing");
-            var report = new Analysis();
-            report.Reports.Add(new MappingReport()
+            var analysis = new Analysis();
+            analysis.Reports.Add(new MappingReport()
             {
                 Mapping = mapper.coreTable
             });
             var sim = new SimReport();
-            report.Reports.Add(sim);
+            analysis.Reports.Add(sim);
             int TS = 0;
             while (!input.NextTimestep() && TS < maxTimesteps)
             {
@@ -126,16 +126,16 @@ namespace SpikingDSE
                 var coreSpikeMap = GetCoreSpikeMap(allSpikeRoutes);
 
                 var timestep = new TimestepReport(TS);
-                report.Reports.Add(timestep);
+                analysis.Reports.Add(timestep);
                 timestep.SpikeRoutes = allSpikeRoutes;
                 for (int i = 0; i < hwConf.NrPEs; i++)
                 {
                     var coreSpikes = coreSpikeMap[i];
-                    var memory = new MemoryModel(coreSpikes, hwConf).Calculate();
-                    var latency = new LatencyModel(coreSpikes, hwConf).Calculate();
-                    var energy = new EnergyModel(coreSpikes, hwConf, costConf, memory, latency).Calculate();
+                    var memory = new MemoryModel(hwConf).Calculate(coreSpikes);
+                    var latency = new LatencyModel(hwConf).Calculate(coreSpikes);
+                    var energy = new EnergyModel(hwConf, costConf, memory, latency).Calculate(coreSpikes);
                     var core = new PEReport(i, TS, coreSpikes, memory, latency, energy);
-                    report.Reports.Add(core);
+                    analysis.Reports.Add(core);
                     timestep.Energy += core.Energy;
                     timestep.Latency += core.Latency;
                 }
@@ -148,7 +148,7 @@ namespace SpikingDSE
 
             var reportPath = "res/report.json";
             Console.WriteLine($"Writing report to: {reportPath}");
-            File.WriteAllText(reportPath, JsonSerializer.Serialize(report, new JsonSerializerOptions { }));
+            File.WriteAllText(reportPath, JsonSerializer.Serialize(analysis, new JsonSerializerOptions { }));
         }
     }
 }

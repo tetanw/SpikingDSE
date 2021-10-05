@@ -35,9 +35,9 @@ namespace SpikingDSE
 
         public override String ToString()
         {
-            return $"Leakage: {Measurements.FormatSI(Leakage, "W")}"
-            + $"Dynamic: {Measurements.FormatSI(Dynamic, "W")}"
-            + $"Total: {Measurements.FormatSI(Total, "W")}";
+            return $"Leakage: {Measurements.FormatSI(Leakage, "J")}"
+            + $"Dynamic: {Measurements.FormatSI(Dynamic, "J")}"
+            + $"Total: {Measurements.FormatSI(Total, "J")}";
         }
 
     }
@@ -78,21 +78,19 @@ namespace SpikingDSE
 
     public abstract class Model<T>
     {
-        public abstract T Calculate();
+        public abstract T Calculate(SpikeMap spikes);
     }
 
     public class MemoryModel : Model<Memory>
     {
-        private SpikeMap spikes;
         private HWConfig hw;
 
-        public MemoryModel(SpikeMap spikes, HWConfig hw)
+        public MemoryModel(HWConfig hw)
         {
-            this.spikes = spikes;
             this.hw = hw;
         }
 
-        public override Memory Calculate()
+        public override Memory Calculate(SpikeMap spikes)
         {
             int NrSOPs = hw.NrNeurons * (spikes.Input.Count + spikes.Internal.Count);
 
@@ -108,16 +106,14 @@ namespace SpikingDSE
 
     public class LatencyModel : Model<Latency>
     {
-        private SpikeMap spikes;
         private HWConfig hw;
 
-        public LatencyModel(SpikeMap spikes, HWConfig hw)
+        public LatencyModel(HWConfig hw)
         {
-            this.spikes = spikes;
             this.hw = hw;
         }
 
-        public override Latency Calculate()
+        public override Latency Calculate(SpikeMap spikes)
         {
             int pipeII = 0, pipeLat = 0;
             if (hw.PipelineII != 0 && hw.PipelineLat != 0)
@@ -142,22 +138,20 @@ namespace SpikingDSE
 
     public class EnergyModel : Model<Energy>
     {
-        private SpikeMap spikes;
         private HWConfig hw;
         private CostConfig cost;
         private Memory memory;
         private Latency latency;
 
-        public EnergyModel(SpikeMap spikes, HWConfig hw, CostConfig cost, Memory memory, Latency latency)
+        public EnergyModel(HWConfig hw, CostConfig cost, Memory memory, Latency latency)
         {
-            this.spikes = spikes;
             this.hw = hw;
             this.cost = cost;
             this.memory = memory;
             this.latency = latency;
         }
 
-        public override Energy Calculate()
+        public override Energy Calculate(SpikeMap spikes)
         {
             // Energy
             var energy = new Energy();
