@@ -196,7 +196,7 @@ namespace SpikingDSE
             };
             var sim = new SimReport();
             int ts = 0;
-            while (!input.NextTimestep() && ts < maxTimesteps)
+            while (input.NextTimestep() && ts < maxTimesteps)
             {
                 var allSpikes = input.NeuronSpikes();
                 var allSpikeRoutes = mapper.GetAllSpikeRoutes(allSpikes);

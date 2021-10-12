@@ -40,33 +40,30 @@ namespace SpikingDSE
         {
             inputSpikes.Clear();
             string inputLine = input.ReadLine();
-            int partIndex;
-
-            if (IsDone || inputLine == null)
+            if (inputLine == null)
             {
-                IsDone = true;
-                return true;
+                return false;
             }
 
-            partIndex = baseID;
+            int neuronIndex = baseID;
             var inputParts = inputLine.Split(",").Skip(1);
             foreach (var part in inputParts)
             {
                 if (part.Equals("1.0"))
                 {
-                    inputSpikes.Add(partIndex);
+                    inputSpikes.Add(neuronIndex);
                 }
-                partIndex++;
+                neuronIndex++;
             }
 
-            return false;
+            return true;
         }
     }
 
     public class TensorFileGroup : ISpikeSource
     {
         private TensorFile[] tensorFiles;
-        private bool isDone;
+        private bool isAnyFileDone;
 
         public TensorFileGroup(string[] inputFiles)
         {
@@ -91,19 +88,18 @@ namespace SpikingDSE
 
         public bool NextTimestep()
         {
-            if (isDone)
-                return true;
+            if (isAnyFileDone)
+                return false;
 
             for (int i = 0; i < tensorFiles.Length; i++)
             {
-                bool isFileDone = tensorFiles[i].NextTimestep();
-                if (isFileDone) {
-                    isDone = true;
-                    break;
+                if (!tensorFiles[i].NextTimestep()) {
+                    isAnyFileDone = true;
+                    return false;
                 }
             }
 
-            return false;
+            return true;
         }
 
         public int[] LayerSizes()
@@ -167,55 +163,6 @@ namespace SpikingDSE
 
         public int CurrentNeuronID { get; private set; }
     }
-
-    public enum TraceFileMode
-    {
-        InputsOnly,
-        OutputsOnly,
-        InputsAndOutputs
-    }
-
-    public class TraceFile : ISpikeSource
-    {
-        private TraceFileMode mode;
-        private TraceReader reader;
-        private List<int> spikes;
-
-        public TraceFile(string filePath, TraceFileMode mode)
-        {
-            this.mode = mode;
-            this.reader = new TraceReader(filePath);
-        }
-
-        public List<int> NeuronSpikes()
-        {
-            return spikes;
-        }
-
-        public bool NextTimestep()
-        {
-            spikes = new List<int>();
-
-            bool doReadInputs = mode == TraceFileMode.InputsOnly || mode == TraceFileMode.InputsAndOutputs;
-            bool doReadOutputs = mode == TraceFileMode.OutputsOnly || mode == TraceFileMode.InputsAndOutputs;
-
-            while (reader.NextEvent())
-            {
-                if (reader.CurrentType == EventType.InputSpike && doReadInputs)
-                {
-                    spikes.Add(reader.CurrentNeuronID);
-                }
-                else if (reader.CurrentType == EventType.OutputSpike && doReadOutputs)
-                {
-                    spikes.Add(reader.CurrentNeuronID);
-                }
-            }
-
-            return false;
-        }
-    }
-
-
     public class SpikeBuffer
     {
         private ISpikeSource source;
