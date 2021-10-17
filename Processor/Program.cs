@@ -8,14 +8,7 @@ namespace SpikingDSE
     [Verb("sim", HelpText = "Simulate trace file")]
     public class SimOptions
     {
-        [Option('i', "input", Required = true, HelpText = "Trace file that needs to be run")]
-        public string TracePath { get; set; }
 
-        [Option('h', "hw", Required = true, HelpText = "Hardware definition")]
-        public string HwPath { get; set; }
-
-        [Option('p', "profile", Required = false, HelpText = "Output profile information")]
-        public string ProfPath { get; set; }
     }
 
     [Verb("parse-vcd", HelpText = "Parse VCD file")]
@@ -75,10 +68,9 @@ namespace SpikingDSE
                     vcd.Process();
                     return 0;
                 },
-                (AnalyzeOptions opts) =>
-                {
-                    var analyzer = new Analyzer(opts.SNN, opts.HW, opts.Cost, opts.Strategy);
-                    analyzer.Run(opts.MaxTimesteps);
+                (SimOptions opts) => {
+                    var sim = new Simulation();
+                    sim.Run();
                     return 0;
                 },
                 (ToTensorOptions opts) =>
