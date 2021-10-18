@@ -114,38 +114,33 @@ namespace SpikingDSE
                     var channel = channelReg[send.Port - 1];
                     channel.Sender = thread;
                     channel.Message = send.Message;
-                    if (channel.Sender != null && channel.Receiver != null)
-                    {
-                        channel.Sender.time = env.Now;
-                        channel.Receiver.time = env.Now;
-                        channel.Receiver.message = channel.Message;
-                        running.Enqueue(channel.Sender);
-                        running.Enqueue(channel.Receiver);
-                        channel.Sender = null;
-                        channel.Receiver = null;
-                        channel.Message = null;
-                    }
+                    PollTransmitMessage(channel);
                 }
                 else if (cmd is ReceiveCmd)
                 {
                     var recv = cmd as ReceiveCmd;
                     var channel = channelReg[recv.Port - 1];
                     channel.Receiver = thread;
-                    if (channel.Sender != null && channel.Receiver != null)
-                    {
-                        channel.Sender.time = env.Now;
-                        channel.Receiver.time = env.Now;
-                        channel.Receiver.message = channel.Message;
-                        running.Enqueue(channel.Sender);
-                        running.Enqueue(channel.Receiver);
-                        channel.Sender = null;
-                        channel.Receiver = null;
-                        channel.Message = null;
-                    }
+                    PollTransmitMessage(channel);
                 }
             }
 
             return nrCommands;
+        }
+
+        private void PollTransmitMessage(Channel channel)
+        {
+            if (channel.Sender != null && channel.Receiver != null)
+            {
+                channel.Sender.time = env.Now;
+                channel.Receiver.time = env.Now;
+                channel.Receiver.message = channel.Message;
+                running.Enqueue(channel.Sender);
+                running.Enqueue(channel.Receiver);
+                channel.Sender = null;
+                channel.Receiver = null;
+                channel.Message = null;
+            }
         }
     }
 
@@ -166,7 +161,7 @@ namespace SpikingDSE
             scheduler.Init();
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
-            int nrCommands = scheduler.RunUntil(10);
+            int nrCommands = scheduler.RunUntil(10_000_000);
             stopwatch.Stop();
             Console.WriteLine($"Running time was: {stopwatch.ElapsedMilliseconds} ms");
             Console.WriteLine($"Commands handled: {nrCommands:n}");
