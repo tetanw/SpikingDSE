@@ -8,11 +8,13 @@ using System.Diagnostics;
 
 namespace SpikingDSE
 {
+    [DebuggerStepThrough]
     class SimThread : IComparable<SimThread>
     {
         public Process actor;
         public IEnumerator<Command> runnable;
         public int time;
+        public object message;
 
         public int CompareTo([AllowNull] SimThread other)
         {
@@ -27,6 +29,7 @@ namespace SpikingDSE
         public SimThread Receiver;
     }
 
+    [DebuggerStepThrough]
     public class Scheduler
     {
         private PriorityQueue<SimThread> running = new PriorityQueue<SimThread>();
@@ -91,6 +94,7 @@ namespace SpikingDSE
                     break;
 
                 env.Now = thread.time;
+                env.Received = thread.message;
                 bool stillRunning = thread.runnable.MoveNext();
                 if (!stillRunning)
                 {
@@ -114,6 +118,7 @@ namespace SpikingDSE
                     {
                         channel.Sender.time = env.Now;
                         channel.Receiver.time = env.Now;
+                        channel.Receiver.message = channel.Message;
                         running.Enqueue(channel.Sender);
                         running.Enqueue(channel.Receiver);
                         channel.Sender = null;
@@ -130,6 +135,7 @@ namespace SpikingDSE
                     {
                         channel.Sender.time = env.Now;
                         channel.Receiver.time = env.Now;
+                        channel.Receiver.message = channel.Message;
                         running.Enqueue(channel.Sender);
                         running.Enqueue(channel.Receiver);
                         channel.Sender = null;
@@ -160,7 +166,7 @@ namespace SpikingDSE
             scheduler.Init();
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
-            int nrCommands = scheduler.RunUntil(1_000_000);
+            int nrCommands = scheduler.RunUntil(10);
             stopwatch.Stop();
             Console.WriteLine($"Running time was: {stopwatch.ElapsedMilliseconds} ms");
             Console.WriteLine($"Commands handled: {nrCommands:n}");
@@ -169,6 +175,7 @@ namespace SpikingDSE
         }
     }
 
+    [DebuggerStepThrough]
     public class Environment
     {
         public SleepCmd Delay(int time)
@@ -211,16 +218,18 @@ namespace SpikingDSE
 
         public override IEnumerator<Command> Run()
         {
+            int spike = 1;
             while (true)
             {
                 yield return env.Delay(1);
-                yield return env.Send(spikesOut, 1);
+                yield return env.Send(spikesOut, spike++);
             }
         }
     }
 
     public class Core : Process
     {
+        private List<int> buffer = new List<int>();
         private int spikesIn;
 
         public override void RegisterPorts(PortRegister register)
@@ -230,12 +239,12 @@ namespace SpikingDSE
 
         public override IEnumerator<Command> Run()
         {
-            while (true)
+            while (buffer.Count < 10)
             {
                 yield return env.Receive(spikesIn);
-                var spike = env.Received;
-
-                // Console.WriteLine($"[{env.Now}]: {spike}");
+                var spike = (int)env.Received;
+                buffer.Add(spike);
+                Console.WriteLine($"[{env.Now}]: {spike}");
             }
         }
     }

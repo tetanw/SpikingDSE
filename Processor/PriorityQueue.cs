@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace SpikingDSE
 {
     // Copied from: https://gist.github.com/paralleltree/31045ab26f69b956052c
+    [DebuggerStepThrough]
     public class PriorityQueue<T> where T : IComparable<T>
     {
         private List<T> list;
