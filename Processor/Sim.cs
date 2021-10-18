@@ -8,9 +8,9 @@ using System.Diagnostics;
 
 namespace SpikingDSE
 {
-    struct SimThread : IComparable<SimThread>
+    class SimThread : IComparable<SimThread>
     {
-        public Actor actor;
+        public Process actor;
         public IEnumerator<Command> runnable;
         public int time;
 
@@ -20,13 +20,22 @@ namespace SpikingDSE
         }
     }
 
+    class Channel
+    {
+        public object Message;
+        public SimThread Sender;
+        public SimThread Receiver;
+    }
+
     public class Scheduler
     {
         private PriorityQueue<SimThread> running = new PriorityQueue<SimThread>();
-        private List<Actor> actors;
+        private Dictionary<string, int> channelByName = new Dictionary<string, int>();
+        private List<Channel> channelReg = new List<Channel>();
+        private List<Process> actors;
         private Environment env;
 
-        public Scheduler(List<Actor> actors)
+        public Scheduler(List<Process> actors)
         {
             this.actors = actors;
             this.env = new Environment();
@@ -37,6 +46,7 @@ namespace SpikingDSE
             foreach (var actor in actors)
             {
                 actor.Init(env);
+                actor.RegisterPorts(RegisterPort);
                 running.Enqueue(new SimThread
                 {
                     actor = actor,
@@ -44,6 +54,30 @@ namespace SpikingDSE
                     time = 0
                 });
             }
+        }
+
+        private int RegisterPort(string name, Dir dir)
+        {
+            // TODO: Do more checking in terms of type and direction, etc
+            if (channelByName.ContainsKey(name))
+            {
+                var channel = channelByName[name];
+                return channel;
+            }
+            else
+            {
+                var channel = new Channel
+                {
+                    Message = null,
+                    Sender = null,
+                    Receiver = null
+                };
+                channelReg.Add(channel);
+                int newId = channelReg.Count;
+                channelByName[name] = newId;
+                return newId;
+            }
+
         }
 
         public int RunUntil(int stopTime)
@@ -56,16 +90,52 @@ namespace SpikingDSE
                 if (thread.time > stopTime)
                     break;
 
-                env.Time = thread.time;
+                env.Now = thread.time;
                 bool stillRunning = thread.runnable.MoveNext();
-                if (thread.runnable.Current is SleepCmd)
+                if (!stillRunning)
                 {
-                    var sleepCmd = thread.runnable.Current as SleepCmd;
-                    thread.time += sleepCmd.TimeMs;
+                    continue;
                 }
-                if (stillRunning)
+
+                var cmd = thread.runnable.Current;
+                if (cmd is SleepCmd)
                 {
+                    var sleep = cmd as SleepCmd;
+                    thread.time += sleep.Time;
                     running.Enqueue(thread);
+                }
+                else if (cmd is SendCmd)
+                {
+                    var send = cmd as SendCmd;
+                    var channel = channelReg[send.Port - 1];
+                    channel.Sender = thread;
+                    channel.Message = send.Message;
+                    if (channel.Sender != null && channel.Receiver != null)
+                    {
+                        channel.Sender.time = env.Now;
+                        channel.Receiver.time = env.Now;
+                        running.Enqueue(channel.Sender);
+                        running.Enqueue(channel.Receiver);
+                        channel.Sender = null;
+                        channel.Receiver = null;
+                        channel.Message = null;
+                    }
+                }
+                else if (cmd is ReceiveCmd)
+                {
+                    var recv = cmd as ReceiveCmd;
+                    var channel = channelReg[recv.Port - 1];
+                    channel.Receiver = thread;
+                    if (channel.Sender != null && channel.Receiver != null)
+                    {
+                        channel.Sender.time = env.Now;
+                        channel.Receiver.time = env.Now;
+                        running.Enqueue(channel.Sender);
+                        running.Enqueue(channel.Receiver);
+                        channel.Sender = null;
+                        channel.Receiver = null;
+                        channel.Message = null;
+                    }
                 }
             }
 
@@ -82,9 +152,9 @@ namespace SpikingDSE
 
         public void Run()
         {
-            var alice = new Person(1, "Alice");
-            var bob = new Person(2, "Bob");
-            var actors = new List<Actor>() { alice, bob };
+            var io = new IO(1);
+            var core = new Core();
+            var actors = new List<Process>() { io, core };
 
             var scheduler = new Scheduler(actors);
             scheduler.Init();
@@ -93,54 +163,92 @@ namespace SpikingDSE
             int nrCommands = scheduler.RunUntil(1_000_000);
             stopwatch.Stop();
             Console.WriteLine($"Running time was: {stopwatch.ElapsedMilliseconds} ms");
-            Console.WriteLine($"Commands handled: {nrCommands}");
-            Console.WriteLine($"Performance was about: {nrCommands / stopwatch.Elapsed.TotalSeconds} cmd/s");
+            Console.WriteLine($"Commands handled: {nrCommands:n}");
+            Console.WriteLine($"Performance was about: {nrCommands / stopwatch.Elapsed.TotalSeconds:n} cmd/s");
+            Console.WriteLine($"Time per cmd: {Measurements.FormatSI(stopwatch.Elapsed.TotalSeconds / nrCommands, "s")}");
         }
-
-
     }
 
     public class Environment
     {
-        public Command Sleep(int timeMs)
+        public SleepCmd Delay(int time)
         {
-            return new SleepCmd { TimeMs = timeMs };
+            return new SleepCmd { Time = time };
         }
 
-        // public Command WaitFor()
-        // {
+        public SendCmd Send(int port, object message)
+        {
+            return new SendCmd { Port = port, Message = message };
+        }
 
-        // }
+        public ReceiveCmd Receive(int port)
+        {
+            return new ReceiveCmd { Port = port };
+        }
 
-        // public Command Send(int target, object message)
-        // {
+        public object Received
+        {
+            get; set;
+        }
 
-        // }
-
-        public int Time { get; set; }
+        public int Now { get; set; }
     }
 
-    public class Person : Actor
+    public class IO : Process
     {
+        private int spikesOut = 1;
         private int interval;
-        private string name;
 
-        public Person(int interval, string name)
+        public IO(int interval)
         {
             this.interval = interval;
-            this.name = name;
+        }
+
+        public override void RegisterPorts(PortRegister register)
+        {
+            spikesOut = register("spikes", Dir.Out);
         }
 
         public override IEnumerator<Command> Run()
         {
-            for (; ; )
+            while (true)
             {
-                yield return env.Sleep(interval);
+                yield return env.Delay(1);
+                yield return env.Send(spikesOut, 1);
             }
         }
     }
 
-    public abstract class Actor
+    public class Core : Process
+    {
+        private int spikesIn;
+
+        public override void RegisterPorts(PortRegister register)
+        {
+            spikesIn = register("spikes", Dir.In);
+        }
+
+        public override IEnumerator<Command> Run()
+        {
+            while (true)
+            {
+                yield return env.Receive(spikesIn);
+                var spike = env.Received;
+
+                // Console.WriteLine($"[{env.Now}]: {spike}");
+            }
+        }
+    }
+
+    public enum Dir
+    {
+        Out,
+        In
+    }
+
+    public delegate int PortRegister(string name, Dir dir);
+
+    public abstract class Process
     {
         protected Environment env;
 
@@ -148,6 +256,8 @@ namespace SpikingDSE
         {
             this.env = env;
         }
+
+        public abstract void RegisterPorts(PortRegister register);
 
         public abstract IEnumerator<Command> Run();
     }
@@ -159,17 +269,18 @@ namespace SpikingDSE
 
     public class SleepCmd : Command
     {
-        public int TimeMs;
+        public int Time;
     }
 
-    public class WaitFor : Command
+    public class SendCmd : Command
     {
-
+        public int Port;
+        public object Message;
     }
 
-    public class Send : Command
+    public class ReceiveCmd : Command
     {
-
+        public int Port;
     }
 
 }
