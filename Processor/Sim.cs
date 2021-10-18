@@ -20,44 +20,39 @@ namespace SpikingDSE
         }
     }
 
-    public class Simulation
+    public class Scheduler
     {
-        public Simulation()
-        {
+        private PriorityQueue<SimThread> running = new PriorityQueue<SimThread>();
+        private List<Actor> actors;
+        private Environment env;
 
+        public Scheduler(List<Actor> actors)
+        {
+            this.actors = actors;
+            this.env = new Environment();
         }
 
-        public void Run()
+        public void Init()
         {
-            RunUntil(10);
-        }
-
-        public void RunUntil(int stopTime)
-        {
-            var alice = new Person(1, "Alice");
-            var bob = new Person(2, "Bob");
-            var actors = new List<Actor>() { alice, bob };
-
-            Environment env = new Environment();
             foreach (var actor in actors)
             {
                 actor.Init(env);
-            }
-
-            var threads = new PriorityQueue<SimThread>();
-            foreach (var actor in actors)
-            {
-                threads.Enqueue(new SimThread
+                running.Enqueue(new SimThread
                 {
                     actor = actor,
                     runnable = actor.Run(),
                     time = 0
                 });
             }
+        }
 
-            while (threads.Count > 0)
+        public int RunUntil(int stopTime)
+        {
+            int nrCommands = 0;
+            while (running.Count > 0)
             {
-                var thread = threads.Dequeue();
+                nrCommands++;
+                var thread = running.Dequeue();
                 if (thread.time > stopTime)
                     break;
 
@@ -70,10 +65,39 @@ namespace SpikingDSE
                 }
                 if (stillRunning)
                 {
-                    threads.Enqueue(thread);
+                    running.Enqueue(thread);
                 }
             }
+
+            return nrCommands;
         }
+    }
+
+    public class Simulation
+    {
+        public Simulation()
+        {
+
+        }
+
+        public void Run()
+        {
+            var alice = new Person(1, "Alice");
+            var bob = new Person(2, "Bob");
+            var actors = new List<Actor>() { alice, bob };
+
+            var scheduler = new Scheduler(actors);
+            scheduler.Init();
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
+            int nrCommands = scheduler.RunUntil(1_000_000);
+            stopwatch.Stop();
+            Console.WriteLine($"Running time was: {stopwatch.ElapsedMilliseconds} ms");
+            Console.WriteLine($"Commands handled: {nrCommands}");
+            Console.WriteLine($"Performance was about: {nrCommands / stopwatch.Elapsed.TotalSeconds} cmd/s");
+        }
+
+
     }
 
     public class Environment
@@ -82,6 +106,16 @@ namespace SpikingDSE
         {
             return new SleepCmd { TimeMs = timeMs };
         }
+
+        // public Command WaitFor()
+        // {
+
+        // }
+
+        // public Command Send(int target, object message)
+        // {
+
+        // }
 
         public int Time { get; set; }
     }
@@ -99,9 +133,8 @@ namespace SpikingDSE
 
         public override IEnumerator<Command> Run()
         {
-            for (;;)
+            for (; ; )
             {
-                Console.WriteLine($"[{env.Time}]: {name}");
                 yield return env.Sleep(interval);
             }
         }
@@ -127,6 +160,16 @@ namespace SpikingDSE
     public class SleepCmd : Command
     {
         public int TimeMs;
+    }
+
+    public class WaitFor : Command
+    {
+
+    }
+
+    public class Send : Command
+    {
+
     }
 
 }
