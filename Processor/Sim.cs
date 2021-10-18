@@ -33,23 +33,44 @@ namespace SpikingDSE
     public class Scheduler
     {
         private PriorityQueue<SimThread> running = new PriorityQueue<SimThread>();
-        private Dictionary<string, int> channelByName = new Dictionary<string, int>();
         private List<Channel> channelReg = new List<Channel>();
-        private List<Process> actors;
+        private List<Process> processes = new List<Process>();
         private Environment env;
 
-        public Scheduler(List<Process> actors)
+        public Scheduler()
         {
-            this.actors = actors;
             this.env = new Environment();
+        }
+
+        public void AddProcess(Process process)
+        {
+            processes.Add(process);
+        }
+
+        public void AddChannel(ref Port a, ref Port b)
+        {
+            if (a.Handle != 0 || b.Handle != 0)
+            {
+                throw new Exception("Port already bound");
+            }
+
+            var channel = new Channel
+            {
+                Message = null,
+                Sender = null,
+                Receiver = null
+            };
+            channelReg.Add(channel);
+            int newId = channelReg.Count;
+            a.Handle = newId;
+            b.Handle = newId;
         }
 
         public void Init()
         {
-            foreach (var actor in actors)
+            foreach (var actor in processes)
             {
                 actor.Init(env);
-                actor.RegisterPorts(RegisterPort);
                 running.Enqueue(new SimThread
                 {
                     actor = actor,
@@ -57,30 +78,6 @@ namespace SpikingDSE
                     time = 0
                 });
             }
-        }
-
-        private int RegisterPort(string name, Dir dir)
-        {
-            // TODO: Do more checking in terms of type and direction, etc
-            if (channelByName.ContainsKey(name))
-            {
-                var channel = channelByName[name];
-                return channel;
-            }
-            else
-            {
-                var channel = new Channel
-                {
-                    Message = null,
-                    Sender = null,
-                    Receiver = null
-                };
-                channelReg.Add(channel);
-                int newId = channelReg.Count;
-                channelByName[name] = newId;
-                return newId;
-            }
-
         }
 
         public int RunUntil(int stopTime)
@@ -111,7 +108,7 @@ namespace SpikingDSE
                 else if (cmd is SendCmd)
                 {
                     var send = cmd as SendCmd;
-                    var channel = channelReg[send.Port - 1];
+                    var channel = channelReg[send.Port.Handle - 1];
                     channel.Sender = thread;
                     channel.Message = send.Message;
                     PollTransmitMessage(channel);
@@ -119,7 +116,7 @@ namespace SpikingDSE
                 else if (cmd is ReceiveCmd)
                 {
                     var recv = cmd as ReceiveCmd;
-                    var channel = channelReg[recv.Port - 1];
+                    var channel = channelReg[recv.Port.Handle - 1];
                     channel.Receiver = thread;
                     PollTransmitMessage(channel);
                 }
@@ -153,15 +150,19 @@ namespace SpikingDSE
 
         public void Run()
         {
-            var io = new IO(1);
-            var core = new Core();
-            var actors = new List<Process>() { io, core };
+            var scheduler = new Scheduler();
 
-            var scheduler = new Scheduler(actors);
+            var io = new IO(1);
+            scheduler.AddProcess(io);
+            var core = new Core();
+            scheduler.AddProcess(core);
+
+            scheduler.AddChannel(ref io.spikesOut, ref core.spikesIn);
+
             scheduler.Init();
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
-            int nrCommands = scheduler.RunUntil(10_000_000);
+            int nrCommands = scheduler.RunUntil(1_000_000);
             stopwatch.Stop();
             Console.WriteLine($"Running time was: {stopwatch.ElapsedMilliseconds} ms");
             Console.WriteLine($"Commands handled: {nrCommands:n}");
@@ -178,12 +179,12 @@ namespace SpikingDSE
             return new SleepCmd { Time = time };
         }
 
-        public SendCmd Send(int port, object message)
+        public SendCmd Send(Port port, object message)
         {
             return new SendCmd { Port = port, Message = message };
         }
 
-        public ReceiveCmd Receive(int port)
+        public ReceiveCmd Receive(Port port)
         {
             return new ReceiveCmd { Port = port };
         }
@@ -196,19 +197,19 @@ namespace SpikingDSE
         public int Now { get; set; }
     }
 
+    public class Port
+    {
+        public int Handle;
+    }
+
     public class IO : Process
     {
-        private int spikesOut = 1;
+        public Port spikesOut = new Port();
         private int interval;
 
         public IO(int interval)
         {
             this.interval = interval;
-        }
-
-        public override void RegisterPorts(PortRegister register)
-        {
-            spikesOut = register("spikes", Dir.Out);
         }
 
         public override IEnumerator<Command> Run()
@@ -224,13 +225,8 @@ namespace SpikingDSE
 
     public class Core : Process
     {
+        public Port spikesIn = new Port { };
         private List<int> buffer = new List<int>();
-        private int spikesIn;
-
-        public override void RegisterPorts(PortRegister register)
-        {
-            spikesIn = register("spikes", Dir.In);
-        }
 
         public override IEnumerator<Command> Run()
         {
@@ -238,8 +234,8 @@ namespace SpikingDSE
             {
                 yield return env.Receive(spikesIn);
                 var spike = (int)env.Received;
-                buffer.Add(spike);
-                Console.WriteLine($"[{env.Now}]: {spike}");
+                // buffer.Add(spike);
+                // Console.WriteLine($"[{env.Now}]: {spike}");
             }
         }
     }
@@ -250,8 +246,6 @@ namespace SpikingDSE
         In
     }
 
-    public delegate int PortRegister(string name, Dir dir);
-
     public abstract class Process
     {
         protected Environment env;
@@ -260,8 +254,6 @@ namespace SpikingDSE
         {
             this.env = env;
         }
-
-        public abstract void RegisterPorts(PortRegister register);
 
         public abstract IEnumerator<Command> Run();
     }
@@ -278,13 +270,13 @@ namespace SpikingDSE
 
     public class SendCmd : Command
     {
-        public int Port;
+        public Port Port;
         public object Message;
     }
 
     public class ReceiveCmd : Command
     {
-        public int Port;
+        public Port Port;
     }
 
 }
