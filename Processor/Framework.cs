@@ -22,6 +22,7 @@ namespace SpikingDSE
     class Channel
     {
         public object Message;
+        public int Time;
         public SimThread Sender;
         public SimThread Receiver;
     }
@@ -117,6 +118,7 @@ namespace SpikingDSE
                     var channel = channelReg[send.Port.Handle - 1];
                     channel.Sender = thread;
                     channel.Message = send.Message;
+                    channel.Time = send.Time;
                     PollTransmitMessage(channel);
                 }
                 else if (cmd is ReceiveCmd)
@@ -141,8 +143,8 @@ namespace SpikingDSE
         {
             if (channel.Sender != null && channel.Receiver != null)
             {
-                channel.Sender.Time = env.Now;
-                channel.Receiver.Time = env.Now;
+                channel.Sender.Time = channel.Time;
+                channel.Receiver.Time = channel.Time;
                 channel.Receiver.message = channel.Message;
                 running.Enqueue(channel.Sender);
                 running.Enqueue(channel.Receiver);
@@ -185,6 +187,7 @@ namespace SpikingDSE
     {
         public Port Port;
         public object Message;
+        public int Time;
     }
 
     public class ReceiveCmd : Command
@@ -200,25 +203,36 @@ namespace SpikingDSE
     [DebuggerStepThrough]
     public class Environment
     {
-        public SleepCmd Delay(int time)
+        public Command Delay(int time)
         {
             return new SleepCmd { Time = time };
         }
 
-        public SendCmd Send(Port port, object message)
+        public Command SleepUntil(int newTime)
         {
-            return new SendCmd { Port = port, Message = message };
+            return new SleepCmd { Time = newTime - Now };
         }
 
-        public ReceiveCmd Receive(Port port)
+        public Command Send(Port port, object message)
+        {
+            return new SendCmd { Port = port, Message = message, Time = Now };
+        }
+
+        public Command SendAt(Port port, object message, int time)
+        {
+            return new SendCmd { Port = port, Message = message, Time = time };
+        }
+
+        public Command Receive(Port port)
         {
             return new ReceiveCmd { Port = port };
         }
 
-        public ProcessCmd WaitFor(IEnumerable<Command> process)
+        public Command WaitFor(IEnumerable<Command> process)
         {
             return new ProcessCmd { Runnable = process };
         }
+
 
         public bool Ready(Port port)
         {

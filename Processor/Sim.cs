@@ -16,14 +16,14 @@ namespace SpikingDSE
             var scheduler = new Scheduler();
 
             var io = scheduler.AddProcess(new IO(1));
-            var core1 = scheduler.AddProcess(new Core(1, 10));
+            var core1 = scheduler.AddProcess(new ODINCore(1, 10, 256));
 
             scheduler.AddChannel(ref io.spikesOut, ref core1.spikesIn);
 
             scheduler.Init();
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
-            int nrCommands = scheduler.RunUntil(int.MaxValue, 10_000_000);
+            int nrCommands = scheduler.RunUntil(int.MaxValue, 1_000_000);
             stopwatch.Stop();
             Console.WriteLine($"Running time was: {stopwatch.ElapsedMilliseconds} ms");
             Console.WriteLine($"Commands handled: {nrCommands:n}");
@@ -44,27 +44,36 @@ namespace SpikingDSE
 
         public override IEnumerable<Command> Run()
         {
-            int spike = 1;
             while (true)
             {
                 yield return env.Delay(1);
-                yield return env.Send(spikesOut, spike++);
+                yield return env.Send(spikesOut, 1);
             }
         }
     }
 
-    public class Core : Process
+    public class ODINCore : Process
     {
         public Port spikesIn = new Port();
         public Port spikesOut = new Port();
         private Queue<int> buffer = new Queue<int>();
         private int bufferCap;
         private int coreID;
+        private int nrNeurons;
+        private double threshold;
+        private double[,] weights;
+        private double[] pots;
+        private int synComputeTime;
 
-        public Core(int coreID, int bufferCap)
+        public ODINCore(int coreID, int bufferCap, int nrNeurons, double threshold = 0.1, int synComputeTime = 0)
         {
             this.coreID = coreID;
             this.bufferCap = bufferCap;
+            this.weights = new double[nrNeurons, nrNeurons];
+            this.pots = new double[nrNeurons];
+            this.nrNeurons = nrNeurons;
+            this.threshold = threshold;
+            this.synComputeTime = synComputeTime;
         }
 
         public override IEnumerable<Command> Run()
@@ -89,8 +98,19 @@ namespace SpikingDSE
 
         private IEnumerable<Command> Compute()
         {
-            buffer.Dequeue();
+            int neuron = buffer.Dequeue();
             yield return env.Delay(16);
+
+            int src = neuron;
+            int start = env.Now;
+            for (int dst = 0; dst < nrNeurons; dst++)
+            {
+                pots[dst] = weights[src, dst] * 1.0;
+                if (pots[dst] > threshold)
+                {
+                    yield return env.SendAt(spikesOut, 1, start + dst * synComputeTime);
+                }
+            }
         }
     }
 
