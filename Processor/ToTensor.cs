@@ -6,13 +6,13 @@ namespace SpikingDSE
     public class ToTensor
     {
         private TensorFile tensor;
-        private TraceReader events;
+        private EventTraceReader events;
         private StreamWriter sw;
 
         public ToTensor(string inputTensorPath, string inputEventPath, string outputTensorPath)
         {
             this.tensor = new TensorFile(inputTensorPath);
-            this.events = new TraceReader(inputEventPath);
+            this.events = new EventTraceReader(inputEventPath);
             this.sw = new StreamWriter(File.OpenWrite(outputTensorPath));
 
             sw.Write(",");

@@ -2,15 +2,16 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
+using System.Linq;
 
 namespace SpikingDSE
 {
-    [DebuggerStepThrough]
     class SimThread : IComparable<SimThread>
     {
         public Process Process;
-        public List<IEnumerator<Command>> Runnables;
-        public int Time;
+        public IEnumerator<Command> Runnable;
+        public long Time;
         public object message;
 
         public int CompareTo([AllowNull] SimThread other)
@@ -22,7 +23,7 @@ namespace SpikingDSE
     class Channel
     {
         public object Message;
-        public int Time;
+        public long Time;
         public SimThread Sender;
         public SimThread Receiver;
     }
@@ -72,7 +73,7 @@ namespace SpikingDSE
                 running.Enqueue(new SimThread
                 {
                     Process = process,
-                    Runnables = new List<IEnumerator<Command>>() { process.Run().GetEnumerator() },
+                    Runnable = process.Run().GetEnumerator(),
                     Time = 0
                 });
             }
@@ -90,19 +91,11 @@ namespace SpikingDSE
 
                 env.Now = thread.Time;
                 env.Received = thread.message;
-                var runnable = thread.Runnables[thread.Runnables.Count - 1];
+                var runnable = thread.Runnable;
                 bool stillRunning = runnable.MoveNext();
                 if (!stillRunning)
                 {
-                    if (thread.Runnables.Count > 0)
-                    {
-                        thread.Runnables.RemoveAt(thread.Runnables.Count - 1);
-                        running.Enqueue(thread);
-                    }
-                    else
-                    {
-                        continue;
-                    }
+                    continue;
                 }
 
                 var cmd = runnable.Current;
@@ -128,12 +121,15 @@ namespace SpikingDSE
                     channel.Receiver = thread;
                     PollTransmitMessage(channel);
                 }
-                else if (cmd is ProcessCmd)
+                else
                 {
-                    var process = cmd as ProcessCmd;
-                    thread.Runnables.Add(process.Runnable.GetEnumerator());
-                    running.Enqueue(thread);
+                    throw new Exception("Unknown command: " + cmd);
                 }
+            }
+
+            foreach (var process in processes)
+            {
+                process.Finish();
             }
 
             return nrCommands;
@@ -171,6 +167,7 @@ namespace SpikingDSE
         }
 
         public abstract IEnumerable<Command> Run();
+        public virtual void Finish() { }
     }
 
     public class Command
@@ -180,14 +177,14 @@ namespace SpikingDSE
 
     public class SleepCmd : Command
     {
-        public int Time;
+        public long Time;
     }
 
     public class SendCmd : Command
     {
         public Port Port;
         public object Message;
-        public int Time;
+        public long Time;
     }
 
     public class ReceiveCmd : Command
@@ -195,12 +192,6 @@ namespace SpikingDSE
         public Port Port;
     }
 
-    public class ProcessCmd : Command
-    {
-        public IEnumerable<Command> Runnable;
-    }
-
-    [DebuggerStepThrough]
     public class Environment
     {
         public Command Delay(int time)
@@ -208,7 +199,7 @@ namespace SpikingDSE
             return new SleepCmd { Time = time };
         }
 
-        public Command SleepUntil(int newTime)
+        public Command SleepUntil(long newTime)
         {
             return new SleepCmd { Time = newTime - Now };
         }
@@ -218,7 +209,7 @@ namespace SpikingDSE
             return new SendCmd { Port = port, Message = message, Time = Now };
         }
 
-        public Command SendAt(Port port, object message, int time)
+        public Command SendAt(Port port, object message, long time)
         {
             return new SendCmd { Port = port, Message = message, Time = time };
         }
@@ -227,12 +218,6 @@ namespace SpikingDSE
         {
             return new ReceiveCmd { Port = port };
         }
-
-        public Command WaitFor(IEnumerable<Command> process)
-        {
-            return new ProcessCmd { Runnable = process };
-        }
-
 
         public bool Ready(Port port)
         {
@@ -245,11 +230,36 @@ namespace SpikingDSE
             get; set;
         }
 
-        public int Now { get; set; }
+        public long Now { get; set; }
     }
 
     public class Port
     {
         public int Handle;
+    }
+
+    public class Weights
+    {
+        public static double[,] ReadFromCSV(string path)
+        {
+            double[,] weights = null;
+            int currentLine = 0;
+            foreach (var line in File.ReadAllLines(path))
+            {
+                double[] numbers = line.Split(",").Select(t => double.Parse(t)).ToArray();
+                if (weights == null)
+                {
+                    weights = new double[numbers.Length, numbers.Length];
+                }
+
+                for (int i = 0; i < numbers.Length; i++)
+                {
+                    weights[currentLine, i] = numbers[i];
+                }
+                currentLine++;
+            }
+
+            return weights;
+        }
     }
 }

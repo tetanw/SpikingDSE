@@ -120,14 +120,25 @@ namespace SpikingDSE
         None
     }
 
-    public class TraceReader
+    public class EventTraceReader
     {
+        public static IEnumerable<(int, long)> ReadInputs(string path, int frequency)
+        {
+            var reader = new EventTraceReader(path, frequency);
+            while (reader.NextEvent())
+            {
+                yield return (reader.CurrentNeuronID, reader.CurrentTime);
+            }
+        }
+
         private StreamReader file;
         private string line;
+        private long clkPeriod;
 
-        public TraceReader(string filePath)
+        public EventTraceReader(string filePath, int frequency = int.MaxValue)
         {
             this.file = new StreamReader(File.OpenRead(filePath));
+            this.clkPeriod = 1_000_000_000_000 / frequency;
         }
 
         public bool NextEvent()
@@ -145,12 +156,16 @@ namespace SpikingDSE
             {
                 // new input spike event
                 CurrentNeuronID = int.Parse(parts[1]);
+                long time = long.Parse(parts[2]);
+                CurrentTime = time / clkPeriod;
                 CurrentType = EventType.InputSpike;
             }
             else if (parts[0].Equals("1"))
             {
                 // new output spike vent
                 CurrentNeuronID = int.Parse(parts[1]);
+                long time = long.Parse(parts[2]);
+                CurrentTime = time / clkPeriod;
                 CurrentType = EventType.OutputSpike;
             }
 
@@ -158,11 +173,11 @@ namespace SpikingDSE
         }
 
         public bool IsDone => line == null;
-
         public EventType CurrentType { get; private set; }
-
         public int CurrentNeuronID { get; private set; }
+        public long CurrentTime { get; private set; }
     }
+
     public class SpikeBuffer
     {
         private ISpikeSource source;
