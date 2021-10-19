@@ -127,7 +127,10 @@ namespace SpikingDSE
             var reader = new EventTraceReader(path, frequency);
             while (reader.NextEvent())
             {
-                yield return (reader.CurrentNeuronID, reader.CurrentTime);
+                if (reader.CurrentType == EventType.InputSpike)
+                {
+                    yield return (reader.CurrentNeuronID, reader.CurrentTime);
+                }
             }
         }
 

@@ -16,10 +16,11 @@ namespace SpikingDSE
         {
             var scheduler = new Scheduler();
 
-            var input = scheduler.AddProcess(new EventTraceIn("res/events_test.trace"));
-            var output = scheduler.AddProcess(new SpikeSink("res/out.trace"));
+            var report = new StreamWriter("res/out.trace");
+            var input = scheduler.AddProcess(new EventTraceIn("res/events_test.trace", report));
+            var output = scheduler.AddProcess(new SpikeSink(report));
             var weights = Weights.ReadFromCSV("res/weights.csv");
-            var core1 = scheduler.AddProcess(new ODINCore(1, 10, 256, threshold: 32.0, weights: weights));
+            var core1 = scheduler.AddProcess(new ODINCore(1, 10, 256, threshold: 1.0, weights: weights));
 
             scheduler.AddChannel(ref input.spikesOut, ref core1.spikesIn);
             scheduler.AddChannel(ref core1.spikesOut, ref output.spikesIn);
@@ -29,6 +30,9 @@ namespace SpikingDSE
             stopwatch.Start();
             int nrCommands = scheduler.RunUntil(int.MaxValue, int.MaxValue);
             stopwatch.Stop();
+            report.Flush();
+            report.Close();
+
             Console.WriteLine($"Running time was: {stopwatch.ElapsedMilliseconds} ms");
             Console.WriteLine($"Commands handled: {nrCommands:n}");
             Console.WriteLine($"Performance was about: {nrCommands / stopwatch.Elapsed.TotalSeconds:n} cmd/s");
@@ -40,10 +44,12 @@ namespace SpikingDSE
     {
         public Port spikesOut = new Port();
         private string path;
+        private StreamWriter sw;
 
-        public EventTraceIn(string path)
+        public EventTraceIn(string path, StreamWriter sw)
         {
             this.path = path;
+            this.sw = sw;
         }
 
         public override IEnumerable<Command> Run()
@@ -52,6 +58,7 @@ namespace SpikingDSE
             {
                 yield return env.SleepUntil(time);
                 yield return env.Send(spikesOut, neuron);
+                sw.WriteLine($"0,{neuron},{time}");
             }
         }
     }
@@ -60,13 +67,11 @@ namespace SpikingDSE
     {
         public Port spikesIn = new Port();
 
-        private string path;
         private StreamWriter sw;
 
-        public SpikeSink(string path)
+        public SpikeSink(StreamWriter sw)
         {
-            this.path = path;
-            this.sw = new StreamWriter(path);
+            this.sw = sw;
         }
 
         public override IEnumerable<Command> Run()
@@ -77,12 +82,6 @@ namespace SpikingDSE
                 int spike = (int)env.Received;
                 sw.WriteLine($"1,{spike},{env.Now}");
             }
-        }
-
-        public override void Finish()
-        {
-            sw.Flush();
-            sw.Close();
         }
     }
 
@@ -140,6 +139,15 @@ namespace SpikingDSE
                     var spike = (int)env.Received;
                     yield return env.Delay(inputTime);
                     buffer.Enqueue(spike);
+                }
+                else if (buffer.Count > 0)
+                {
+                    #region Compute()
+                    foreach (var item in Compute())
+                    {
+                        yield return item;
+                    }
+                    #endregion
                 }
             }
         }
