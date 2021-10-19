@@ -135,15 +135,26 @@ namespace SpikingDSE
                 }
                 if (buffer.Count != bufferCap && env.Ready(spikesIn))
                 {
-                    yield return env.Receive(spikesIn);
-                    var spike = (int)env.Received;
-                    yield return env.Delay(inputTime);
-                    buffer.Enqueue(spike);
+                    #region Receive()
+                    foreach (var item in Receive())
+                    {
+                        yield return item;
+                    }
+                    #endregion
                 }
                 else if (buffer.Count > 0)
                 {
                     #region Compute()
                     foreach (var item in Compute())
+                    {
+                        yield return item;
+                    }
+                    #endregion
+                }
+                else
+                {
+                    #region Receive()
+                    foreach (var item in Receive())
                     {
                         yield return item;
                     }
@@ -168,6 +179,14 @@ namespace SpikingDSE
                 }
             }
             yield return env.SleepUntil(now);
+        }
+
+        private IEnumerable<Command> Receive()
+        {
+            yield return env.Receive(spikesIn);
+            var spike = (int)env.Received;
+            yield return env.Delay(inputTime);
+            buffer.Enqueue(spike);
         }
     }
 
