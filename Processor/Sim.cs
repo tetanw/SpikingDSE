@@ -22,8 +22,8 @@ namespace SpikingDSE
             var weights = Weights.ReadFromCSV("res/weights.csv");
             var core1 = scheduler.AddProcess(new ODINCore(1, 10, 256, threshold: 1.0, weights: weights));
 
-            scheduler.AddChannel(ref input.spikesOut, ref core1.spikesIn);
-            scheduler.AddChannel(ref core1.spikesOut, ref output.spikesIn);
+            scheduler.AddChannel(ref core1.spikesIn, ref input.spikesOut);
+            scheduler.AddChannel(ref output.spikesIn, ref core1.spikesOut);
 
             scheduler.Init();
             Stopwatch stopwatch = new Stopwatch();
@@ -42,7 +42,7 @@ namespace SpikingDSE
 
     public class EventTraceIn : Process
     {
-        public Port spikesOut = new Port();
+        public OutPort spikesOut;
         private string path;
         private StreamWriter sw;
 
@@ -65,7 +65,7 @@ namespace SpikingDSE
 
     public class SpikeSink : Process
     {
-        public Port spikesIn = new Port();
+        public InPort spikesIn;
 
         private StreamWriter sw;
 
@@ -87,8 +87,9 @@ namespace SpikingDSE
 
     public class ODINCore : Process
     {
-        public Port spikesIn = new Port();
-        public Port spikesOut = new Port();
+        public InPort spikesIn;
+        public OutPort spikesOut;
+
         private Queue<int> buffer = new Queue<int>();
         private int bufferCap;
         private int coreID;

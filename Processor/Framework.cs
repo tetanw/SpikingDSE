@@ -46,13 +46,15 @@ namespace SpikingDSE
             return process;
         }
 
-        public void AddChannel(ref Port a, ref Port b)
+        public void AddChannel(ref InPort inPort, ref OutPort outPort)
         {
-            if (a.Handle != 0 || b.Handle != 0)
+            if (inPort != null|| outPort != null)
             {
                 throw new Exception("Port already bound");
             }
 
+            inPort = new InPort();
+            outPort = new OutPort();
             var channel = new Channel
             {
                 Message = null,
@@ -61,8 +63,8 @@ namespace SpikingDSE
             };
             channelReg.Add(channel);
             int newId = channelReg.Count;
-            a.Handle = newId;
-            b.Handle = newId;
+            inPort.Handle = newId;
+            outPort.Handle = newId;
         }
 
         public void Init()
@@ -146,12 +148,6 @@ namespace SpikingDSE
         }
     }
 
-    public enum Dir
-    {
-        Out,
-        In
-    }
-
     public abstract class Process
     {
         protected Environment env;
@@ -177,14 +173,14 @@ namespace SpikingDSE
 
     public class SendCmd : Command
     {
-        public Port Port;
+        public OutPort Port;
         public object Message;
         public long Time;
     }
 
     public class ReceiveCmd : Command
     {
-        public Port Port;
+        public InPort Port;
     }
 
     public class Environment
@@ -199,22 +195,22 @@ namespace SpikingDSE
             return new SleepCmd { Time = newTime - Now };
         }
 
-        public Command Send(Port port, object message)
+        public Command Send(OutPort port, object message)
         {
             return new SendCmd { Port = port, Message = message, Time = Now };
         }
 
-        public Command SendAt(Port port, object message, long time)
+        public Command SendAt(OutPort port, object message, long time)
         {
             return new SendCmd { Port = port, Message = message, Time = time };
         }
 
-        public Command Receive(Port port)
+        public Command Receive(InPort port)
         {
             return new ReceiveCmd { Port = port };
         }
 
-        public bool Ready(Port port)
+        public bool Ready(InPort port)
         {
             // TODO: Implement
             return true;
@@ -228,9 +224,16 @@ namespace SpikingDSE
         public long Now { get; set; }
     }
 
-    public class Port
+    public class InPort
     {
         public int Handle;
+
+    }
+
+    public class OutPort
+    {
+        public int Handle;
+
     }
 
     public class Weights
