@@ -5,17 +5,17 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace SpikingDSE
 {
-[DebuggerStepThrough]
+    [DebuggerStepThrough]
     class SimThread : IComparable<SimThread>
     {
-        public Process actor;
-        public IEnumerator<Command> runnable;
-        public int time;
+        public Process Process;
+        public List<IEnumerator<Command>> Runnables;
+        public int Time;
         public object message;
 
         public int CompareTo([AllowNull] SimThread other)
         {
-            return time.CompareTo(other.time);
+            return Time.CompareTo(other.Time);
         }
     }
 
@@ -26,7 +26,6 @@ namespace SpikingDSE
         public SimThread Receiver;
     }
 
-    [DebuggerStepThrough]
     public class Scheduler
     {
         private PriorityQueue<SimThread> running = new PriorityQueue<SimThread>();
@@ -39,7 +38,7 @@ namespace SpikingDSE
             this.env = new Environment();
         }
 
-        public T AddProcess<T>(T process) where T: Process
+        public T AddProcess<T>(T process) where T : Process
         {
             processes.Add(process);
             return process;
@@ -66,41 +65,50 @@ namespace SpikingDSE
 
         public void Init()
         {
-            foreach (var actor in processes)
+            foreach (var process in processes)
             {
-                actor.Init(env);
+                process.Init(env);
                 running.Enqueue(new SimThread
                 {
-                    actor = actor,
-                    runnable = actor.Run(),
-                    time = 0
+                    Process = process,
+                    Runnables = new List<IEnumerator<Command>>() { process.Run().GetEnumerator() },
+                    Time = 0
                 });
             }
         }
 
-        public int RunUntil(int stopTime)
+        public int RunUntil(int stopTime, int stopCmds)
         {
             int nrCommands = 0;
-            while (running.Count > 0)
+            while (running.Count > 0 && nrCommands < stopCmds)
             {
                 nrCommands++;
                 var thread = running.Dequeue();
-                if (thread.time > stopTime)
+                if (thread.Time > stopTime)
                     break;
 
-                env.Now = thread.time;
+                env.Now = thread.Time;
                 env.Received = thread.message;
-                bool stillRunning = thread.runnable.MoveNext();
+                var runnable = thread.Runnables[thread.Runnables.Count - 1];
+                bool stillRunning = runnable.MoveNext();
                 if (!stillRunning)
                 {
-                    continue;
+                    if (thread.Runnables.Count > 0)
+                    {
+                        thread.Runnables.RemoveAt(thread.Runnables.Count - 1);
+                        running.Enqueue(thread);
+                    }
+                    else
+                    {
+                        continue;
+                    }
                 }
 
-                var cmd = thread.runnable.Current;
+                var cmd = runnable.Current;
                 if (cmd is SleepCmd)
                 {
                     var sleep = cmd as SleepCmd;
-                    thread.time += sleep.Time;
+                    thread.Time += sleep.Time;
                     running.Enqueue(thread);
                 }
                 else if (cmd is SendCmd)
@@ -118,6 +126,12 @@ namespace SpikingDSE
                     channel.Receiver = thread;
                     PollTransmitMessage(channel);
                 }
+                else if (cmd is ProcessCmd)
+                {
+                    var process = cmd as ProcessCmd;
+                    thread.Runnables.Add(process.Runnable.GetEnumerator());
+                    running.Enqueue(thread);
+                }
             }
 
             return nrCommands;
@@ -127,8 +141,8 @@ namespace SpikingDSE
         {
             if (channel.Sender != null && channel.Receiver != null)
             {
-                channel.Sender.time = env.Now;
-                channel.Receiver.time = env.Now;
+                channel.Sender.Time = env.Now;
+                channel.Receiver.Time = env.Now;
                 channel.Receiver.message = channel.Message;
                 running.Enqueue(channel.Sender);
                 running.Enqueue(channel.Receiver);
@@ -154,7 +168,7 @@ namespace SpikingDSE
             this.env = env;
         }
 
-        public abstract IEnumerator<Command> Run();
+        public abstract IEnumerable<Command> Run();
     }
 
     public class Command
@@ -178,6 +192,11 @@ namespace SpikingDSE
         public Port Port;
     }
 
+    public class ProcessCmd : Command
+    {
+        public IEnumerable<Command> Runnable;
+    }
+
     [DebuggerStepThrough]
     public class Environment
     {
@@ -194,6 +213,17 @@ namespace SpikingDSE
         public ReceiveCmd Receive(Port port)
         {
             return new ReceiveCmd { Port = port };
+        }
+
+        public ProcessCmd WaitFor(IEnumerable<Command> process)
+        {
+            return new ProcessCmd { Runnable = process };
+        }
+
+        public bool Ready(Port port)
+        {
+            // TODO: Implement
+            return true;
         }
 
         public object Received

@@ -16,20 +16,14 @@ namespace SpikingDSE
             var scheduler = new Scheduler();
 
             var io = scheduler.AddProcess(new IO(1));
-            var router = scheduler.AddProcess(new Router());
-            var core1 = scheduler.AddProcess(new Core(1));
-            var core2 = scheduler.AddProcess(new Core(2));
-            var core3 = scheduler.AddProcess(new Core(3));
+            var core1 = scheduler.AddProcess(new Core(1, 10));
 
-            scheduler.AddChannel(ref io.spikesOut, ref router.spikesIn);
-            scheduler.AddChannel(ref router.spikesOut1, ref core1.spikesIn);
-            scheduler.AddChannel(ref router.spikesOut2, ref core2.spikesIn);
-            scheduler.AddChannel(ref router.spikesOut3, ref core3.spikesIn);
+            scheduler.AddChannel(ref io.spikesOut, ref core1.spikesIn);
 
             scheduler.Init();
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
-            int nrCommands = scheduler.RunUntil(1_000_000);
+            int nrCommands = scheduler.RunUntil(int.MaxValue, 10_000_000);
             stopwatch.Stop();
             Console.WriteLine($"Running time was: {stopwatch.ElapsedMilliseconds} ms");
             Console.WriteLine($"Commands handled: {nrCommands:n}");
@@ -48,7 +42,7 @@ namespace SpikingDSE
             this.interval = interval;
         }
 
-        public override IEnumerator<Command> Run()
+        public override IEnumerable<Command> Run()
         {
             int spike = 1;
             while (true)
@@ -62,23 +56,41 @@ namespace SpikingDSE
     public class Core : Process
     {
         public Port spikesIn = new Port();
-        private List<int> buffer = new List<int>();
+        public Port spikesOut = new Port();
+        private Queue<int> buffer = new Queue<int>();
+        private int bufferCap;
         private int coreID;
 
-        public Core(int coreID)
+        public Core(int coreID, int bufferCap)
         {
             this.coreID = coreID;
+            this.bufferCap = bufferCap;
         }
 
-        public override IEnumerator<Command> Run()
+        public override IEnumerable<Command> Run()
         {
-            while (buffer.Count < 10)
+            while (true)
             {
-                yield return env.Receive(spikesIn);
-                var spike = (int)env.Received;
-                buffer.Add(spike);
-                Console.WriteLine($"[{env.Now}]: core {coreID} received {spike}");
+                if (buffer.Count == bufferCap)
+                {
+                    foreach (var item in Compute())
+                    {
+                        yield return item;
+                    }
+                }
+                if (buffer.Count != bufferCap && env.Ready(spikesIn))
+                {
+                    yield return env.Receive(spikesIn);
+                    var spike = (int)env.Received;
+                    buffer.Enqueue(spike);
+                }
             }
+        }
+
+        private IEnumerable<Command> Compute()
+        {
+            buffer.Dequeue();
+            yield return env.Delay(16);
         }
     }
 
@@ -89,7 +101,7 @@ namespace SpikingDSE
         public Port spikesOut2 = new Port();
         public Port spikesOut3 = new Port();
 
-        public override IEnumerator<Command> Run()
+        public override IEnumerable<Command> Run()
         {
             while (true)
             {
