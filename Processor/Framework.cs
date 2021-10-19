@@ -127,11 +127,6 @@ namespace SpikingDSE
                 }
             }
 
-            foreach (var process in processes)
-            {
-                process.Finish();
-            }
-
             return nrCommands;
         }
 
@@ -167,7 +162,7 @@ namespace SpikingDSE
         }
 
         public abstract IEnumerable<Command> Run();
-        public virtual void Finish() { }
+        public void Finish() {} 
     }
 
     public class Command
@@ -254,7 +249,7 @@ namespace SpikingDSE
 
                 for (int i = 0; i < numbers.Length; i++)
                 {
-                    weights[currentLine, i] = numbers[i];
+                    weights[currentLine, i] = numbers[i]; 
                 }
                 currentLine++;
             }
