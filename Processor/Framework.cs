@@ -12,7 +12,6 @@ namespace SpikingDSE
         public Process Process;
         public IEnumerator<Command> Runnable;
         public long Time;
-        public object message;
 
         public int CompareTo([AllowNull] SimThread other)
         {
@@ -22,10 +21,11 @@ namespace SpikingDSE
 
     class Channel
     {
-        public object Message;
         public long Time;
         public SimThread Sender;
+        public OutPort OutPort;
         public SimThread Receiver;
+        public InPort InPort;
     }
 
     public class Scheduler
@@ -57,9 +57,11 @@ namespace SpikingDSE
             outPort = new OutPort();
             var channel = new Channel
             {
-                Message = null,
                 Sender = null,
-                Receiver = null
+                Receiver = null,
+                OutPort = outPort,
+                InPort = inPort
+                
             };
             channelReg.Add(channel);
             int newId = channelReg.Count;
@@ -92,7 +94,6 @@ namespace SpikingDSE
                     break;
 
                 env.Now = thread.Time;
-                env.Received = thread.message;
                 var runnable = thread.Runnable;
                 bool stillRunning = runnable.MoveNext();
                 if (!stillRunning)
@@ -112,7 +113,8 @@ namespace SpikingDSE
                     var send = cmd as SendCmd;
                     var channel = channelReg[send.Port.Handle - 1];
                     channel.Sender = thread;
-                    channel.Message = send.Message;
+                    channel.OutPort.Message = send.Message;
+                    channel.InPort.Ready = true;
                     channel.Time = send.Time;
                     PollTransmitMessage(channel);
                 }
@@ -136,14 +138,17 @@ namespace SpikingDSE
         {
             if (channel.Sender != null && channel.Receiver != null)
             {
+                channel.InPort.Ready = false;
+                channel.InPort.Message = channel.OutPort.Message; // FIXME: Maybe clean after each run?
+                channel.OutPort.Message = null;
+
+                // Handle threads
                 channel.Sender.Time = channel.Time;
                 channel.Receiver.Time = channel.Time;
-                channel.Receiver.message = channel.Message;
                 running.Enqueue(channel.Sender);
                 running.Enqueue(channel.Receiver);
                 channel.Sender = null;
                 channel.Receiver = null;
-                channel.Message = null;
             }
         }
     }
@@ -210,30 +215,20 @@ namespace SpikingDSE
             return new ReceiveCmd { Port = port };
         }
 
-        public bool Ready(InPort port)
-        {
-            // TODO: Implement
-            return true;
-        }
-
-        public object Received
-        {
-            get; set;
-        }
-
         public long Now { get; set; }
     }
 
     public class InPort
     {
         public int Handle;
-
+        public bool Ready;
+        public object Message;
     }
 
     public class OutPort
     {
         public int Handle;
-
+        public object Message;
     }
 
     public class Weights

@@ -79,7 +79,7 @@ namespace SpikingDSE
             while (true)
             {
                 yield return env.Receive(spikesIn);
-                int spike = (int)env.Received;
+                int spike = (int)spikesIn.Message;
                 sw.WriteLine($"1,{spike},{env.Now}");
             }
         }
@@ -134,7 +134,7 @@ namespace SpikingDSE
                     }
                     #endregion
                 }
-                if (buffer.Count != bufferCap && env.Ready(spikesIn))
+                if (buffer.Count != bufferCap && spikesIn.Ready)
                 {
                     #region Receive()
                     foreach (var item in Receive())
@@ -185,7 +185,7 @@ namespace SpikingDSE
         private IEnumerable<Command> Receive()
         {
             yield return env.Receive(spikesIn);
-            var spike = (int)env.Received;
+            var spike = (int)spikesIn.Message;
             yield return env.Delay(inputTime);
             buffer.Enqueue(spike);
         }
