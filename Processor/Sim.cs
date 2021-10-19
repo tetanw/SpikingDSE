@@ -16,10 +16,10 @@ namespace SpikingDSE
         {
             var scheduler = new Scheduler();
 
-            var input = scheduler.AddProcess(new EventTraceIn("res/events.trace"));
+            var input = scheduler.AddProcess(new EventTraceIn("res/events_test.trace"));
             var output = scheduler.AddProcess(new SpikeSink("res/out.trace"));
             var weights = Weights.ReadFromCSV("res/weights.csv");
-            var core1 = scheduler.AddProcess(new ODINCore(1, 10, 256, threshold: 128.0, weights: weights));
+            var core1 = scheduler.AddProcess(new ODINCore(1, 10, 256, threshold: 32.0, weights: weights));
 
             scheduler.AddChannel(ref input.spikesOut, ref core1.spikesIn);
             scheduler.AddChannel(ref core1.spikesOut, ref output.spikesIn);
@@ -150,7 +150,7 @@ namespace SpikingDSE
             long now = env.Now;
             for (int dst = 0; dst < nrNeurons; dst++)
             {
-                pots[dst] += weights[src, dst];
+                pots[dst] += weights[dst, src];
                 now += synComputeTime;
                 if (pots[dst] > threshold)
                 {
