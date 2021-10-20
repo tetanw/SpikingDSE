@@ -164,7 +164,6 @@ namespace SpikingDSE
         }
 
         public abstract IEnumerable<Command> Run();
-        public void Finish() {} 
     }
 
     public class Command
