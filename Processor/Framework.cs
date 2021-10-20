@@ -190,7 +190,7 @@ namespace SpikingDSE
 
     public class Environment
     {
-        public Command Delay(int time)
+        public Command Delay(long time)
         {
             return new SleepCmd { Time = time };
         }
