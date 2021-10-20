@@ -39,11 +39,11 @@ namespace SpikingDSE
             var scheduler = new Scheduler();
 
             var report = new StreamWriter("res/exp1/result.trace");
-            var input = scheduler.AddProcess(new EventTraceIn("res/exp1/validation.trace", report));
+            var input = scheduler.AddProcess(new EventTraceIn("res/exp1/validation.trace", report, startTime: 4521));
             var output = scheduler.AddProcess(new SpikeSink(report));
             var weights = Weights.ReadFromCSV("res/exp1/weights_256.csv");
             CorrectWeights(weights);
-            var core1 = scheduler.AddProcess(new ODINCore(1, 10, 256, threshold: 30.0, weights: weights, synComputeTime: 2, outputTime: 8));
+            var core1 = scheduler.AddProcess(new ODINCore(1, 256, bufferCap: 1, threshold: 30.0, weights: weights, synComputeTime: 2, outputTime: 8, inputTime: 7));
 
             scheduler.AddChannel(ref core1.spikesIn, ref input.spikesOut);
             scheduler.AddChannel(ref output.spikesIn, ref core1.spikesOut);
@@ -68,11 +68,13 @@ namespace SpikingDSE
         public OutPort spikesOut;
         private string path;
         private StreamWriter sw;
+        private long startTime;
 
-        public EventTraceIn(string path, StreamWriter sw)
+        public EventTraceIn(string path, StreamWriter sw, long startTime = 0)
         {
             this.path = path;
             this.sw = sw;
+            this.startTime = startTime;
         }
 
         private IEnumerable<(int, long)> ReadInputSpikes(string path, int frequency)
@@ -96,11 +98,11 @@ namespace SpikingDSE
 
         public override IEnumerable<Command> Run()
         {
-            foreach (var (neuron, time) in EventTraceReader.ReadInputs(path, 100_000_000))
+            yield return env.SleepUntil(startTime);
+            foreach (var (neuron, time) in EventTraceReader.ReadInputs(path, 100_000_000, startTime))
             {
-                yield return env.SleepUntil(time);
                 yield return env.Send(spikesOut, neuron);
-                sw.WriteLine($"0,{neuron},{time}");
+                sw.WriteLine($"0,{neuron},{env.Now}");
             }
         }
     }
@@ -143,7 +145,7 @@ namespace SpikingDSE
         private int inputTime;
         private int outputTime;
 
-        public ODINCore(int coreID, int bufferCap, int nrNeurons, double[,] weights = null, double threshold = 0.1, int synComputeTime = 0, int outputTime = 0, int inputTime = 0)
+        public ODINCore(int coreID, int nrNeurons, double[,] weights = null, int bufferCap = 1, double threshold = 0.1, int synComputeTime = 0, int outputTime = 0, int inputTime = 0)
         {
             this.coreID = coreID;
             this.bufferCap = bufferCap;
@@ -176,7 +178,7 @@ namespace SpikingDSE
                     }
                     #endregion
                 }
-                if (buffer.Count != bufferCap && spikesIn.Ready)
+                else if (buffer.Count != bufferCap && spikesIn.Ready)
                 {
                     #region Receive()
                     foreach (var item in Receive())
@@ -209,7 +211,8 @@ namespace SpikingDSE
         private IEnumerable<Command> Compute()
         {
             int src = buffer.Dequeue();
-            long now = env.Now;
+            long startNow = env.Now;
+            long now = startNow;
             for (int dst = 0; dst < nrNeurons; dst++)
             {
                 pots[dst] += weights[src, dst];
@@ -226,9 +229,10 @@ namespace SpikingDSE
 
         private IEnumerable<Command> Receive()
         {
+            // FIXME: Maybe one command???
+            yield return env.Delay(inputTime);
             yield return env.Receive(spikesIn);
             var spike = (int)spikesIn.Message;
-            yield return env.Delay(inputTime);
             buffer.Enqueue(spike);
         }
     }

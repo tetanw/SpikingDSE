@@ -122,14 +122,14 @@ namespace SpikingDSE
 
     public class EventTraceReader
     {
-        public static IEnumerable<(int, long)> ReadInputs(string path, int frequency)
+        public static IEnumerable<(int, long)> ReadInputs(string path, int frequency, long startTime)
         {
             var reader = new EventTraceReader(path, frequency);
             while (reader.NextEvent())
             {
                 if (reader.CurrentType == EventType.InputSpike)
                 {
-                    yield return (reader.CurrentNeuronID, reader.CurrentTime);
+                    yield return (reader.CurrentNeuronID, reader.CurrentTime + startTime);
                 }
             }
         }
