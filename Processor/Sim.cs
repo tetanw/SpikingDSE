@@ -229,9 +229,7 @@ namespace SpikingDSE
 
         private IEnumerable<Command> Receive()
         {
-            // FIXME: Maybe one command???
-            yield return env.Delay(inputTime);
-            yield return env.Receive(spikesIn);
+            yield return env.Receive(spikesIn, duration: inputTime);
             var spike = (int)spikesIn.Message;
             buffer.Enqueue(spike);
         }

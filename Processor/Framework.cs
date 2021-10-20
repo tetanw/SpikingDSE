@@ -212,9 +212,9 @@ namespace SpikingDSE
             return new SendCmd { Port = port, Message = message, Time = time };
         }
 
-        public Command Receive(InPort port)
+        public Command Receive(InPort port, long duration = 0)
         {
-            return new ReceiveCmd { Port = port, Time = Now };
+            return new ReceiveCmd { Port = port, Time = Now + duration };
         }
 
         public long Now { get; set; }
