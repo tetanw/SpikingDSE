@@ -12,6 +12,28 @@ namespace SpikingDSE
 
         }
 
+        private void Swap(int c, int x, int y, double[,] array)
+        {
+            // swap index x and y
+            var buffer = array[c, x];
+            array[c, x] = array[c, y];
+            array[c, y] = buffer;
+        }
+
+        private void CorrectWeights(double[,] weights)
+        {
+            for (int x = 0; x < 256; x++)
+            {
+                for (int y = 0; y < 256; y += 8)
+                {
+                    Swap(x, y + 0, y + 7, weights);
+                    Swap(x, y + 1, y + 6, weights);
+                    Swap(x, y + 2, y + 5, weights);
+                    Swap(x, y + 3, y + 4, weights);
+                }
+            }
+        }
+
         public void Run()
         {
             var scheduler = new Scheduler();
@@ -20,7 +42,8 @@ namespace SpikingDSE
             var input = scheduler.AddProcess(new EventTraceIn("res/exp1/validation.trace", report));
             var output = scheduler.AddProcess(new SpikeSink(report));
             var weights = Weights.ReadFromCSV("res/exp1/weights_256.csv");
-            var core1 = scheduler.AddProcess(new ODINCore(1, 10, 256, threshold: 30.0, weights: weights, synComputeTime: 2));
+            CorrectWeights(weights);
+            var core1 = scheduler.AddProcess(new ODINCore(1, 10, 256, threshold: 30.0, weights: weights, synComputeTime: 2, outputTime: 8));
 
             scheduler.AddChannel(ref core1.spikesIn, ref input.spikesOut);
             scheduler.AddChannel(ref output.spikesIn, ref core1.spikesOut);
@@ -191,11 +214,11 @@ namespace SpikingDSE
             {
                 pots[dst] += weights[src, dst];
                 now += synComputeTime;
-                if (pots[dst] > threshold)
+                if (pots[dst] >= threshold)
                 {
-                    now += outputTime;
                     pots[dst] = 0.0;
                     yield return env.SendAt(spikesOut, dst, now);
+                    now += outputTime;
                 }
             }
             yield return env.SleepUntil(now);

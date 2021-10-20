@@ -247,7 +247,7 @@ namespace SpikingDSE
 
                 for (int i = 0; i < numbers.Length; i++)
                 {
-                    weights[currentLine, i] = numbers[i]; 
+                    weights[i, currentLine] = numbers[i]; 
                 }
                 currentLine++;
             }
