@@ -115,7 +115,7 @@ namespace SpikingDSE
                     channel.Sender = thread;
                     channel.OutPort.Message = send.Message;
                     channel.InPort.Ready = true;
-                    channel.Time = send.Time;
+                    channel.Time = Math.Max(send.Time, channel.Time);
                     PollTransmitMessage(channel);
                 }
                 else if (cmd is ReceiveCmd)
@@ -123,6 +123,7 @@ namespace SpikingDSE
                     var recv = cmd as ReceiveCmd;
                     var channel = channelReg[recv.Port.Handle - 1];
                     channel.Receiver = thread;
+                    channel.Time = Math.Max(recv.Time, channel.Time);
                     PollTransmitMessage(channel);
                 }
                 else
@@ -186,6 +187,7 @@ namespace SpikingDSE
     public class ReceiveCmd : Command
     {
         public InPort Port;
+        public long Time;
     }
 
     public class Environment
@@ -210,9 +212,9 @@ namespace SpikingDSE
             return new SendCmd { Port = port, Message = message, Time = time };
         }
 
-        public Command Receive(InPort port)
+        public Command Receive(InPort port, long duration = 0)
         {
-            return new ReceiveCmd { Port = port };
+            return new ReceiveCmd { Port = port, Time = Now + duration };
         }
 
         public long Now { get; set; }
@@ -247,7 +249,7 @@ namespace SpikingDSE
 
                 for (int i = 0; i < numbers.Length; i++)
                 {
-                    weights[currentLine, i] = numbers[i]; 
+                    weights[i, currentLine] = numbers[i]; 
                 }
                 currentLine++;
             }

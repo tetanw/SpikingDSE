@@ -183,7 +183,7 @@ namespace SpikingDSE
             // when an output spike is generated
             if (id == "9" && newValue == 1)
             {
-                sw.Write($"1,{spike.Synapse},{time}\n");
+                sw.Write($"1,{spike.Synapse - 1},{time}\n");
             }
         }
 

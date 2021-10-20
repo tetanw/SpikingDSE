@@ -50,7 +50,7 @@ namespace SpikingDSE
                     return 0;
                 },
                 (SimOptions opts) => {
-                    var sim = new Simulation();
+                    var sim = new ODINSingleCore();
                     sim.Run();
                     return 0;
                 },
