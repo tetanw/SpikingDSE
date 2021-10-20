@@ -16,11 +16,11 @@ namespace SpikingDSE
         {
             var scheduler = new Scheduler();
 
-            var report = new StreamWriter("res/out.trace");
-            var input = scheduler.AddProcess(new EventTraceIn("res/events_test.trace", report));
+            var report = new StreamWriter("res/exp1/result.trace");
+            var input = scheduler.AddProcess(new EventTraceIn("res/exp1/validation.trace", report));
             var output = scheduler.AddProcess(new SpikeSink(report));
-            var weights = Weights.ReadFromCSV("res/weights.csv");
-            var core1 = scheduler.AddProcess(new ODINCore(1, 10, 256, threshold: 1.0, weights: weights));
+            var weights = Weights.ReadFromCSV("res/exp1/weights_256.csv");
+            var core1 = scheduler.AddProcess(new ODINCore(1, 10, 256, threshold: 30.0, weights: weights, synComputeTime: 2));
 
             scheduler.AddChannel(ref core1.spikesIn, ref input.spikesOut);
             scheduler.AddChannel(ref output.spikesIn, ref core1.spikesOut);
@@ -50,6 +50,25 @@ namespace SpikingDSE
         {
             this.path = path;
             this.sw = sw;
+        }
+
+        private IEnumerable<(int, long)> ReadInputSpikes(string path, int frequency)
+        {
+            long clkPeriodPs = 1_000_000_000_000 / frequency;
+            StreamReader sr = new StreamReader(path);
+            sr.ReadLine();
+            sr.ReadLine();
+            sr.ReadLine();
+            sr.ReadLine();
+            string line;
+            while ((line = sr.ReadLine()) != null)
+            {
+                var parts = line.Split(",");
+                long time = long.Parse(parts[0]) / clkPeriodPs;
+                int neuron = int.Parse(parts[1]);
+                yield return (neuron, time);
+            }
+            sr.Close();
         }
 
         public override IEnumerable<Command> Run()
@@ -170,7 +189,7 @@ namespace SpikingDSE
             long now = env.Now;
             for (int dst = 0; dst < nrNeurons; dst++)
             {
-                pots[dst] += weights[dst, src];
+                pots[dst] += weights[src, dst];
                 now += synComputeTime;
                 if (pots[dst] > threshold)
                 {

@@ -24,25 +24,6 @@ namespace SpikingDSE
         public int MaxLines { get; set; }
     }
 
-    [Verb("analyze", HelpText = "Analyzes input file")]
-    public class AnalyzeOptions
-    {
-        [Option('s', "snn", Required = true, HelpText = "SNN definition")]
-        public string SNN { get; set; }
-
-        [Option('h', "hardware", Required = true, HelpText = "Hardware definition")]
-        public string HW { get; set; }
-        
-        [Option('c', "cost", Required = true, HelpText = "Cost definition")]
-        public string Cost { get; set; }
-
-        [Option("strategy", Required = true, HelpText = "Strategy")]
-        public string Strategy { get; set; }
-
-        [Option('l', "limit", HelpText = "Max amount of timesteps to do")]
-        public int MaxTimesteps { get; set; }
-    }
-
     [Verb("to-tensor", HelpText = "Converts event trace to tensor")]
     public class ToTensorOptions
     {
@@ -60,7 +41,7 @@ namespace SpikingDSE
     {
         static int Main(string[] args)
         {
-            var result = Parser.Default.ParseArguments<SimOptions, VCDOptions, AnalyzeOptions, ToTensorOptions>(args);
+            var result = Parser.Default.ParseArguments<SimOptions, VCDOptions, ToTensorOptions>(args);
             var ret = result.MapResult(
                 (VCDOptions opts) =>
                 {
