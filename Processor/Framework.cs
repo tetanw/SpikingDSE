@@ -307,7 +307,6 @@ namespace SpikingDSE
     public class InPort : Port
     {
         public Command WaitingForRecv;
-        public bool Ready = false; // TODO: Remove
     }
 
     public class OutPort : Port

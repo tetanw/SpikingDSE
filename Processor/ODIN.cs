@@ -119,7 +119,7 @@ namespace SpikingDSE
                     }
                     #endregion
                 }
-                else if (buffer.Count != bufferCap && spikesIn.Ready)
+                else if (buffer.Count != bufferCap && SpikeReady())
                 {
                     #region Receive()
                     foreach (var item in Receive())
@@ -147,6 +147,12 @@ namespace SpikingDSE
                     #endregion
                 }
             }
+        }
+
+        private bool SpikeReady()
+        {
+            // TODO: What needs to happen with this???
+            return false;
         }
 
         private IEnumerable<Command> Compute()
