@@ -23,12 +23,17 @@ namespace SpikingDSE
         public string Name;
         public OutPort OutPort;
         public InPort InPort;
+
+        public SimThread SendThread;
+        public SendCmd SendCmd;
+        public SimThread ReceiveThread;
+        public Command ReceiveCmd;
     }
 
     public class Scheduler
     {
         private PriorityQueue<SimThread> ready = new PriorityQueue<SimThread>();
-        private List<Channel> channelReg = new List<Channel>();
+        private List<Channel> channels = new List<Channel>();
         private List<Actor> actors = new List<Actor>();
         private Environment env;
 
@@ -50,22 +55,16 @@ namespace SpikingDSE
                 throw new Exception("Port already bound");
             }
 
-            inPort = new InPort
-            {
-                WaitingForRecv = null
-            };
-            outPort = new OutPort()
-            {
-                WaitingForSend = null
-            };
+            inPort = new InPort();
+            outPort = new OutPort();
             var channel = new Channel
             {
                 OutPort = outPort,
                 InPort = inPort,
                 Name = name
             };
-            channelReg.Add(channel);
-            int newId = channelReg.Count;
+            int newId = channels.Count;
+            channels.Add(channel);
             inPort.ChannelHandle = newId;
             outPort.ChannelHandle = newId;
         }
@@ -117,133 +116,56 @@ namespace SpikingDSE
                         }
                     case SendCmd send:
                         {
-                            var channel = channelReg[send.Port.ChannelHandle - 1];
-                            if (channel.InPort.WaitingForRecv != null)
+                            var channel = channels[send.Port.ChannelHandle];
+                            if (channel.SendCmd != null)
                             {
-                                throw new Exception("In port is already busy");
+                                throw new Exception("Channel is already occupied");
                             }
 
-                            // New
-                            if (channel.OutPort.WaitingForSend != null)
+                            channel.SendCmd = send;
+                            channel.SendThread = currentThread;
+                            if (channel.ReceiveCmd != null)
                             {
-                                if (channel.OutPort.WaitingForSend is ReceiveCmd)
-                                {
-                                    var recv = (ReceiveCmd)channel.OutPort.WaitingForSend;
-                                    channel.OutPort.WaitingForSend = null;
-
-                                    // Find the two channels plan
-                                    SimThread sendThread = currentThread;
-                                    SimThread recvThread = recv.Thread;
-                                    recv.Thread = null;
-                                    long newTime = Math.Max(send.Time, recv.Time);
-                                    sendThread.Time = newTime;
-                                    recvThread.Time = newTime;
-                                    ready.Enqueue(sendThread);
-                                    ready.Enqueue(recvThread);
-                                    recv.Message = send.Message;
-                                }
-                                else if (channel.OutPort.WaitingForSend is SelectCmd)
-                                {
-                                    // TODO: May not always be a receive command
-                                    var select = (SelectCmd)channel.OutPort.WaitingForSend;
-                                    channel.OutPort.WaitingForSend = null;
-
-                                    for (int i = 0; i < select.Ports.Length; i++)
-                                    {
-                                        var port = select.Ports[i];
-                                        var selChannel = channelReg[port.ChannelHandle];
-                                        selChannel.OutPort.WaitingForSend = null;
-                                    }
-
-                                    SimThread sendThread = currentThread;
-                                    SimThread recvThread = select.Thread;
-                                    send.Thread = null;
-                                    long newTime = Math.Max(send.Time, select.Time);
-                                    sendThread.Time = newTime;
-                                    recvThread.Time = newTime;
-                                    ready.Enqueue(sendThread);
-                                    ready.Enqueue(recvThread);
-                                    select.Message = send.Message;
-                                    select.Port = channel.InPort;
-                                }
+                                DoChannelTransfer(channel);
                             }
-                            else
-                            {
-                                send.Thread = currentThread;
-                                channel.InPort.WaitingForRecv = send;
-                            }
-
                             break;
                         }
                     case ReceiveCmd recv:
                         {
-                            var channel = channelReg[recv.Port.ChannelHandle - 1];
-                            if (channel.OutPort.WaitingForSend != null)
+                            var channel = channels[recv.Port.ChannelHandle];
+                            if (channel.ReceiveCmd != null)
                             {
-                                throw new Exception("Out port is already busy");
+                                throw new Exception("Channel is already occupied");
                             }
 
-                            // New
-                            if (channel.InPort.WaitingForRecv != null)
+                            channel.ReceiveCmd = recv;
+                            channel.ReceiveThread = currentThread;
+                            if (channel.SendCmd != null)
                             {
-                                var send = (SendCmd)channel.InPort.WaitingForRecv;
-                                channel.InPort.WaitingForRecv = null;
-
-                                // Find the two channels plan
-                                SimThread sendThread = send.Thread;
-                                SimThread recvThread = currentThread;
-                                send.Thread = null;
-                                long newTime = Math.Max(send.Time, recv.Time);
-                                sendThread.Time = newTime;
-                                recvThread.Time = newTime;
-                                ready.Enqueue(sendThread);
-                                ready.Enqueue(recvThread);
-                                recv.Message = send.Message;
+                                DoChannelTransfer(channel);
                             }
-                            else
-                            {
-                                recv.Thread = currentThread;
-                                channel.OutPort.WaitingForSend = recv;
-                            }
-
                             break;
                         }
                     case SelectCmd select:
                         {
                             for (int i = 0; i < select.Ports.Length; i++)
                             {
-                                var recvPort = select.Ports[i];
-                                var channel = channelReg[recvPort.ChannelHandle];
-
-                                if (channel.InPort.WaitingForRecv != null)
+                                var port = select.Ports[i];
+                                var aChannel = channels[port.ChannelHandle];
+                                aChannel.ReceiveCmd = select;
+                                aChannel.ReceiveThread = currentThread;
+                                if (aChannel.SendCmd != null)
                                 {
-                                    var send = (SendCmd)channel.InPort.WaitingForRecv;
-                                    SimThread sendThread = send.Thread;
-                                    SimThread recvThread = currentThread;
-                                    send.Thread = null;
-                                    long newTime = Math.Max(send.Time, select.Time);
-                                    sendThread.Time = newTime;
-                                    recvThread.Time = newTime;
-                                    ready.Enqueue(sendThread);
-                                    ready.Enqueue(recvThread);
-                                    select.Message = send.Message;
-                                    select.Port = recvPort;
+                                    DoChannelTransfer(aChannel);
+                                    break;
                                 }
-                            }
-
-                            select.Thread = currentThread;
-                            for (int i = 0; i < select.Ports.Length; i++)
-                            {
-                                var recvPort = select.Ports[i];
-                                var channel = channelReg[recvPort.ChannelHandle - 1];
-
-                                channel.OutPort.WaitingForSend = select;
                             }
 
                             break;
                         }
                     case ParCmd parallel:
                         {
+                            // FIXME: Am I going to do it like this?
                             foreach (var process in parallel.Processes)
                             {
                                 ready.Enqueue(new SimThread
@@ -260,6 +182,54 @@ namespace SpikingDSE
             }
 
             return nrCommands;
+        }
+
+        private void DoChannelTransfer(Channel channel)
+        {
+            if (channel.ReceiveCmd is ReceiveCmd)
+            {
+                var rcv = channel.ReceiveCmd as ReceiveCmd;
+                rcv.Message = channel.SendCmd.Message;
+                long newTime = Math.Max(channel.SendCmd.Time, rcv.Time);
+                QueueThreads(channel, newTime);
+                CleanChannel(channel);
+            }
+            else if (channel.ReceiveCmd is SelectCmd)
+            {
+                var select = channel.ReceiveCmd as SelectCmd;
+                select.Message = channel.SendCmd.Message;
+                select.Port = channel.InPort;
+                long newTime = Math.Max(channel.SendCmd.Time, select.Time);
+                QueueThreads(channel, newTime);
+
+                for (int i = 0; i < select.Ports.Length; i++)
+                {
+                    var port = select.Ports[i];
+                    var aChannel = channels[port.ChannelHandle];
+                    CleanChannel(aChannel);
+                }
+            }
+            else
+            {
+                throw new Exception("Unknown receive command");
+            }
+
+        }
+
+        private void CleanChannel(Channel channel)
+        {
+            channel.SendCmd = null;
+            channel.SendThread = null;
+            channel.ReceiveCmd = null;
+            channel.ReceiveThread = null;
+        }
+
+        private void QueueThreads(Channel channel, long newTime)
+        {
+            channel.SendThread.Time = newTime;
+            channel.ReceiveThread.Time = newTime;
+            ready.Enqueue(channel.SendThread);
+            ready.Enqueue(channel.ReceiveThread);
         }
     }
 
@@ -278,8 +248,6 @@ namespace SpikingDSE
     public class Command
     {
         // Scheduler tracking variable, DO NOT USE
-        // FIXME: I am not happy with this variable
-        public SimThread Thread;
     }
 
     public class SleepCmd : Command
@@ -371,14 +339,12 @@ namespace SpikingDSE
 
     public class InPort : Port
     {
-        // FIXME: Not happy with this variable
-        public Command WaitingForRecv;
+
     }
 
     public class OutPort : Port
     {
-        // FIXME: Not happy with this variable
-        public Command WaitingForSend;
+
     }
 
     public class Weights

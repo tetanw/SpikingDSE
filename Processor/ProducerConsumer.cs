@@ -41,7 +41,8 @@ namespace SpikingDSE
         {
             while (true)
             {
-                yield return env.Receive(In);
+                var rcv = env.Receive(In);
+                yield return rcv;
             }
         }
     }
@@ -93,7 +94,7 @@ namespace SpikingDSE
                 bundle.Add(message);
                 if (bundle.Count == 3)
                 {
-                    yield return env.Send(output, bundle);
+                    yield return env.Send(output, bundle.ToArray());
                     bundle.Clear();
                 }
             }
