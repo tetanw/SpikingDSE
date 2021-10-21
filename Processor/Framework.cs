@@ -128,6 +128,17 @@ namespace SpikingDSE
                             PollTransmitMessage(channel);
                             break;
                         }
+                    case SelectCmd select:
+                        {
+                            for (int i = 0; i < select.Ports.Length; i++)
+                            {
+                                var recvPort = select.Ports[i];
+                                var channel = channelReg[recvPort.Handle];
+                                
+
+                            }
+                            break;
+                        }
                     default:
                         throw new Exception("Unknown command: " + cmd);
                 }
@@ -190,6 +201,13 @@ namespace SpikingDSE
         public long Time;
     }
 
+    public class SelectCmd : Command
+    {
+        public InPort[] Ports;
+        public InPort Port;
+        public object Message;
+    }
+
     public class Environment
     {
         public Command Delay(long time)
@@ -215,6 +233,11 @@ namespace SpikingDSE
         public Command Receive(InPort port, long duration = 0)
         {
             return new ReceiveCmd { Port = port, Time = Now + duration };
+        }
+
+        public SelectCmd Select(params InPort[] ports)
+        {
+            return new SelectCmd { Ports = ports };
         }
 
         public long Now { get; set; }

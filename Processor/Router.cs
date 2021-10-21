@@ -27,30 +27,31 @@ namespace SpikingDSE
             while (true)
             {
                 // 1. Monitor the inputs for any packet
-                // TODO: Implement select
-                var packet = new XYPacket();
+                var select = env.Select();
+                yield return select;
+                XYPacket packet = (XYPacket)select.Message;
 
                 // 2. Add a delay to simulate processing
                 yield return env.Delay(processingDelay);
 
                 // 3. Determine into which output port it goes
                 OutPort outPort;
-                if (packet.x > 0)
+                if (packet.X > 0)
                 {
                     // West
                     outPort = outWest;
                 }
-                else if (packet.x < 0)
+                else if (packet.X < 0)
                 {
                     // East
                     outPort = outEast;
                 }
-                else if (packet.y > 0)
+                else if (packet.Y > 0)
                 {
                     // South
                     outPort = outSouth;
                 }
-                else if (packet.y < 0)
+                else if (packet.Y < 0)
                 {
                     // North
                     outPort = outNorth;
@@ -69,8 +70,8 @@ namespace SpikingDSE
 
     public class XYPacket
     {
-        public int x;
-        public int y;
+        public int X;
+        public int Y;
         public object Message;
     }
 }
