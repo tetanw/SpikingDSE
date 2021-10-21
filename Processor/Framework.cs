@@ -124,7 +124,7 @@ namespace SpikingDSE
                             // New
                             if (channel.OutPort.WaitingForSend != null)
                             {
-                                // TODO: May not always be receive command
+                                // TODO: May not always be a receive command
                                 var recv = (ReceiveCmd)channel.OutPort.WaitingForSend;
                                 channel.OutPort.WaitingForSend = null;
 
@@ -243,7 +243,7 @@ namespace SpikingDSE
     public class ReceiveCmd : Command
     {
         public InPort Port;
-        public object Message; // TODO: Fill with message
+        public object Message;
         public long Time;
     }
 
