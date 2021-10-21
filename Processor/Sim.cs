@@ -114,4 +114,35 @@ namespace SpikingDSE
             Console.WriteLine($"Time per cmd: {Measurements.FormatSI(stopwatch.Elapsed.TotalSeconds / nrCommands, "s")}");
         }
     }
+
+    public class ForkJoin
+    {
+
+        public void Run()
+        {
+            var scheduler = new Scheduler();
+
+            var producer = scheduler.AddProcess(new Producer(8, "hi"));
+            var consumer = scheduler.AddProcess(new Consumer());
+            var fork = scheduler.AddProcess(new Fork());
+            var join = scheduler.AddProcess(new Join());
+
+            scheduler.AddChannel(ref producer.Out, ref fork.input, "Producer -> Fork");
+            scheduler.AddChannel(ref fork.out1, ref join.in1, "Fork -> Join 1");
+            scheduler.AddChannel(ref fork.out2, ref join.in2, "Fork -> Join 2");
+            scheduler.AddChannel(ref fork.out3, ref join.in3, "Fork -> Join 3");
+            scheduler.AddChannel(ref join.output, ref consumer.In, "Join -> Consumer");
+
+            scheduler.Init();
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
+            int nrCommands = scheduler.RunUntil(int.MaxValue, 10_000_000);
+            stopwatch.Stop();
+
+            Console.WriteLine($"Running time was: {stopwatch.ElapsedMilliseconds} ms");
+            Console.WriteLine($"Commands handled: {nrCommands:n}");
+            Console.WriteLine($"Performance was about: {nrCommands / stopwatch.Elapsed.TotalSeconds:n} cmd/s");
+            Console.WriteLine($"Time per cmd: {Measurements.FormatSI(stopwatch.Elapsed.TotalSeconds / nrCommands, "s")}");
+        }
+    }
 }

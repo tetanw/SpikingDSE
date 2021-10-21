@@ -64,6 +64,10 @@ namespace SpikingDSE
                     {
                         new MultiCore().Run();
                     }
+                    else if (opts.Name.Equals("FORKJOIN"))
+                    {
+                        new ForkJoin().Run();
+                    }
                     else
                     {
                         throw new Exception($"Unknown simulation: {opts.Name}");
