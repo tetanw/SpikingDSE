@@ -3,7 +3,7 @@ using System.IO;
 
 namespace SpikingDSE
 {
-    public class EventTraceIn : Process
+    public class EventTraceIn : Actor
     {
         public OutPort spikesOut;
         private string path;
@@ -47,7 +47,7 @@ namespace SpikingDSE
         }
     }
 
-    public class SpikeSink : Process
+    public class SpikeSink : Actor
     {
         public InPort spikesIn;
 
@@ -62,14 +62,15 @@ namespace SpikingDSE
         {
             while (true)
             {
-                yield return env.Receive(spikesIn);
-                int spike = (int)spikesIn.Message;
+                var rcv = env.Receive(spikesIn);
+                yield return rcv;
+                int spike = (int)rcv.Message;
                 sw.WriteLine($"1,{spike},{env.Now}");
             }
         }
     }
 
-    public class ODINCore : Process
+    public class ODINCore : Actor
     {
         public InPort spikesIn;
         public OutPort spikesOut;
@@ -169,8 +170,9 @@ namespace SpikingDSE
 
         private IEnumerable<Command> Receive()
         {
-            yield return env.Receive(spikesIn, duration: inputTime);
-            var spike = (int)spikesIn.Message;
+            var rcv = env.Receive(spikesIn, waitBefore: inputTime);
+            yield return rcv;
+            var spike = (int)rcv.Message;
             buffer.Enqueue(spike);
         }
     }

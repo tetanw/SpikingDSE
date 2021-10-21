@@ -2,7 +2,7 @@ using System.Collections.Generic;
 
 namespace SpikingDSE
 {
-    public class MeshNI : Process
+    public class MeshNI : Actor
     {
         public InPort MeshIn;
         public InPort PEIn;
@@ -26,12 +26,12 @@ namespace SpikingDSE
 
                 if (select.Port == MeshIn)
                 {
-                    var packet = (MeshFlit) select.Port.Message;
+                    var packet = (MeshFlit) select.Message;
                     yield return env.Send(PEOut, packet.Message);
                 }
                 else if (select.Port == PEIn)
                 {
-                    var packet = (Packet) select.Port.Message;
+                    var packet = (Packet) select.Message;
                     var (x, y) = FindLocation(packet.ID);
                     var flit = new MeshFlit
                     {

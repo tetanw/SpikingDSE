@@ -3,7 +3,7 @@ using System.Linq;
 
 namespace SpikingDSE
 {
-    public class Producer : Process
+    public class Producer : Actor
     {
         public OutPort Out;
 
@@ -28,7 +28,7 @@ namespace SpikingDSE
         }
     }
 
-    public class Consumer : Process
+    public class Consumer : Actor
     {
         public InPort In;
 

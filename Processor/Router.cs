@@ -2,7 +2,7 @@ using System.Collections.Generic;
 
 namespace SpikingDSE
 {
-    public class XYRouter : Process
+    public class XYRouter : Actor
     {
         public InPort inNorth;
         public InPort inSouth;

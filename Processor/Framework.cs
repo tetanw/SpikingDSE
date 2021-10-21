@@ -7,9 +7,8 @@ using System.Linq;
 
 namespace SpikingDSE
 {
-    class SimThread : IComparable<SimThread>
+    public class SimThread : IComparable<SimThread>
     {
-        public Process Process;
         public IEnumerator<Command> Runnable;
         public long Time;
 
@@ -21,10 +20,7 @@ namespace SpikingDSE
 
     class Channel
     {
-        public long Time;
-        public SimThread Sender;
         public OutPort OutPort;
-        public SimThread Receiver;
         public InPort InPort;
     }
 
@@ -32,7 +28,7 @@ namespace SpikingDSE
     {
         private PriorityQueue<SimThread> ready = new PriorityQueue<SimThread>();
         private List<Channel> channelReg = new List<Channel>();
-        private List<Process> processes = new List<Process>();
+        private List<Actor> actors = new List<Actor>();
         private Environment env;
 
         public Scheduler()
@@ -40,9 +36,9 @@ namespace SpikingDSE
             this.env = new Environment();
         }
 
-        public T AddProcess<T>(T process) where T : Process
+        public T AddProcess<T>(T process) where T : Actor
         {
-            processes.Add(process);
+            actors.Add(process);
             return process;
         }
 
@@ -53,15 +49,18 @@ namespace SpikingDSE
                 throw new Exception("Port already bound");
             }
 
-            inPort = new InPort();
-            outPort = new OutPort();
+            inPort = new InPort
+            {
+                WaitingForRecv = new Queue<Command>(4)
+            };
+            outPort = new OutPort()
+            {
+                WaitingForSend = new Queue<Command>(4)
+            };
             var channel = new Channel
             {
-                Sender = null,
-                Receiver = null,
                 OutPort = outPort,
-                InPort = inPort
-
+                InPort = inPort,
             };
             channelReg.Add(channel);
             int newId = channelReg.Count;
@@ -76,13 +75,12 @@ namespace SpikingDSE
 
         public void Init()
         {
-            foreach (var process in processes)
+            foreach (var actor in actors)
             {
-                process.Init(env);
+                actor.Init(env);
                 ready.Enqueue(new SimThread
                 {
-                    Process = process,
-                    Runnable = process.Run().GetEnumerator(),
+                    Runnable = actor.Run().GetEnumerator(),
                     Time = 0
                 });
             }
@@ -94,12 +92,12 @@ namespace SpikingDSE
             while (ready.Count > 0 && nrCommands < stopCmds)
             {
                 nrCommands++;
-                var thread = ready.Dequeue();
-                if (thread.Time > stopTime)
+                var currentThread = ready.Dequeue();
+                if (currentThread.Time > stopTime)
                     break;
 
-                env.Now = thread.Time;
-                var runnable = thread.Runnable;
+                env.Now = currentThread.Time;
+                var runnable = currentThread.Runnable;
                 bool stillRunning = runnable.MoveNext();
                 if (!stillRunning)
                 {
@@ -111,36 +109,92 @@ namespace SpikingDSE
                 {
                     case SleepCmd sleep:
                         {
-                            thread.Time += sleep.Time;
-                            ready.Enqueue(thread);
+                            currentThread.Time += sleep.Time;
+                            ready.Enqueue(currentThread);
                             break;
                         }
                     case SendCmd send:
                         {
                             var channel = channelReg[send.Port.Handle - 1];
-                            channel.Sender = thread;
-                            channel.OutPort.Message = send.Message;
-                            channel.InPort.Ready = true;
-                            channel.Time = Math.Max(send.Time, channel.Time);
-                            PollTransmitMessage(channel);
+
+                            // New
+                            if (channel.OutPort.WaitingForSend.Count > 0)
+                            {
+                                // TODO: May not always be receive command
+                                var recv = (ReceiveCmd)channel.OutPort.WaitingForSend.Dequeue();
+
+                                // Find the two channels plan
+                                SimThread sendThread = currentThread;
+                                SimThread recvThread = recv.Thread;
+                                recv.Thread = null;
+                                long newTime = Math.Max(send.Time, recv.Time);
+                                sendThread.Time = newTime;
+                                recvThread.Time = newTime;
+                                ready.Enqueue(sendThread);
+                                ready.Enqueue(recvThread);
+                                recv.Message = send.Message;
+                            }
+                            else
+                            {
+                                send.Thread = currentThread;
+                                channel.InPort.WaitingForRecv.Enqueue(send);
+                            }
+
                             break;
                         }
                     case ReceiveCmd recv:
                         {
                             var channel = channelReg[recv.Port.Handle - 1];
-                            channel.Receiver = thread;
-                            channel.Time = Math.Max(recv.Time, channel.Time);
-                            PollTransmitMessage(channel);
+
+                            // Old
+                            // channel.Receiver = currentThread;
+                            // channel.Time = Math.Max(recv.Time, channel.Time);
+                            // PollTransmitMessage(channel);
+
+                            // New
+                            if (channel.InPort.WaitingForRecv.Count > 0)
+                            {
+                                // TODO: May not always be receive command
+                                var send = (SendCmd)channel.InPort.WaitingForRecv.Dequeue();
+
+                                // Find the two channels plan
+                                SimThread sendThread = send.Thread;
+                                SimThread recvThread = currentThread;
+                                send.Thread = null;
+                                long newTime = Math.Max(send.Time, recv.Time);
+                                sendThread.Time = newTime;
+                                recvThread.Time = newTime;
+                                ready.Enqueue(sendThread);
+                                ready.Enqueue(recvThread);
+                                recv.Message = send.Message;
+                            }
+                            else
+                            {
+                                recv.Thread = currentThread;
+                                channel.OutPort.WaitingForSend.Enqueue(recv);
+                            }
+
                             break;
                         }
                     case SelectCmd select:
                         {
+                            // TODO: Finish
                             for (int i = 0; i < select.Ports.Length; i++)
                             {
                                 var recvPort = select.Ports[i];
                                 var channel = channelReg[recvPort.Handle];
-                                
-
+                            }
+                            break;
+                        }
+                    case ParCmd parallel:
+                        {
+                            foreach (var process in parallel.Processes)
+                            {
+                                ready.Enqueue(new SimThread
+                                {
+                                    Runnable = process.GetEnumerator(),
+                                    Time = currentThread.Time
+                                });
                             }
                             break;
                         }
@@ -151,27 +205,9 @@ namespace SpikingDSE
 
             return nrCommands;
         }
-
-        private void PollTransmitMessage(Channel channel)
-        {
-            if (channel.Sender != null && channel.Receiver != null)
-            {
-                channel.InPort.Ready = false;
-                channel.InPort.Message = channel.OutPort.Message; // FIXME: Maybe clean after each run?
-                channel.OutPort.Message = null;
-
-                // Handle threads
-                channel.Sender.Time = channel.Time;
-                channel.Receiver.Time = channel.Time;
-                ready.Enqueue(channel.Sender);
-                ready.Enqueue(channel.Receiver);
-                channel.Sender = null;
-                channel.Receiver = null;
-            }
-        }
     }
 
-    public abstract class Process
+    public abstract class Actor
     {
         protected Environment env;
 
@@ -185,7 +221,7 @@ namespace SpikingDSE
 
     public class Command
     {
-
+        public SimThread Thread;
     }
 
     public class SleepCmd : Command
@@ -203,6 +239,7 @@ namespace SpikingDSE
     public class ReceiveCmd : Command
     {
         public InPort Port;
+        public object Message; // TODO: Fill with message
         public long Time;
     }
 
@@ -213,31 +250,36 @@ namespace SpikingDSE
         public object Message;
     }
 
+    public class ParCmd : Command
+    {
+        public IEnumerable<Command>[] Processes;
+    }
+
     public class Environment
     {
-        public Command Delay(long time)
+        public SleepCmd Delay(long time)
         {
             return new SleepCmd { Time = time };
         }
 
-        public Command SleepUntil(long newTime)
+        public SleepCmd SleepUntil(long newTime)
         {
             return new SleepCmd { Time = newTime - Now };
         }
 
-        public Command Send(OutPort port, object message)
+        public SendCmd Send(OutPort port, object message)
         {
             return new SendCmd { Port = port, Message = message, Time = Now };
         }
 
-        public Command SendAt(OutPort port, object message, long time)
+        public SendCmd SendAt(OutPort port, object message, long time)
         {
             return new SendCmd { Port = port, Message = message, Time = time };
         }
 
-        public Command Receive(InPort port, long duration = 0)
+        public ReceiveCmd Receive(InPort port, long waitBefore = 0)
         {
-            return new ReceiveCmd { Port = port, Time = Now + duration };
+            return new ReceiveCmd { Port = port, Time = Now + waitBefore };
         }
 
         public SelectCmd Select(params InPort[] ports)
@@ -245,20 +287,28 @@ namespace SpikingDSE
             return new SelectCmd { Ports = ports };
         }
 
+        public ParCmd Parallel(params IEnumerable<Command>[] processes)
+        {
+            return new ParCmd { Processes = processes };
+        }
+
         public long Now { get; set; }
     }
 
-    public class InPort
+    public class Port
     {
         public int Handle;
-        public bool Ready;
-        public object Message;
     }
 
-    public class OutPort
+    public class InPort : Port
     {
-        public int Handle;
-        public object Message;
+        public Queue<Command> WaitingForRecv;
+        public bool Ready = false; // TODO: Remove
+    }
+
+    public class OutPort : Port
+    {
+        public Queue<Command> WaitingForSend;
     }
 
     public class Weights
