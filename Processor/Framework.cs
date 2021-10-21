@@ -51,11 +51,11 @@ namespace SpikingDSE
 
             inPort = new InPort
             {
-                WaitingForRecv = new Queue<Command>(4)
+                WaitingForRecv = null
             };
             outPort = new OutPort()
             {
-                WaitingForSend = new Queue<Command>(4)
+                WaitingForSend = null
             };
             var channel = new Channel
             {
@@ -116,12 +116,17 @@ namespace SpikingDSE
                     case SendCmd send:
                         {
                             var channel = channelReg[send.Port.Handle - 1];
+                            if (channel.InPort.WaitingForRecv != null)
+                            {
+                                throw new Exception("In port is already busy");
+                            }
 
                             // New
-                            if (channel.OutPort.WaitingForSend.Count > 0)
+                            if (channel.OutPort.WaitingForSend != null)
                             {
                                 // TODO: May not always be receive command
-                                var recv = (ReceiveCmd)channel.OutPort.WaitingForSend.Dequeue();
+                                var recv = (ReceiveCmd)channel.OutPort.WaitingForSend;
+                                channel.OutPort.WaitingForSend = null;
 
                                 // Find the two channels plan
                                 SimThread sendThread = currentThread;
@@ -137,7 +142,7 @@ namespace SpikingDSE
                             else
                             {
                                 send.Thread = currentThread;
-                                channel.InPort.WaitingForRecv.Enqueue(send);
+                                channel.InPort.WaitingForRecv = send;
                             }
 
                             break;
@@ -145,17 +150,16 @@ namespace SpikingDSE
                     case ReceiveCmd recv:
                         {
                             var channel = channelReg[recv.Port.Handle - 1];
-
-                            // Old
-                            // channel.Receiver = currentThread;
-                            // channel.Time = Math.Max(recv.Time, channel.Time);
-                            // PollTransmitMessage(channel);
+                            if (channel.OutPort.WaitingForSend != null)
+                            {
+                                throw new Exception("Out port is already busy");
+                            }
 
                             // New
-                            if (channel.InPort.WaitingForRecv.Count > 0)
+                            if (channel.InPort.WaitingForRecv != null)
                             {
-                                // TODO: May not always be receive command
-                                var send = (SendCmd)channel.InPort.WaitingForRecv.Dequeue();
+                                var send = (SendCmd)channel.InPort.WaitingForRecv;
+                                channel.InPort.WaitingForRecv = null;
 
                                 // Find the two channels plan
                                 SimThread sendThread = send.Thread;
@@ -171,7 +175,7 @@ namespace SpikingDSE
                             else
                             {
                                 recv.Thread = currentThread;
-                                channel.OutPort.WaitingForSend.Enqueue(recv);
+                                channel.OutPort.WaitingForSend = recv;
                             }
 
                             break;
@@ -302,13 +306,13 @@ namespace SpikingDSE
 
     public class InPort : Port
     {
-        public Queue<Command> WaitingForRecv;
+        public Command WaitingForRecv;
         public bool Ready = false; // TODO: Remove
     }
 
     public class OutPort : Port
     {
-        public Queue<Command> WaitingForSend;
+        public Command WaitingForSend;
     }
 
     public class Weights
