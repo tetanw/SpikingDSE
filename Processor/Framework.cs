@@ -48,7 +48,7 @@ namespace SpikingDSE
 
         public void AddChannel(ref InPort inPort, ref OutPort outPort)
         {
-            if (inPort != null|| outPort != null)
+            if (inPort != null || outPort != null)
             {
                 throw new Exception("Port already bound");
             }
@@ -61,7 +61,7 @@ namespace SpikingDSE
                 Receiver = null,
                 OutPort = outPort,
                 InPort = inPort
-                
+
             };
             channelReg.Add(channel);
             int newId = channelReg.Count;
@@ -102,33 +102,34 @@ namespace SpikingDSE
                 }
 
                 var cmd = runnable.Current;
-                if (cmd is SleepCmd)
+                switch (cmd)
                 {
-                    var sleep = cmd as SleepCmd;
-                    thread.Time += sleep.Time;
-                    running.Enqueue(thread);
-                }
-                else if (cmd is SendCmd)
-                {
-                    var send = cmd as SendCmd;
-                    var channel = channelReg[send.Port.Handle - 1];
-                    channel.Sender = thread;
-                    channel.OutPort.Message = send.Message;
-                    channel.InPort.Ready = true;
-                    channel.Time = Math.Max(send.Time, channel.Time);
-                    PollTransmitMessage(channel);
-                }
-                else if (cmd is ReceiveCmd)
-                {
-                    var recv = cmd as ReceiveCmd;
-                    var channel = channelReg[recv.Port.Handle - 1];
-                    channel.Receiver = thread;
-                    channel.Time = Math.Max(recv.Time, channel.Time);
-                    PollTransmitMessage(channel);
-                }
-                else
-                {
-                    throw new Exception("Unknown command: " + cmd);
+                    case SleepCmd sleep:
+                        {
+                            thread.Time += sleep.Time;
+                            running.Enqueue(thread);
+                            break;
+                        }
+                    case SendCmd send:
+                        {
+                            var channel = channelReg[send.Port.Handle - 1];
+                            channel.Sender = thread;
+                            channel.OutPort.Message = send.Message;
+                            channel.InPort.Ready = true;
+                            channel.Time = Math.Max(send.Time, channel.Time);
+                            PollTransmitMessage(channel);
+                            break;
+                        }
+                    case ReceiveCmd recv:
+                        {
+                            var channel = channelReg[recv.Port.Handle - 1];
+                            channel.Receiver = thread;
+                            channel.Time = Math.Max(recv.Time, channel.Time);
+                            PollTransmitMessage(channel);
+                            break;
+                        }
+                    default:
+                        throw new Exception("Unknown command: " + cmd);
                 }
             }
 
@@ -248,7 +249,7 @@ namespace SpikingDSE
 
                 for (int i = 0; i < numbers.Length; i++)
                 {
-                    weights[i, currentLine] = numbers[i]; 
+                    weights[i, currentLine] = numbers[i];
                 }
                 currentLine++;
             }
