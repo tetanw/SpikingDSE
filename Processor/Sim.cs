@@ -58,4 +58,28 @@ namespace SpikingDSE
         }
     }
 
+    public class ProducerConsumer
+    {
+        public void Run()
+        {
+            var scheduler = new Scheduler();
+
+            var producer = scheduler.AddProcess(new Producer(8, "hi"));
+            var consumer = scheduler.AddProcess(new Consumer());
+
+            scheduler.AddChannel(ref consumer.In, ref producer.Out);
+
+            scheduler.Init();
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
+            int nrCommands = scheduler.RunUntil(int.MaxValue, stopCmds: 10_000_000);
+            stopwatch.Stop();
+
+            Console.WriteLine($"Running time was: {stopwatch.ElapsedMilliseconds} ms");
+            Console.WriteLine($"Commands handled: {nrCommands:n}");
+            Console.WriteLine($"Performance was about: {nrCommands / stopwatch.Elapsed.TotalSeconds:n} cmd/s");
+            Console.WriteLine($"Time per cmd: {Measurements.FormatSI(stopwatch.Elapsed.TotalSeconds / nrCommands, "s")}");
+        }
+    }
+
 }

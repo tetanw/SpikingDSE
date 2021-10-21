@@ -8,7 +8,8 @@ namespace SpikingDSE
     [Verb("sim", HelpText = "Simulate trace file")]
     public class SimOptions
     {
-
+        [Value(0)]
+        public string Name { get; set; }
     }
 
     [Verb("parse-vcd", HelpText = "Parse VCD file")]
@@ -49,9 +50,20 @@ namespace SpikingDSE
                     vcd.Process();
                     return 0;
                 },
-                (SimOptions opts) => {
-                    var sim = new ODINSingleCore();
-                    sim.Run();
+                (SimOptions opts) =>
+                {
+                    if (opts.Name.Equals("PC"))
+                    {
+                        new ProducerConsumer().Run();
+                    }
+                    else if (opts.Name.Equals("ODIN"))
+                    {
+                        new ODINSingleCore().Run();
+                    }
+                    else
+                    {
+                        throw new Exception($"Unknown simulation: {opts.Name}");
+                    }
                     return 0;
                 },
                 (ToTensorOptions opts) =>
