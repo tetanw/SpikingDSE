@@ -58,8 +58,33 @@ namespace SpikingDSE
         }
     }
 
-    public class ODINMUltiCore
+    public class ProducerConsumer
     {
+        public void Run()
+        {
+            var scheduler = new Scheduler();
+
+            var producer = scheduler.AddProcess(new Producer(8, "hi"));
+            var consumer = scheduler.AddProcess(new Consumer());
+
+            scheduler.AddChannel(ref consumer.In, ref producer.Out);
+
+            scheduler.Init();
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
+            int nrCommands = scheduler.RunUntil(int.MaxValue, stopCmds: 10_000_000);
+            stopwatch.Stop();
+
+            Console.WriteLine($"Running time was: {stopwatch.ElapsedMilliseconds} ms");
+            Console.WriteLine($"Commands handled: {nrCommands:n}");
+            Console.WriteLine($"Performance was about: {nrCommands / stopwatch.Elapsed.TotalSeconds:n} cmd/s");
+            Console.WriteLine($"Time per cmd: {Measurements.FormatSI(stopwatch.Elapsed.TotalSeconds / nrCommands, "s")}");
+        }
+    }
+
+    public class MultiCore
+    {
+
         public void Run()
         {
             var scheduler = new Scheduler();
@@ -68,6 +93,7 @@ namespace SpikingDSE
             var router2 = new XYRouter(1);
             var core2 = new DummyCore(DummyCoreMode.Source, interval: 1, destX: 1, destY: 1);
             var core1 = new DummyCore(DummyCoreMode.Sink);
+
 
             scheduler.Init();
             Stopwatch stopwatch = new Stopwatch();
@@ -79,7 +105,9 @@ namespace SpikingDSE
             Console.WriteLine($"Commands handled: {nrCommands:n}");
             Console.WriteLine($"Performance was about: {nrCommands / stopwatch.Elapsed.TotalSeconds:n} cmd/s");
             Console.WriteLine($"Time per cmd: {Measurements.FormatSI(stopwatch.Elapsed.TotalSeconds / nrCommands, "s")}");
+
         }
+
     }
 
     public enum DummyCoreMode
