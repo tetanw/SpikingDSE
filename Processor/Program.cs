@@ -60,6 +60,10 @@ namespace SpikingDSE
                     {
                         new ODINSingleCore().Run();
                     }
+                    else if (opts.Name.Equals("MULTI"))
+                    {
+                        new MultiCore().Run();
+                    }
                     else
                     {
                         throw new Exception($"Unknown simulation: {opts.Name}");

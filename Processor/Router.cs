@@ -29,7 +29,7 @@ namespace SpikingDSE
                 // 1. Monitor the inputs for any packet
                 var select = env.Select();
                 yield return select;
-                XYPacket packet = (XYPacket)select.Message;
+                MeshFlit packet = (MeshFlit)select.Message;
 
                 // 2. Add a delay to simulate processing
                 yield return env.Delay(processingDelay);
@@ -68,7 +68,7 @@ namespace SpikingDSE
         }
     }
 
-    public class XYPacket
+    public class MeshFlit
     {
         public int X;
         public int Y;

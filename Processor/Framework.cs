@@ -30,7 +30,7 @@ namespace SpikingDSE
 
     public class Scheduler
     {
-        private PriorityQueue<SimThread> running = new PriorityQueue<SimThread>();
+        private PriorityQueue<SimThread> ready = new PriorityQueue<SimThread>();
         private List<Channel> channelReg = new List<Channel>();
         private List<Process> processes = new List<Process>();
         private Environment env;
@@ -69,12 +69,17 @@ namespace SpikingDSE
             outPort.Handle = newId;
         }
 
+        public void AddChannel(ref OutPort outPort, ref InPort inPort)
+        {
+            AddChannel(ref inPort, ref outPort);
+        }
+
         public void Init()
         {
             foreach (var process in processes)
             {
                 process.Init(env);
-                running.Enqueue(new SimThread
+                ready.Enqueue(new SimThread
                 {
                     Process = process,
                     Runnable = process.Run().GetEnumerator(),
@@ -86,10 +91,10 @@ namespace SpikingDSE
         public int RunUntil(int stopTime, int stopCmds)
         {
             int nrCommands = 0;
-            while (running.Count > 0 && nrCommands < stopCmds)
+            while (ready.Count > 0 && nrCommands < stopCmds)
             {
                 nrCommands++;
-                var thread = running.Dequeue();
+                var thread = ready.Dequeue();
                 if (thread.Time > stopTime)
                     break;
 
@@ -107,7 +112,7 @@ namespace SpikingDSE
                     case SleepCmd sleep:
                         {
                             thread.Time += sleep.Time;
-                            running.Enqueue(thread);
+                            ready.Enqueue(thread);
                             break;
                         }
                     case SendCmd send:
@@ -158,8 +163,8 @@ namespace SpikingDSE
                 // Handle threads
                 channel.Sender.Time = channel.Time;
                 channel.Receiver.Time = channel.Time;
-                running.Enqueue(channel.Sender);
-                running.Enqueue(channel.Receiver);
+                ready.Enqueue(channel.Sender);
+                ready.Enqueue(channel.Receiver);
                 channel.Sender = null;
                 channel.Receiver = null;
             }

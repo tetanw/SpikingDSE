@@ -1,15 +1,18 @@
 using System.Collections.Generic;
+using System.Linq;
 
 namespace SpikingDSE
 {
-        public class Producer : Process
+    public class Producer : Process
     {
         public OutPort Out;
 
         private int interval;
         private object message;
 
-        public Producer(int interval, object message)
+        public delegate object Transform(object message);
+
+        public Producer(int interval, object message, Transform transformer = null)
         {
             this.interval = interval;
             this.message = message;
@@ -36,7 +39,7 @@ namespace SpikingDSE
 
         public override IEnumerable<Command> Run()
         {
-            while(true)
+            while (true)
             {
                 yield return env.Receive(In);
             }
