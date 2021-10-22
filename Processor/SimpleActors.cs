@@ -3,18 +3,25 @@ using System.Linq;
 
 namespace SpikingDSE
 {
+    public interface ProducerReport
+    {
+        public void ProducerSent(long time, object message);
+    }
+
     public class Producer : Actor
     {
         public OutPort Out;
 
         private int interval;
         private object message;
+        private ProducerReport reporter;
 
-        public Producer(int interval, object message, string name = "")
+        public Producer(int interval, object message, string name = "", ProducerReport reporter = null)
         {
             this.name = name;
             this.interval = interval;
             this.message = message;
+            this.reporter = reporter;
         }
 
         public override IEnumerable<Command> Run()
@@ -22,18 +29,27 @@ namespace SpikingDSE
             while (true)
             {
                 yield return env.Send(Out, message);
+                reporter?.ProducerSent(env.Now, message);
                 yield return env.Delay(interval);
             }
         }
+    }
+
+    public interface ConsumerReporter
+    {
+        public void ConsumerReceived(long time, object message);
     }
 
     public class Consumer : Actor
     {
         public InPort In;
 
-        public Consumer(string name = "")
+        private ConsumerReporter reporter;
+
+        public Consumer(string name = "", ConsumerReporter reporter = null)
         {
             this.name = name;
+            this.reporter = reporter;
         }
 
         public override IEnumerable<Command> Run()
@@ -43,6 +59,7 @@ namespace SpikingDSE
             {
                 rcv = env.Receive(In);
                 yield return rcv;
+                reporter?.ConsumerReceived(env.Now, rcv.Message);
             }
         }
     }

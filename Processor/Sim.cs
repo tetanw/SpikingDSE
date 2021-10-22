@@ -202,4 +202,42 @@ namespace SpikingDSE
             Console.WriteLine($"Time per cmd: {Measurements.FormatSI(stopwatch.Elapsed.TotalSeconds / nrCommands, "s")}");
         }
     }
+
+    public class ReportingTest
+    {
+        public class Reporter : ProducerReport, ConsumerReporter
+        {
+            public void ConsumerReceived(long time, object message)
+            {
+                Console.WriteLine($"[{time}][Consumer] Received message: {message}");
+            }
+
+            public void ProducerSent(long time, object message)
+            {
+                Console.WriteLine($"[{time}][Producer] Produced message: {message}");
+            }
+        }
+
+        public void Run()
+        {
+            var scheduler = new Simulator();
+            var reporter = new Reporter();
+            
+            var producer = scheduler.AddProcess(new Producer(4, "hi", reporter: reporter));
+            var consumer = scheduler.AddProcess(new Consumer(reporter: reporter));
+
+            scheduler.AddChannel(ref producer.Out, ref consumer.In);
+            
+            scheduler.Init();
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
+            int nrCommands = scheduler.RunUntil(10, int.MaxValue);
+            stopwatch.Stop();
+
+            Console.WriteLine($"Running time was: {stopwatch.ElapsedMilliseconds} ms");
+            Console.WriteLine($"Commands handled: {nrCommands:n}");
+            Console.WriteLine($"Performance was about: {nrCommands / stopwatch.Elapsed.TotalSeconds:n} cmd/s");
+            Console.WriteLine($"Time per cmd: {Measurements.FormatSI(stopwatch.Elapsed.TotalSeconds / nrCommands, "s")}");
+        }
+    }
 }

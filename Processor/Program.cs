@@ -68,6 +68,10 @@ namespace SpikingDSE
                     {
                         new ForkJoin().Run();
                     }
+                    else if (opts.Name.Equals("REPTEST"))
+                    {
+                        new ReportingTest().Run();
+                    }
                     else
                     {
                         throw new Exception($"Unknown simulation: {opts.Name}");
