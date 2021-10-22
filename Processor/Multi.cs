@@ -2,6 +2,11 @@ using System.Collections.Generic;
 
 namespace SpikingDSE
 {
+    public interface Locator<T>
+    {
+        public T Locate(int packetID);
+    }
+
     public class MeshNI : Actor
     {
         public InPort FromMesh;
@@ -9,13 +14,15 @@ namespace SpikingDSE
         public OutPort ToMesh;
         public OutPort ToCore;
 
+        private Locator<(int x, int y)> locator;
         public int srcX, srcY;
 
-        public MeshNI(int x, int y, string name = "")
+        public MeshNI(int x, int y, Locator<(int x, int y)> locator, string name = "")
         {
-            this.name = name;
             this.srcX = x;
             this.srcY = y;
+            this.locator = locator;
+            this.name = name;
         }
 
         public override IEnumerable<Command> Run()
@@ -33,22 +40,16 @@ namespace SpikingDSE
                 else if (select.Port == FromCore)
                 {
                     var packet = (Packet) select.Message;
-                    var (x, y) = FindLocation(packet.ID);
+                    var (destX, destY) = locator.Locate(packet.ID);
                     var flit = new MeshFlit
                     {
-                        DX = x,
-                        DY = y,
+                        DX = destX - srcX,
+                        DY = destY - srcY,
                         Message = packet.Message
                     };
                     yield return env.Send(ToMesh, flit);
                 }
             }
-        }
-
-        private (int x, int y) FindLocation(int ID)
-        {
-            var (destX, destY) = (1, 0);
-            return (destX - srcX, destY - srcY);
         }
     }
 

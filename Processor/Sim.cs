@@ -82,6 +82,24 @@ namespace SpikingDSE
         }
     }
 
+    public class MeshLocator : Locator<(int x, int y)>
+    {
+        private int width, height;
+
+        public MeshLocator(int width, int height)
+        {
+            this.width = width;
+            this.height = height;
+        }
+
+        public (int x, int y) Locate(int packetID)
+        {
+            int x = packetID % width;
+            int y = packetID / width;
+            return (x, y);
+        }
+    }
+
     public class MultiCore
     {
 
@@ -91,8 +109,9 @@ namespace SpikingDSE
 
             var producer = scheduler.AddProcess(new Producer(8, new Packet { ID = 1, Message = "hi" }, name: "producer"));
             var consumer = scheduler.AddProcess(new Consumer(name: "consumer"));
-            var ni1 = scheduler.AddProcess(new MeshNI(0, 0, name: "ni1"));
-            var ni2 = scheduler.AddProcess(new MeshNI(1, 0, name: "ni2"));
+            var locator = new MeshLocator(2, 1);
+            var ni1 = scheduler.AddProcess(new MeshNI(0, 0, locator, name: "ni1"));
+            var ni2 = scheduler.AddProcess(new MeshNI(1, 0, locator, name: "ni2"));
             var router1 = scheduler.AddProcess(new XYRouter(1, name: "router1"));
             var router2 = scheduler.AddProcess(new XYRouter(1, name: "router2"));
 
