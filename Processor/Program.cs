@@ -60,9 +60,9 @@ namespace SpikingDSE
                     {
                         new ODINSingleCore().Run();
                     }
-                    else if (opts.Name.Equals("MULTI"))
+                    else if (opts.Name.Equals("MESHTEST"))
                     {
-                        new MultiCore().Run();
+                        new MeshTest().Run();
                     }
                     else if (opts.Name.Equals("FORKJOIN"))
                     {

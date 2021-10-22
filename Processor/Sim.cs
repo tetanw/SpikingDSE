@@ -100,31 +100,66 @@ namespace SpikingDSE
         }
     }
 
-    public class MultiCore
+    public class MeshTest
     {
 
         public void Run()
         {
             var scheduler = new Scheduler();
 
-            var producer = scheduler.AddProcess(new Producer(8, new Packet { ID = 1, Message = "hi" }, name: "producer"));
+            var producer = scheduler.AddProcess(new Producer(8, new Packet { ID = 3, Message = "hi" }, name: "producer"));
             var consumer = scheduler.AddProcess(new Consumer(name: "consumer"));
-            var locator = new MeshLocator(2, 1);
+            var locator = new MeshLocator(2, 2);
             var ni1 = scheduler.AddProcess(new MeshNI(0, 0, locator, name: "ni1"));
-            var ni2 = scheduler.AddProcess(new MeshNI(1, 0, locator, name: "ni2"));
-            var router1 = scheduler.AddProcess(new XYRouter(1, name: "router1"));
-            var router2 = scheduler.AddProcess(new XYRouter(1, name: "router2"));
+            var ni2 = scheduler.AddProcess(new MeshNI(1, 1, locator, name: "ni2"));
+            var routers = new XYRouter[2, 2];
+            for (int y = 0; y < 2; y++)
+            {
+                for (int x = 0; x < 2; x++)
+                {
+                    routers[x, y] = scheduler.AddProcess(new XYRouter(1, name: $"router {x},{y}"));
+                }
+            }
+
+            for (int y = 0; y < 2; y++)
+            {
+                for (int x = 0; x < 2; x++)
+                {
+                    // wire up west side if possible
+                    if (x > 0)
+                    {
+                        scheduler.AddChannel(ref routers[x, y].outWest, ref routers[x - 1, y].inEast);
+                    }
+
+                    // wire up east side if possible
+                    if (x < 1)
+                    {
+                        scheduler.AddChannel(ref routers[x, y].outEast, ref routers[x + 1, y].inWest);
+                    }
+
+                    // wire up south side if possible
+                    if (y > 0)
+                    {
+                        scheduler.AddChannel(ref routers[x, y].outSouth, ref routers[x, y - 1].inNorth);
+                    }
+
+                    // wire up north side if possible
+                    if (y < 1)
+                    {
+                        scheduler.AddChannel(ref routers[x, y].outNorth, ref routers[x, y + 1].inSouth);
+                    }
+                }
+            }
+            scheduler.AddChannel(ref routers[1, 1].toCore, ref ni2.FromMesh);
+            scheduler.AddChannel(ref routers[0, 0].fromCore, ref ni1.ToMesh);
 
             scheduler.AddChannel(ref producer.Out, ref ni1.FromCore);
-            scheduler.AddChannel(ref ni1.ToMesh, ref router1.fromCore);
-            scheduler.AddChannel(ref router1.outEast, ref router2.inWest);
-            scheduler.AddChannel(ref router2.toCore, ref ni2.FromMesh);
             scheduler.AddChannel(ref ni2.ToCore, ref consumer.In);
 
             scheduler.Init();
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
-            int nrCommands = scheduler.RunUntil(10, int.MaxValue);
+            int nrCommands = scheduler.RunUntil(1_000_000, int.MaxValue);
             stopwatch.Stop();
 
             Console.WriteLine($"Running time was: {stopwatch.ElapsedMilliseconds} ms");

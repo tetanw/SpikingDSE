@@ -68,6 +68,10 @@ namespace SpikingDSE
                 }
 
                 // 4. Send to right port
+                if (outPort == null)
+                {
+                    throw new System.Exception("Outport was not configured");
+                }
                 yield return env.Send(outPort, flit);
             }
         }
