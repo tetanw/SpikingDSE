@@ -4,50 +4,51 @@ namespace SpikingDSE
 {
     public class MeshNI : Actor
     {
-        public InPort MeshIn;
-        public InPort PEIn;
-        public OutPort MeshOut;
-        public OutPort PEOut;
+        public InPort FromMesh;
+        public InPort FromCore;
+        public OutPort ToMesh;
+        public OutPort ToCore;
 
-        public int x, y;
+        public int srcX, srcY;
 
-        public MeshNI(int x, int y)
+        public MeshNI(int x, int y, string name = "")
         {
-            this.x = x;
-            this.y = y;
+            this.name = name;
+            this.srcX = x;
+            this.srcY = y;
         }
 
         public override IEnumerable<Command> Run()
         {
             while (true)
             {
-                var select = env.Select(MeshIn, PEIn);
+                var select = env.Select(FromMesh, FromCore);
                 yield return select;
 
-                if (select.Port == MeshIn)
+                if (select.Port == FromMesh)
                 {
                     var packet = (MeshFlit) select.Message;
-                    yield return env.Send(PEOut, packet.Message);
+                    yield return env.Send(ToCore, packet.Message);
                 }
-                else if (select.Port == PEIn)
+                else if (select.Port == FromCore)
                 {
                     var packet = (Packet) select.Message;
                     var (x, y) = FindLocation(packet.ID);
                     var flit = new MeshFlit
                     {
-                        X = x,
-                        Y = y,
+                        DX = x,
+                        DY = y,
                         Message = packet.Message
                     };
-                    yield return env.Send(MeshOut, packet);
+                    yield return env.Send(ToMesh, flit);
                 }
             }
         }
 
         private (int x, int y) FindLocation(int ID)
         {
-            // Do location
-            return (0, 0);
+            var (destX, destY) = (1, 0);
+            return (destX - srcX, destY - srcY);
         }
     }
 

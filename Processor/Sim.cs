@@ -89,23 +89,23 @@ namespace SpikingDSE
         {
             var scheduler = new Scheduler();
 
-            var producer = scheduler.AddProcess(new Producer(8, "hi", transformer: (m) => new Packet { ID = 1, Message = m }));
-            var consumer = scheduler.AddProcess(new Consumer());
-            var ni1 = scheduler.AddProcess(new MeshNI(0, 0));
-            var ni2 = scheduler.AddProcess(new MeshNI(1, 0));
-            var router1 = new XYRouter(1);
-            var router2 = new XYRouter(1);
+            var producer = scheduler.AddProcess(new Producer(8, new Packet { ID = 1, Message = "hi" }, name: "producer"));
+            var consumer = scheduler.AddProcess(new Consumer(name: "consumer"));
+            var ni1 = scheduler.AddProcess(new MeshNI(0, 0, name: "ni1"));
+            var ni2 = scheduler.AddProcess(new MeshNI(1, 0, name: "ni2"));
+            var router1 = scheduler.AddProcess(new XYRouter(1, name: "router1"));
+            var router2 = scheduler.AddProcess(new XYRouter(1, name: "router2"));
 
-            scheduler.AddChannel(ref producer.Out, ref ni1.PEIn);
-            scheduler.AddChannel(ref ni2.PEOut, ref consumer.In);
-            scheduler.AddChannel(ref ni1.MeshOut, ref router1.inPE);
-            scheduler.AddChannel(ref router2.outPE, ref ni2.PEIn);
+            scheduler.AddChannel(ref producer.Out, ref ni1.FromCore);
+            scheduler.AddChannel(ref ni1.ToMesh, ref router1.fromCore);
             scheduler.AddChannel(ref router1.outEast, ref router2.inWest);
+            scheduler.AddChannel(ref router2.toCore, ref ni2.FromMesh);
+            scheduler.AddChannel(ref ni2.ToCore, ref consumer.In);
 
             scheduler.Init();
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
-            int nrCommands = scheduler.RunUntil(int.MaxValue, int.MaxValue);
+            int nrCommands = scheduler.RunUntil(10, int.MaxValue);
             stopwatch.Stop();
 
             Console.WriteLine($"Running time was: {stopwatch.ElapsedMilliseconds} ms");

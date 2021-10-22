@@ -10,10 +10,9 @@ namespace SpikingDSE
         private int interval;
         private object message;
 
-        public delegate object Transform(object message);
-
-        public Producer(int interval, object message, Transform transformer = null)
+        public Producer(int interval, object message, string name = "")
         {
+            this.name = name;
             this.interval = interval;
             this.message = message;
         }
@@ -32,16 +31,17 @@ namespace SpikingDSE
     {
         public InPort In;
 
-        public Consumer()
+        public Consumer(string name = "")
         {
-
+            this.name = name;
         }
 
         public override IEnumerable<Command> Run()
         {
+            ReceiveCmd rcv;
             while (true)
             {
-                var rcv = env.Receive(In);
+                rcv = env.Receive(In);
                 yield return rcv;
             }
         }

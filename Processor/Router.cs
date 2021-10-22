@@ -8,17 +8,18 @@ namespace SpikingDSE
         public InPort inSouth;
         public InPort inEast;
         public InPort inWest;
-        public InPort inPE;
+        public InPort fromCore;
         public OutPort outNorth;
         public OutPort outSouth;
         public OutPort outEast;
         public OutPort outWest;
-        public OutPort outPE;
+        public OutPort toCore;
 
         public long processingDelay;
 
-        public XYRouter(long processingDelay)
+        public XYRouter(long processingDelay, string name = "")
         {
+            this.name = name;
             this.processingDelay = processingDelay;
         }
 
@@ -27,51 +28,55 @@ namespace SpikingDSE
             while (true)
             {
                 // 1. Monitor the inputs for any packet
-                var select = env.Select();
+                var select = env.Select(inNorth, inEast, inSouth, inWest, fromCore);
                 yield return select;
-                MeshFlit packet = (MeshFlit)select.Message;
+                MeshFlit flit = (MeshFlit)select.Message;
 
                 // 2. Add a delay to simulate processing
                 yield return env.Delay(processingDelay);
 
                 // 3. Determine into which output port it goes
                 OutPort outPort;
-                if (packet.X > 0)
-                {
-                    // West
-                    outPort = outWest;
-                }
-                else if (packet.X < 0)
+                if (flit.DX > 0)
                 {
                     // East
+                    flit.DX--;
                     outPort = outEast;
                 }
-                else if (packet.Y > 0)
+                else if (flit.DX < 0)
                 {
-                    // South
-                    outPort = outSouth;
+                    // West
+                    flit.DX++;
+                    outPort = outWest;
                 }
-                else if (packet.Y < 0)
+                else if (flit.DY > 0)
                 {
                     // North
+                    flit.DY--;
                     outPort = outNorth;
+                }
+                else if (flit.DY < 0)
+                {
+                    // South
+                    flit.DY++;
+                    outPort = outSouth;
                 }
                 else
                 {
                     // Chip
-                    outPort = outPE;
+                    outPort = toCore;
                 }
 
                 // 4. Send to right port
-                yield return env.Send(outPort, packet);
+                yield return env.Send(outPort, flit);
             }
         }
     }
 
     public class MeshFlit
     {
-        public int X;
-        public int Y;
+        public int DX;
+        public int DY;
         public object Message;
     }
 }

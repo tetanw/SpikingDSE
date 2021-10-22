@@ -151,6 +151,11 @@ namespace SpikingDSE
                             for (int i = 0; i < select.Ports.Length; i++)
                             {
                                 var port = select.Ports[i];
+                                if (port == null)
+                                {
+                                    continue;
+                                }
+
                                 var aChannel = channels[port.ChannelHandle];
                                 aChannel.ReceiveCmd = select;
                                 aChannel.ReceiveThread = currentThread;
@@ -205,6 +210,8 @@ namespace SpikingDSE
                 for (int i = 0; i < select.Ports.Length; i++)
                 {
                     var port = select.Ports[i];
+                    if (port == null)
+                        continue;
                     var aChannel = channels[port.ChannelHandle];
                     CleanChannel(aChannel);
                 }
@@ -236,6 +243,7 @@ namespace SpikingDSE
     public abstract class Actor
     {
         protected Environment env;
+        protected string name;
 
         public void Init(Environment env)
         {
@@ -310,7 +318,7 @@ namespace SpikingDSE
         }
 
         public SendCmd SendAt(OutPort port, object message, long time)
-        {
+        {            
             return new SendCmd { Port = port, Message = message, Time = time };
         }
 
