@@ -2,11 +2,34 @@ using System.Collections.Generic;
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 
 namespace SpikingDSE
 {
     public class ODINSingleCore
     {
+
+        private double[,] ReadFromCSV(string path)
+        {
+            double[,] weights = null;
+            int currentLine = 0;
+            foreach (var line in File.ReadAllLines(path))
+            {
+                double[] numbers = line.Split(",").Select(t => double.Parse(t)).ToArray();
+                if (weights == null)
+                {
+                    weights = new double[numbers.Length, numbers.Length];
+                }
+
+                for (int i = 0; i < numbers.Length; i++)
+                {
+                    weights[i, currentLine] = numbers[i];
+                }
+                currentLine++;
+            }
+
+            return weights;
+        }
         private void Swap(int c, int x, int y, double[,] array)
         {
             // swap index x and y
@@ -31,12 +54,12 @@ namespace SpikingDSE
 
         public void Run()
         {
-            var scheduler = new Scheduler();
+            var scheduler = new Simulator();
 
             var report = new StreamWriter("res/exp1/result.trace");
             var input = scheduler.AddProcess(new EventTraceIn("res/exp1/validation.trace", report, startTime: 4521));
             var output = scheduler.AddProcess(new SpikeSink(report));
-            var weights = Weights.ReadFromCSV("res/exp1/weights_256.csv");
+            var weights = ReadFromCSV("res/exp1/weights_256.csv");
             CorrectWeights(weights);
             var core1 = scheduler.AddProcess(new ODINCore(1, 256, bufferCap: 1, threshold: 30.0, weights: weights, synComputeTime: 2, outputTime: 8, inputTime: 7));
 
@@ -62,7 +85,7 @@ namespace SpikingDSE
     {
         public void Run()
         {
-            var scheduler = new Scheduler();
+            var scheduler = new Simulator();
 
             var producer = scheduler.AddProcess(new Producer(8, "hi"));
             var consumer = scheduler.AddProcess(new Consumer());
@@ -82,30 +105,11 @@ namespace SpikingDSE
         }
     }
 
-    public class MeshLocator : Locator<(int x, int y)>
-    {
-        private int width, height;
-
-        public MeshLocator(int width, int height)
-        {
-            this.width = width;
-            this.height = height;
-        }
-
-        public (int x, int y) Locate(int packetID)
-        {
-            int x = packetID % width;
-            int y = packetID / width;
-            return (x, y);
-        }
-    }
-
     public class MeshTest
     {
-
         public void Run()
         {
-            var scheduler = new Scheduler();
+            var scheduler = new Simulator();
 
             var producer = scheduler.AddProcess(new Producer(8, new Packet { ID = 3, Message = "hi" }, name: "producer"));
             var consumer = scheduler.AddProcess(new Consumer(name: "consumer"));
@@ -171,10 +175,9 @@ namespace SpikingDSE
 
     public class ForkJoin
     {
-
         public void Run()
         {
-            var scheduler = new Scheduler();
+            var scheduler = new Simulator();
 
             var producer = scheduler.AddProcess(new Producer(8, "hi"));
             var consumer = scheduler.AddProcess(new Consumer());

@@ -1,9 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.IO;
-using System.Linq;
 
 namespace SpikingDSE
 {
@@ -30,14 +27,14 @@ namespace SpikingDSE
         public Command ReceiveCmd;
     }
 
-    public class Scheduler
+    public class Simulator
     {
         private PriorityQueue<SimThread> ready = new PriorityQueue<SimThread>();
         private List<Channel> channels = new List<Channel>();
         private List<Actor> actors = new List<Actor>();
         private Environment env;
 
-        public Scheduler()
+        public Simulator()
         {
             this.env = new Environment();
         }
@@ -255,18 +252,18 @@ namespace SpikingDSE
 
     public class Command
     {
-        // Scheduler tracking variable, DO NOT USE
+        
     }
 
     public class SleepCmd : Command
     {
-        // To scheduler
+        // To simulator
         public long Time;
     }
 
     public class SendCmd : Command
     {
-        // To scheduler
+        // To simulator
         public OutPort Port;
         public object Message;
 
@@ -276,7 +273,7 @@ namespace SpikingDSE
 
     public class ReceiveCmd : Command
     {
-        // To scheduler
+        // To simulator
         public InPort Port;
         public long Time;
 
@@ -286,7 +283,7 @@ namespace SpikingDSE
 
     public class SelectCmd : Command
     {
-        // To scheduler
+        // To simulator
         public InPort[] Ports;
         public long Time;
 
@@ -297,6 +294,7 @@ namespace SpikingDSE
 
     public class ParCmd : Command
     {
+        // To simulator
         public IEnumerable<Command>[] Processes;
     }
 
@@ -353,30 +351,5 @@ namespace SpikingDSE
     public class OutPort : Port
     {
 
-    }
-
-    public class Weights
-    {
-        public static double[,] ReadFromCSV(string path)
-        {
-            double[,] weights = null;
-            int currentLine = 0;
-            foreach (var line in File.ReadAllLines(path))
-            {
-                double[] numbers = line.Split(",").Select(t => double.Parse(t)).ToArray();
-                if (weights == null)
-                {
-                    weights = new double[numbers.Length, numbers.Length];
-                }
-
-                for (int i = 0; i < numbers.Length; i++)
-                {
-                    weights[i, currentLine] = numbers[i];
-                }
-                currentLine++;
-            }
-
-            return weights;
-        }
     }
 }
