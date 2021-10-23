@@ -5,7 +5,7 @@ namespace SpikingDSE
 {
     public interface ProducerReport
     {
-        public void ProducerSent(long time, object message);
+        public void Produced(Producer producer, long time, object message);
     }
 
     public class Producer : Actor
@@ -29,7 +29,7 @@ namespace SpikingDSE
             while (true)
             {
                 yield return env.Send(Out, message);
-                reporter?.ProducerSent(env.Now, message);
+                reporter?.Produced(this, env.Now, message);
                 yield return env.Delay(interval);
             }
         }
@@ -37,7 +37,7 @@ namespace SpikingDSE
 
     public interface ConsumerReporter
     {
-        public void ConsumerReceived(long time, object message);
+        public void Consumed(Consumer consumer, long time, object message);
     }
 
     public class Consumer : Actor
@@ -59,14 +59,14 @@ namespace SpikingDSE
             {
                 rcv = env.Receive(In);
                 yield return rcv;
-                reporter?.ConsumerReceived(env.Now, rcv.Message);
+                reporter?.Consumed(this, env.Now, rcv.Message);
             }
         }
     }
 
     public interface ForkReporter
     {
-        public void ForkSentMessage(OutPort port, object message);
+        public void MessageSent(Fork fork, OutPort port, object message);
     }
 
     public class Fork : Actor
@@ -92,11 +92,11 @@ namespace SpikingDSE
                 var message = recv.Message;
 
                 yield return env.Send(out1, message);
-                reporter?.ForkSentMessage(out1, message);
+                reporter?.MessageSent(this, out1, message);
                 yield return env.Send(out2, message);
-                reporter?.ForkSentMessage(out2, message);
+                reporter?.MessageSent(this, out2, message);
                 yield return env.Send(out3, message);
-                reporter?.ForkSentMessage(out3, message);
+                reporter?.MessageSent(this, out3, message);
             }
         }
     }

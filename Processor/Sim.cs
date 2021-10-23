@@ -223,12 +223,12 @@ namespace SpikingDSE
     {
         public class Reporter : ProducerReport, ConsumerReporter
         {
-            public void ConsumerReceived(long time, object message)
+            public void Consumed(Consumer consumer, long time, object message)
             {
                 Console.WriteLine($"[{time}][Consumer] Received message: {message}");
             }
 
-            public void ProducerSent(long time, object message)
+            public void Produced(Producer producer, long time, object message)
             {
                 Console.WriteLine($"[{time}][Producer] Produced message: {message}");
             }
