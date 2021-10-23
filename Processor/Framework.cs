@@ -84,9 +84,9 @@ namespace SpikingDSE
             }
         }
 
-        public int RunUntil(int stopTime, int stopCmds)
+        public long RunUntil(long stopTime = long.MaxValue, long stopCmds = long.MaxValue)
         {
-            int nrCommands = 0;
+            long nrCommands = 0;
             while (ready.Count > 0 && nrCommands < stopCmds)
             {
                 nrCommands++;
