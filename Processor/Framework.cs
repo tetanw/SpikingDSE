@@ -84,9 +84,10 @@ namespace SpikingDSE
             }
         }
 
-        public long RunUntil(long stopTime = long.MaxValue, long stopCmds = long.MaxValue)
+        public (long time, long nrCommands) RunUntil(long stopTime = long.MaxValue, long stopCmds = long.MaxValue)
         {
             long nrCommands = 0;
+            long currentTime = 0;
             while (ready.Count > 0 && nrCommands < stopCmds)
             {
                 nrCommands++;
@@ -94,6 +95,7 @@ namespace SpikingDSE
                 if (currentThread.Time > stopTime)
                     break;
 
+                currentTime = env.Now;
                 env.Now = currentThread.Time;
                 var runnable = currentThread.Runnable;
                 bool stillRunning = runnable.MoveNext();
@@ -183,7 +185,7 @@ namespace SpikingDSE
                 }
             }
 
-            return nrCommands;
+            return (currentTime, nrCommands);
         }
 
         private void DoChannelTransfer(Channel channel)

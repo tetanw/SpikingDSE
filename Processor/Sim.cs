@@ -6,8 +6,49 @@ using System.Linq;
 
 namespace SpikingDSE
 {
-    public class ODINSingleCore
+    public class SimStopConditions
     {
+        public long StopTime = long.MaxValue;
+        public long StopCommands = long.MaxValue;
+    }
+
+    public abstract class Experiment
+    {
+        protected Simulator sim;
+        protected SimStopConditions simStop;
+
+        public Experiment()
+        {
+            sim = new Simulator();
+            simStop = new SimStopConditions();
+        }
+
+        public void Run()
+        {
+            Setup();
+
+            sim.Init();
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
+            var (time, nrCommands) = sim.RunUntil(simStop.StopTime, simStop.StopCommands);
+            stopwatch.Stop();
+
+            Cleanup();
+
+            Console.WriteLine($"Simulation was stopped at time: {time}");
+            Console.WriteLine($"Running time was: {stopwatch.ElapsedMilliseconds} ms");
+            Console.WriteLine($"Commands handled: {nrCommands:n}");
+            Console.WriteLine($"Performance was about: {nrCommands / stopwatch.Elapsed.TotalSeconds:n} cmd/s");
+            Console.WriteLine($"Time per cmd: {Measurements.FormatSI(stopwatch.Elapsed.TotalSeconds / nrCommands, "s")}");
+        }
+
+        public abstract void Setup();
+        public abstract void Cleanup();
+    }
+
+    public class ODINSingleCore : Experiment
+    {
+        private StreamWriter report;
 
         private double[,] ReadFromCSV(string path)
         {
@@ -52,11 +93,9 @@ namespace SpikingDSE
             }
         }
 
-        public void Run()
+        public override void Setup()
         {
-            var sim = new Simulator();
-
-            var report = new StreamWriter("res/exp1/result.trace");
+            report = new StreamWriter("res/exp1/result.trace");
             var input = sim.AddProcess(new EventTraceIn("res/exp1/validation.trace", report, startTime: 4521));
             var output = sim.AddProcess(new SpikeSink(report));
             var weights = ReadFromCSV("res/exp1/weights_256.csv");
@@ -65,52 +104,39 @@ namespace SpikingDSE
 
             sim.AddChannel(ref core1.spikesIn, ref input.spikesOut);
             sim.AddChannel(ref output.spikesIn, ref core1.spikesOut);
+        }
 
-            sim.Init();
-            Stopwatch stopwatch = new Stopwatch();
-            stopwatch.Start();
-            long nrCommands = sim.RunUntil();
-            stopwatch.Stop();
+        public override void Cleanup()
+        {
             report.Flush();
             report.Close();
-
-            Console.WriteLine($"Running time was: {stopwatch.ElapsedMilliseconds} ms");
-            Console.WriteLine($"Commands handled: {nrCommands:n}");
-            Console.WriteLine($"Performance was about: {nrCommands / stopwatch.Elapsed.TotalSeconds:n} cmd/s");
-            Console.WriteLine($"Time per cmd: {Measurements.FormatSI(stopwatch.Elapsed.TotalSeconds / nrCommands, "s")}");
         }
     }
 
-    public class ProducerConsumer
+    public class ProducerConsumer : Experiment
     {
-        public void Run()
+        public override void Setup()
         {
-            var sim = new Simulator();
-
             var producer = sim.AddProcess(new Producer(8, "hi"));
             var consumer = sim.AddProcess(new Consumer());
 
             sim.AddChannel(ref consumer.In, ref producer.Out);
 
-            sim.Init();
-            Stopwatch stopwatch = new Stopwatch();
-            stopwatch.Start();
-            long nrCommands = sim.RunUntil(stopCmds: 10_000_000);
-            stopwatch.Stop();
-
-            Console.WriteLine($"Running time was: {stopwatch.ElapsedMilliseconds} ms");
-            Console.WriteLine($"Commands handled: {nrCommands:n}");
-            Console.WriteLine($"Performance was about: {nrCommands / stopwatch.Elapsed.TotalSeconds:n} cmd/s");
-            Console.WriteLine($"Time per cmd: {Measurements.FormatSI(stopwatch.Elapsed.TotalSeconds / nrCommands, "s")}");
+            simStop.StopCommands = 10_000_000;
         }
+
+        public override void Cleanup()
+        {
+
+        }
+
     }
 
-    public class MeshTest
+    public class MeshTest : Experiment
     {
-        public void Run()
-        {
-            var sim = new Simulator();
 
+        public override void Setup()
+        {
             var producer = sim.AddProcess(new Producer(8, new Packet { ID = 3, Message = "hi" }, name: "producer"));
             var consumer = sim.AddProcess(new Consumer(name: "consumer"));
             var locator = new MeshLocator(2, 2);
@@ -160,25 +186,19 @@ namespace SpikingDSE
             sim.AddChannel(ref producer.Out, ref ni1.FromCore);
             sim.AddChannel(ref ni2.ToCore, ref consumer.In);
 
-            sim.Init();
-            Stopwatch stopwatch = new Stopwatch();
-            stopwatch.Start();
-            long nrCommands = sim.RunUntil(stopTime: 1_000_000);
-            stopwatch.Stop();
+            simStop.StopCommands = 10_000;
+        }
 
-            Console.WriteLine($"Running time was: {stopwatch.ElapsedMilliseconds} ms");
-            Console.WriteLine($"Commands handled: {nrCommands:n}");
-            Console.WriteLine($"Performance was about: {nrCommands / stopwatch.Elapsed.TotalSeconds:n} cmd/s");
-            Console.WriteLine($"Time per cmd: {Measurements.FormatSI(stopwatch.Elapsed.TotalSeconds / nrCommands, "s")}");
+        public override void Cleanup()
+        {
+
         }
     }
 
-    public class ForkJoin
+    public class ForkJoin : Experiment
     {
-        public void Run()
+        public override void Setup()
         {
-            var sim = new Simulator();
-
             var producer = sim.AddProcess(new Producer(8, "hi"));
             var consumer = sim.AddProcess(new Consumer());
             var fork = sim.AddProcess(new Fork());
@@ -190,16 +210,12 @@ namespace SpikingDSE
             sim.AddChannel(ref fork.out3, ref join.in3, "Fork -> Join 3");
             sim.AddChannel(ref join.output, ref consumer.In, "Join -> Consumer");
 
-            sim.Init();
-            Stopwatch stopwatch = new Stopwatch();
-            stopwatch.Start();
-            long nrCommands = sim.RunUntil(stopCmds: 10_000);
-            stopwatch.Stop();
+            simStop.StopCommands = 100;
+        }
 
-            Console.WriteLine($"Running time was: {stopwatch.ElapsedMilliseconds} ms");
-            Console.WriteLine($"Commands handled: {nrCommands:n}");
-            Console.WriteLine($"Performance was about: {nrCommands / stopwatch.Elapsed.TotalSeconds:n} cmd/s");
-            Console.WriteLine($"Time per cmd: {Measurements.FormatSI(stopwatch.Elapsed.TotalSeconds / nrCommands, "s")}");
+        public override void Cleanup()
+        {
+
         }
     }
 }
