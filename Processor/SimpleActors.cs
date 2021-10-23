@@ -12,7 +12,7 @@ namespace SpikingDSE
 
         public Producer(int interval, object message, string name = "")
         {
-            this.name = name;
+            this.Name = name;
             this.interval = interval;
             this.message = message;
         }
@@ -33,7 +33,7 @@ namespace SpikingDSE
 
         public Consumer(string name = "")
         {
-            this.name = name;
+            this.Name = name;
         }
 
         public override IEnumerable<Command> Run()

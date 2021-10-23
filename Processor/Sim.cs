@@ -117,8 +117,8 @@ namespace SpikingDSE
     {
         public override void Setup()
         {
-            var producer = sim.AddProcess(new Producer(8, "hi"));
-            var consumer = sim.AddProcess(new Consumer());
+            var producer = sim.AddProcess(new Producer(8, "hi", name: "P1"));
+            var consumer = sim.AddProcess(new Consumer(name: "C1"));
 
             sim.AddChannel(ref consumer.In, ref producer.Out);
 

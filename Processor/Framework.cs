@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 
 namespace SpikingDSE
 {
@@ -25,6 +26,11 @@ namespace SpikingDSE
         public SendCmd SendCmd;
         public SimThread ReceiveThread;
         public Command ReceiveCmd;
+
+        public override string ToString()
+        {
+            return Name;
+        }
     }
 
     public class Simulator
@@ -52,8 +58,8 @@ namespace SpikingDSE
                 throw new Exception("Port already bound");
             }
 
-            inPort = new InPort();
-            outPort = new OutPort();
+            inPort = new InPort() { IsBound = true };
+            outPort = new OutPort() { IsBound = true };
             var channel = new Channel
             {
                 OutPort = outPort,
@@ -81,6 +87,45 @@ namespace SpikingDSE
                     Runnable = actor.Run().GetEnumerator(),
                     Time = 0
                 });
+
+                var fields = actor.GetType().GetFields(BindingFlags.Public | BindingFlags.Instance);
+                foreach (var field in fields)
+                {
+                    var value = field.GetValue(actor);
+                    if (field.FieldType == typeof(InPort))
+                    {
+                        InPort inPort;
+                        if (value == null)
+                        {
+                            inPort = new InPort() { IsBound = false };
+                            field.SetValue(actor, inPort);
+                        }
+                        else
+                        {
+                            inPort = (InPort)value;
+                        }
+                        inPort.Name = $"{actor.Name}.{field.Name}";
+                    }
+                    else if (field.FieldType == typeof(OutPort))
+                    {
+                        OutPort outPort;
+                        if (value == null)
+                        {
+                            outPort = new OutPort() { IsBound = false };
+                            field.SetValue(actor, outPort);
+                        }
+                        else
+                        {
+                            outPort = (OutPort)value;
+                        }
+                        outPort.Name = $"{actor.Name}.{field.Name}";
+                    }
+                }
+            }
+
+            foreach (var channel in channels)
+            {
+                channel.Name = $"{channel.InPort.Name} -> {channel.OutPort.Name}";
             }
         }
 
@@ -150,7 +195,7 @@ namespace SpikingDSE
                             for (int i = 0; i < select.Ports.Length; i++)
                             {
                                 var port = select.Ports[i];
-                                if (port == null)
+                                if (!port.IsBound)
                                 {
                                     continue;
                                 }
@@ -242,7 +287,7 @@ namespace SpikingDSE
     public abstract class Actor
     {
         protected Environment env;
-        protected string name;
+        public string Name { get; protected set; }
 
         public void Init(Environment env)
         {
@@ -254,7 +299,7 @@ namespace SpikingDSE
 
     public class Command
     {
-        
+
     }
 
     public class SleepCmd : Command
@@ -318,7 +363,7 @@ namespace SpikingDSE
         }
 
         public SendCmd SendAt(OutPort port, object message, long time)
-        {            
+        {
             return new SendCmd { Port = port, Message = message, Time = time };
         }
 
@@ -343,6 +388,13 @@ namespace SpikingDSE
     public class Port
     {
         public int ChannelHandle;
+        public bool IsBound;
+        public string Name;
+
+        public override string ToString()
+        {
+            return Name;
+        }
     }
 
     public class InPort : Port

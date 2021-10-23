@@ -49,7 +49,7 @@ namespace SpikingDSE
 
         public XYRouter(long processingDelay, string name = "")
         {
-            this.name = name;
+            this.Name = name;
             this.processingDelay = processingDelay;
         }
 
@@ -122,7 +122,7 @@ namespace SpikingDSE
             this.srcX = x;
             this.srcY = y;
             this.locator = locator;
-            this.name = name;
+            this.Name = name;
         }
 
         public override IEnumerable<Command> Run()
