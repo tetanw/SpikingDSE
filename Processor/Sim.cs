@@ -6,8 +6,49 @@ using System.Linq;
 
 namespace SpikingDSE
 {
-    public class ODINSingleCore
+    public class SimStopConditions
     {
+        public long StopTime = long.MaxValue;
+        public long StopCommands = long.MaxValue;
+    }
+
+    public abstract class Experiment
+    {
+        protected Simulator sim;
+        protected SimStopConditions simStop;
+
+        public Experiment()
+        {
+            sim = new Simulator();
+            simStop = new SimStopConditions();
+        }
+
+        public void Run()
+        {
+            Setup();
+
+            sim.Init();
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
+            var (time, nrCommands) = sim.RunUntil(simStop.StopTime, simStop.StopCommands);
+            stopwatch.Stop();
+
+            Cleanup();
+
+            Console.WriteLine($"Simulation was stopped at time: {time}");
+            Console.WriteLine($"Running time was: {stopwatch.ElapsedMilliseconds} ms");
+            Console.WriteLine($"Commands handled: {nrCommands:n}");
+            Console.WriteLine($"Performance was about: {nrCommands / stopwatch.Elapsed.TotalSeconds:n} cmd/s");
+            Console.WriteLine($"Time per cmd: {Measurements.FormatSI(stopwatch.Elapsed.TotalSeconds / nrCommands, "s")}");
+        }
+
+        public abstract void Setup();
+        public abstract void Cleanup();
+    }
+
+    public class ODINSingleCore : Experiment
+    {
+        private StreamWriter report;
 
         private double[,] ReadFromCSV(string path)
         {
@@ -52,76 +93,61 @@ namespace SpikingDSE
             }
         }
 
-        public void Run()
+        public override void Setup()
         {
-            var scheduler = new Simulator();
-
-            var report = new StreamWriter("res/exp1/result.trace");
-            var input = scheduler.AddProcess(new EventTraceIn("res/exp1/validation.trace", report, startTime: 4521));
-            var output = scheduler.AddProcess(new SpikeSink(report));
+            report = new StreamWriter("res/exp1/result.trace");
+            var input = sim.AddProcess(new EventTraceIn("res/exp1/validation.trace", report, startTime: 4521));
+            var output = sim.AddProcess(new SpikeSink(report));
             var weights = ReadFromCSV("res/exp1/weights_256.csv");
             CorrectWeights(weights);
-            var core1 = scheduler.AddProcess(new ODINCore(1, 256, bufferCap: 1, threshold: 30.0, weights: weights, synComputeTime: 2, outputTime: 8, inputTime: 7));
+            var core1 = sim.AddProcess(new ODINCore(1, 256, bufferCap: 1, threshold: 30.0, weights: weights, synComputeTime: 2, outputTime: 8, inputTime: 7));
 
-            scheduler.AddChannel(ref core1.spikesIn, ref input.spikesOut);
-            scheduler.AddChannel(ref output.spikesIn, ref core1.spikesOut);
+            sim.AddChannel(ref core1.spikesIn, ref input.spikesOut);
+            sim.AddChannel(ref output.spikesIn, ref core1.spikesOut);
+        }
 
-            scheduler.Init();
-            Stopwatch stopwatch = new Stopwatch();
-            stopwatch.Start();
-            int nrCommands = scheduler.RunUntil(int.MaxValue, int.MaxValue);
-            stopwatch.Stop();
+        public override void Cleanup()
+        {
             report.Flush();
             report.Close();
-
-            Console.WriteLine($"Running time was: {stopwatch.ElapsedMilliseconds} ms");
-            Console.WriteLine($"Commands handled: {nrCommands:n}");
-            Console.WriteLine($"Performance was about: {nrCommands / stopwatch.Elapsed.TotalSeconds:n} cmd/s");
-            Console.WriteLine($"Time per cmd: {Measurements.FormatSI(stopwatch.Elapsed.TotalSeconds / nrCommands, "s")}");
         }
     }
 
-    public class ProducerConsumer
+    public class ProducerConsumer : Experiment
     {
-        public void Run()
+        public override void Setup()
         {
-            var scheduler = new Simulator();
+            var producer = sim.AddProcess(new Producer(8, "hi", name: "P1"));
+            var consumer = sim.AddProcess(new Consumer(name: "C1"));
 
-            var producer = scheduler.AddProcess(new Producer(8, "hi"));
-            var consumer = scheduler.AddProcess(new Consumer());
+            sim.AddChannel(ref consumer.In, ref producer.Out);
 
-            scheduler.AddChannel(ref consumer.In, ref producer.Out);
-
-            scheduler.Init();
-            Stopwatch stopwatch = new Stopwatch();
-            stopwatch.Start();
-            int nrCommands = scheduler.RunUntil(int.MaxValue, stopCmds: 10_000_000);
-            stopwatch.Stop();
-
-            Console.WriteLine($"Running time was: {stopwatch.ElapsedMilliseconds} ms");
-            Console.WriteLine($"Commands handled: {nrCommands:n}");
-            Console.WriteLine($"Performance was about: {nrCommands / stopwatch.Elapsed.TotalSeconds:n} cmd/s");
-            Console.WriteLine($"Time per cmd: {Measurements.FormatSI(stopwatch.Elapsed.TotalSeconds / nrCommands, "s")}");
+            simStop.StopCommands = 10_000_000;
         }
+
+        public override void Cleanup()
+        {
+
+        }
+
     }
 
-    public class MeshTest
+    public class MeshTest : Experiment
     {
-        public void Run()
-        {
-            var scheduler = new Simulator();
 
-            var producer = scheduler.AddProcess(new Producer(8, new Packet { ID = 3, Message = "hi" }, name: "producer"));
-            var consumer = scheduler.AddProcess(new Consumer(name: "consumer"));
+        public override void Setup()
+        {
+            var producer = sim.AddProcess(new Producer(8, new Packet { ID = 3, Message = "hi" }, name: "producer"));
+            var consumer = sim.AddProcess(new Consumer(name: "consumer"));
             var locator = new MeshLocator(2, 2);
-            var ni1 = scheduler.AddProcess(new MeshNI(0, 0, locator, name: "ni1"));
-            var ni2 = scheduler.AddProcess(new MeshNI(1, 1, locator, name: "ni2"));
+            var ni1 = sim.AddProcess(new MeshNI(0, 0, locator, name: "ni1"));
+            var ni2 = sim.AddProcess(new MeshNI(1, 1, locator, name: "ni2"));
             var routers = new XYRouter[2, 2];
             for (int y = 0; y < 2; y++)
             {
                 for (int x = 0; x < 2; x++)
                 {
-                    routers[x, y] = scheduler.AddProcess(new XYRouter(1, name: $"router {x},{y}"));
+                    routers[x, y] = sim.AddProcess(new XYRouter(1, name: $"router {x},{y}"));
                 }
             }
 
@@ -132,78 +158,68 @@ namespace SpikingDSE
                     // wire up west side if possible
                     if (x > 0)
                     {
-                        scheduler.AddChannel(ref routers[x, y].outWest, ref routers[x - 1, y].inEast);
+                        sim.AddChannel(ref routers[x, y].outWest, ref routers[x - 1, y].inEast);
                     }
 
                     // wire up east side if possible
                     if (x < 1)
                     {
-                        scheduler.AddChannel(ref routers[x, y].outEast, ref routers[x + 1, y].inWest);
+                        sim.AddChannel(ref routers[x, y].outEast, ref routers[x + 1, y].inWest);
                     }
 
                     // wire up south side if possible
                     if (y > 0)
                     {
-                        scheduler.AddChannel(ref routers[x, y].outSouth, ref routers[x, y - 1].inNorth);
+                        sim.AddChannel(ref routers[x, y].outSouth, ref routers[x, y - 1].inNorth);
                     }
 
                     // wire up north side if possible
                     if (y < 1)
                     {
-                        scheduler.AddChannel(ref routers[x, y].outNorth, ref routers[x, y + 1].inSouth);
+                        sim.AddChannel(ref routers[x, y].outNorth, ref routers[x, y + 1].inSouth);
                     }
                 }
             }
-            scheduler.AddChannel(ref routers[1, 1].toCore, ref ni2.FromMesh);
-            scheduler.AddChannel(ref routers[0, 0].fromCore, ref ni1.ToMesh);
+            sim.AddChannel(ref routers[1, 1].toCore, ref ni2.FromMesh);
+            sim.AddChannel(ref routers[0, 0].fromCore, ref ni1.ToMesh);
 
-            scheduler.AddChannel(ref producer.Out, ref ni1.FromCore);
-            scheduler.AddChannel(ref ni2.ToCore, ref consumer.In);
+            sim.AddChannel(ref producer.Out, ref ni1.FromCore);
+            sim.AddChannel(ref ni2.ToCore, ref consumer.In);
 
-            scheduler.Init();
-            Stopwatch stopwatch = new Stopwatch();
-            stopwatch.Start();
-            int nrCommands = scheduler.RunUntil(1_000_000, int.MaxValue);
-            stopwatch.Stop();
-
-            Console.WriteLine($"Running time was: {stopwatch.ElapsedMilliseconds} ms");
-            Console.WriteLine($"Commands handled: {nrCommands:n}");
-            Console.WriteLine($"Performance was about: {nrCommands / stopwatch.Elapsed.TotalSeconds:n} cmd/s");
-            Console.WriteLine($"Time per cmd: {Measurements.FormatSI(stopwatch.Elapsed.TotalSeconds / nrCommands, "s")}");
+            simStop.StopCommands = 10_000;
         }
-    }
 
-    public class ForkJoin
-    {
-        public void Run()
+        public override void Cleanup()
         {
-            var scheduler = new Simulator();
 
-            var producer = scheduler.AddProcess(new Producer(8, "hi"));
-            var consumer = scheduler.AddProcess(new Consumer());
-            var fork = scheduler.AddProcess(new Fork());
-            var join = scheduler.AddProcess(new Join());
-
-            scheduler.AddChannel(ref producer.Out, ref fork.input, "Producer -> Fork");
-            scheduler.AddChannel(ref fork.out1, ref join.in1, "Fork -> Join 1");
-            scheduler.AddChannel(ref fork.out2, ref join.in2, "Fork -> Join 2");
-            scheduler.AddChannel(ref fork.out3, ref join.in3, "Fork -> Join 3");
-            scheduler.AddChannel(ref join.output, ref consumer.In, "Join -> Consumer");
-
-            scheduler.Init();
-            Stopwatch stopwatch = new Stopwatch();
-            stopwatch.Start();
-            int nrCommands = scheduler.RunUntil(int.MaxValue, 10_000_000);
-            stopwatch.Stop();
-
-            Console.WriteLine($"Running time was: {stopwatch.ElapsedMilliseconds} ms");
-            Console.WriteLine($"Commands handled: {nrCommands:n}");
-            Console.WriteLine($"Performance was about: {nrCommands / stopwatch.Elapsed.TotalSeconds:n} cmd/s");
-            Console.WriteLine($"Time per cmd: {Measurements.FormatSI(stopwatch.Elapsed.TotalSeconds / nrCommands, "s")}");
         }
     }
 
-    public class ReportingTest
+    public class ForkJoin : Experiment
+    {
+        public override void Setup()
+        {
+            var producer = sim.AddProcess(new Producer(8, "hi"));
+            var consumer = sim.AddProcess(new Consumer());
+            var fork = sim.AddProcess(new Fork());
+            var join = sim.AddProcess(new Join());
+
+            sim.AddChannel(ref producer.Out, ref fork.input);
+            sim.AddChannel(ref fork.out1, ref join.in1);
+            sim.AddChannel(ref fork.out2, ref join.in2);
+            sim.AddChannel(ref fork.out3, ref join.in3);
+            sim.AddChannel(ref join.output, ref consumer.In);
+
+            simStop.StopCommands = 100;
+        }
+
+        public override void Cleanup()
+        {
+
+        }
+    }
+
+    public class ReportingTest : Experiment
     {
         public class Reporter : ProducerReport, ConsumerReporter
         {
@@ -218,26 +234,20 @@ namespace SpikingDSE
             }
         }
 
-        public void Run()
+        public override void Setup()
         {
-            var scheduler = new Simulator();
             var reporter = new Reporter();
-            
-            var producer = scheduler.AddProcess(new Producer(4, "hi", reporter: reporter));
-            var consumer = scheduler.AddProcess(new Consumer(reporter: reporter));
 
-            scheduler.AddChannel(ref producer.Out, ref consumer.In);
-            
-            scheduler.Init();
-            Stopwatch stopwatch = new Stopwatch();
-            stopwatch.Start();
-            int nrCommands = scheduler.RunUntil(10, int.MaxValue);
-            stopwatch.Stop();
+            var producer = sim.AddProcess(new Producer(4, "hi", reporter: reporter));
+            var consumer = sim.AddProcess(new Consumer(reporter: reporter));
 
-            Console.WriteLine($"Running time was: {stopwatch.ElapsedMilliseconds} ms");
-            Console.WriteLine($"Commands handled: {nrCommands:n}");
-            Console.WriteLine($"Performance was about: {nrCommands / stopwatch.Elapsed.TotalSeconds:n} cmd/s");
-            Console.WriteLine($"Time per cmd: {Measurements.FormatSI(stopwatch.Elapsed.TotalSeconds / nrCommands, "s")}");
+            sim.AddChannel(ref producer.Out, ref consumer.In);
+            simStop.StopTime = 10;
+        }
+
+        public override void Cleanup()
+        {
+            
         }
     }
 }

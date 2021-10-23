@@ -18,7 +18,7 @@ namespace SpikingDSE
 
         public Producer(int interval, object message, string name = "", ProducerReport reporter = null)
         {
-            this.name = name;
+            this.Name = name;
             this.interval = interval;
             this.message = message;
             this.reporter = reporter;
@@ -48,8 +48,8 @@ namespace SpikingDSE
 
         public Consumer(string name = "", ConsumerReporter reporter = null)
         {
-            this.name = name;
             this.reporter = reporter;
+            this.Name = name;
         }
 
         public override IEnumerable<Command> Run()
