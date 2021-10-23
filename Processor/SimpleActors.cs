@@ -64,6 +64,11 @@ namespace SpikingDSE
         }
     }
 
+    public interface ForkReporter
+    {
+        public void ForkSentMessage(OutPort port, object message);
+    }
+
     public class Fork : Actor
     {
         public InPort input;
@@ -71,9 +76,11 @@ namespace SpikingDSE
         public OutPort out2;
         public OutPort out3;
 
-        public Fork()
-        {
+        private ForkReporter reporter;
 
+        public Fork(ForkReporter reporter = null)
+        {
+            this.reporter = reporter;
         }
 
         public override IEnumerable<Command> Run()
@@ -85,10 +92,18 @@ namespace SpikingDSE
                 var message = recv.Message;
 
                 yield return env.Send(out1, message);
+                reporter?.ForkSentMessage(out1, message);
                 yield return env.Send(out2, message);
+                reporter?.ForkSentMessage(out2, message);
                 yield return env.Send(out3, message);
+                reporter?.ForkSentMessage(out3, message);
             }
         }
+    }
+
+    public interface JoinReporter
+    {
+
     }
 
     public class Join : Actor
@@ -97,6 +112,13 @@ namespace SpikingDSE
         public InPort in2;
         public InPort in3;
         public OutPort output;
+
+        private JoinReporter reporter;
+
+        public Join(JoinReporter reporter = null)
+        {
+            this.reporter = reporter;
+        }
 
         public override IEnumerable<Command> Run()
         {
