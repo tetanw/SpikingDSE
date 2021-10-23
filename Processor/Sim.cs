@@ -204,11 +204,11 @@ namespace SpikingDSE
             var fork = sim.AddProcess(new Fork());
             var join = sim.AddProcess(new Join());
 
-            sim.AddChannel(ref producer.Out, ref fork.input, "Producer -> Fork");
-            sim.AddChannel(ref fork.out1, ref join.in1, "Fork -> Join 1");
-            sim.AddChannel(ref fork.out2, ref join.in2, "Fork -> Join 2");
-            sim.AddChannel(ref fork.out3, ref join.in3, "Fork -> Join 3");
-            sim.AddChannel(ref join.output, ref consumer.In, "Join -> Consumer");
+            sim.AddChannel(ref producer.Out, ref fork.input);
+            sim.AddChannel(ref fork.out1, ref join.in1);
+            sim.AddChannel(ref fork.out2, ref join.in2);
+            sim.AddChannel(ref fork.out3, ref join.in3);
+            sim.AddChannel(ref join.output, ref consumer.In);
 
             simStop.StopCommands = 100;
         }

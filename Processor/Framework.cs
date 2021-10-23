@@ -51,7 +51,7 @@ namespace SpikingDSE
             return process;
         }
 
-        public void AddChannel(ref InPort inPort, ref OutPort outPort, string name = null)
+        public void AddChannel(ref InPort inPort, ref OutPort outPort)
         {
             if (inPort != null || outPort != null)
             {
@@ -63,8 +63,7 @@ namespace SpikingDSE
             var channel = new Channel
             {
                 OutPort = outPort,
-                InPort = inPort,
-                Name = name
+                InPort = inPort
             };
             int newId = channels.Count;
             channels.Add(channel);
@@ -72,9 +71,9 @@ namespace SpikingDSE
             outPort.ChannelHandle = newId;
         }
 
-        public void AddChannel(ref OutPort outPort, ref InPort inPort, string name = null)
+        public void AddChannel(ref OutPort outPort, ref InPort inPort)
         {
-            AddChannel(ref inPort, ref outPort, name);
+            AddChannel(ref inPort, ref outPort);
         }
 
         public void Init()
