@@ -4,32 +4,9 @@ namespace SpikingDSE
 {
     public class MeshFlit
     {
-        public int DX;
-        public int DY;
+        public int DestX;
+        public int DestY;
         public object Message;
-    }
-
-    public interface Locator<T>
-    {
-        public T Locate(int packetID);
-    }
-
-    public class MeshLocator : Locator<(int x, int y)>
-    {
-        private int width, height;
-
-        public MeshLocator(int width, int height)
-        {
-            this.width = width;
-            this.height = height;
-        }
-
-        public (int x, int y) Locate(int packetID)
-        {
-            int x = packetID % width;
-            int y = packetID / width;
-            return (x, y);
-        }
     }
 
     public class XYRouter : Actor
@@ -46,10 +23,13 @@ namespace SpikingDSE
         public OutPort toCore;
 
         public long processingDelay;
+        private int x, y;
 
-        public XYRouter(long processingDelay, string name = "")
+        public XYRouter(int x, int y, long processingDelay, string name = "")
         {
             this.Name = name;
+            this.x = x;
+            this.y = y;
             this.processingDelay = processingDelay;
         }
 
@@ -66,29 +46,27 @@ namespace SpikingDSE
                 yield return env.Delay(processingDelay);
 
                 // 3. Determine into which output port it goes
+                int DX = flit.DestX - x;
+                int DY = flit.DestY - y;
                 OutPort outPort;
-                if (flit.DX > 0)
+                if (DX > 0)
                 {
                     // East
-                    flit.DX--;
                     outPort = outEast;
                 }
-                else if (flit.DX < 0)
+                else if (DX < 0)
                 {
                     // West
-                    flit.DX++;
                     outPort = outWest;
                 }
-                else if (flit.DY > 0)
+                else if (DY > 0)
                 {
                     // North
-                    flit.DY--;
                     outPort = outNorth;
                 }
-                else if (flit.DY < 0)
+                else if (DY < 0)
                 {
                     // South
-                    flit.DY++;
                     outPort = outSouth;
                 }
                 else
@@ -98,7 +76,7 @@ namespace SpikingDSE
                 }
 
                 // 4. Send to right port
-                if (outPort == null)
+                if (!outPort.IsBound)
                 {
                     throw new System.Exception("Outport was not configured");
                 }
@@ -107,47 +85,58 @@ namespace SpikingDSE
         }
     }
 
-    public class MeshNI : Actor
+    public class MeshUtils
     {
-        public InPort FromMesh;
-        public InPort FromCore;
-        public OutPort ToMesh;
-        public OutPort ToCore;
+        public delegate XYRouter ConstructRouter(int x, int y);
 
-        private Locator<(int x, int y)> locator;
-        public int srcX, srcY;
-
-        public MeshNI(int x, int y, Locator<(int x, int y)> locator, string name = "")
+        public static XYRouter[,] CreateMesh(Simulator sim, int width, int height, ConstructRouter constructRouter)
         {
-            this.srcX = x;
-            this.srcY = y;
-            this.locator = locator;
-            this.Name = name;
+            XYRouter[,] routers = new XYRouter[width, height];
+
+            for (int y = 0; y < height; y++)
+            {
+                for (int x = 0; x < width; x++)
+                {
+                    routers[x, y] = sim.AddProcess(constructRouter(x, y));
+                }
+            }
+
+            ConnectRouters(sim, routers);
+            return routers;
         }
 
-        public override IEnumerable<Command> Run()
+        public static void ConnectRouters(Simulator sim, XYRouter[,] routers)
         {
-            while (true)
-            {
-                var select = env.Select(FromMesh, FromCore);
-                yield return select;
+            int width = routers.GetLength(0);
+            int height = routers.GetLength(1);
 
-                if (select.Port == FromMesh)
+            for (int y = 0; y < height; y++)
+            {
+                for (int x = 0; x < width; x++)
                 {
-                    var packet = (MeshFlit)select.Message;
-                    yield return env.Send(ToCore, packet.Message);
-                }
-                else if (select.Port == FromCore)
-                {
-                    var packet = (Packet)select.Message;
-                    var (destX, destY) = locator.Locate(packet.ID);
-                    var flit = new MeshFlit
+                    // wire up west side if possible
+                    if (x > 0)
                     {
-                        DX = destX - srcX,
-                        DY = destY - srcY,
-                        Message = packet.Message
-                    };
-                    yield return env.Send(ToMesh, flit);
+                        sim.AddChannel(ref routers[x, y].outWest, ref routers[x - 1, y].inEast);
+                    }
+
+                    // wire up east side if possible
+                    if (x < 1)
+                    {
+                        sim.AddChannel(ref routers[x, y].outEast, ref routers[x + 1, y].inWest);
+                    }
+
+                    // wire up south side if possible
+                    if (y > 0)
+                    {
+                        sim.AddChannel(ref routers[x, y].outSouth, ref routers[x, y - 1].inNorth);
+                    }
+
+                    // wire up north side if possible
+                    if (y < 1)
+                    {
+                        sim.AddChannel(ref routers[x, y].outNorth, ref routers[x, y + 1].inSouth);
+                    }
                 }
             }
         }

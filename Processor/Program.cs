@@ -72,6 +72,10 @@ namespace SpikingDSE
                     {
                         new ReportingTest().Run();
                     }
+                    else if (opts.Name.Equals("MULTIODIN"))
+                    {
+                        new MultiODIN().Run();
+                    }
                     else
                     {
                         throw new Exception($"Unknown simulation: {opts.Name}");

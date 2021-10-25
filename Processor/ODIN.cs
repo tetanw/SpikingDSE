@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 
@@ -15,13 +16,14 @@ namespace SpikingDSE
         private string path;
         private long startTime;
         private SpikeSourceTraceReporter reporter;
+        private Func<int, object> outTransformer;
 
-
-        public SpikeSourceTrace(string path, long startTime = 0, SpikeSourceTraceReporter reporter = null)
+        public SpikeSourceTrace(string path, long startTime = 0, SpikeSourceTraceReporter reporter = null, Func<int, object> transformOut = null)
         {
             this.path = path;
             this.startTime = startTime;
             this.reporter = reporter;
+            this.outTransformer = transformOut;
         }
 
         private IEnumerable<(int, long)> ReadInputSpikes(string path, int frequency)
@@ -48,7 +50,8 @@ namespace SpikingDSE
             yield return env.SleepUntil(startTime);
             foreach (var (neuron, time) in EventTraceReader.ReadInputs(path, 100_000_000, startTime))
             {
-                yield return env.Send(spikesOut, neuron);
+                var message = outTransformer == null ? neuron : outTransformer(neuron);
+                yield return env.Send(spikesOut, message);
                 reporter?.SpikeSent(this, neuron, env.Now);
             }
         }
@@ -89,7 +92,6 @@ namespace SpikingDSE
 
         private Queue<int> buffer = new Queue<int>();
         private int bufferCap;
-        private int coreID;
         private int nrNeurons;
         private double threshold;
         private double[,] weights;
@@ -97,10 +99,11 @@ namespace SpikingDSE
         private int synComputeTime;
         private int inputTime;
         private int outputTime;
+        private Func<int, object> transformOut;
+        private Func<object, int> transformIn;
 
-        public ODINCore(int coreID, int nrNeurons, string name = "", double[,] weights = null, int bufferCap = 1, double threshold = 0.1, int synComputeTime = 0, int outputTime = 0, int inputTime = 0)
+        public ODINCore(int nrNeurons, string name = "", double[,] weights = null, int bufferCap = 1, double threshold = 0.1, int synComputeTime = 0, int outputTime = 0, int inputTime = 0, Func<int, object> transformOut = null, Func<object, int> transformIn = null)
         {
-            this.coreID = coreID;
             this.bufferCap = bufferCap;
             this.Name = name;
             if (weights == null)
@@ -117,6 +120,8 @@ namespace SpikingDSE
             this.synComputeTime = synComputeTime;
             this.outputTime = outputTime;
             this.inputTime = inputTime;
+            this.transformOut = transformOut;
+            this.transformIn = transformIn;
         }
 
         public override IEnumerable<Command> Run()
@@ -180,7 +185,8 @@ namespace SpikingDSE
                 if (pots[dst] >= threshold)
                 {
                     pots[dst] = 0.0;
-                    yield return env.SendAt(spikesOut, dst, now);
+                    var message = transformOut == null ? dst : transformOut(dst);
+                    yield return env.SendAt(spikesOut, message, now);
                     now += outputTime;
                 }
             }
@@ -191,7 +197,7 @@ namespace SpikingDSE
         {
             var rcv = env.Receive(spikesIn, waitBefore: inputTime);
             yield return rcv;
-            var spike = (int)rcv.Message;
+            var spike = transformIn == null ? (int)rcv.Message : transformIn(rcv.Message);
             buffer.Enqueue(spike);
         }
     }

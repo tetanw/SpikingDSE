@@ -30,11 +30,19 @@ namespace SpikingDSE
             sim.Init();
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
-            var (time, nrCommands) = sim.RunUntil(simStop.StopTime, simStop.StopCommands);
+            var (idled, time, nrCommands) = sim.RunUntil(simStop.StopTime, simStop.StopCommands);
             stopwatch.Stop();
 
             Cleanup();
 
+            if (idled)
+            {
+                Console.WriteLine("Simulation stopped because no more actors could progress");
+            }
+            else
+            {
+                Console.WriteLine("Simulation stopped because one of the stopping conditions was reached");
+            }
             Console.WriteLine($"Simulation was stopped at time: {time:n}");
             Console.WriteLine($"Running time was: {stopwatch.ElapsedMilliseconds} ms");
             Console.WriteLine($"Commands handled: {nrCommands:n}");
@@ -103,7 +111,7 @@ namespace SpikingDSE
             var input = sim.AddProcess(new SpikeSourceTrace("res/exp1/validation.trace", startTime: 4521, reporter: reporter));
             var output = sim.AddProcess(new SpikeSink(reporter: reporter));
             var weights = WeigthsUtil.ReadFromCSV("res/exp1/weights_256.csv");
-            var core1 = sim.AddProcess(new ODINCore(1, 256, bufferCap: 1, threshold: 30.0, weights: weights, synComputeTime: 2, outputTime: 8, inputTime: 7));
+            var core1 = sim.AddProcess(new ODINCore(256, bufferCap: 1, threshold: 30.0, weights: weights, synComputeTime: 2, outputTime: 8, inputTime: 7));
 
             sim.AddChannel(ref core1.spikesIn, ref input.spikesOut);
             sim.AddChannel(ref output.spikesIn, ref core1.spikesOut);
@@ -119,7 +127,7 @@ namespace SpikingDSE
     {
         public override void Setup()
         {
-            var producer = sim.AddProcess(new Producer(8, "hi", name: "P1"));
+            var producer = sim.AddProcess(new Producer(8, () => "hi", name: "P1"));
             var consumer = sim.AddProcess(new Consumer(name: "C1"));
 
             sim.AddChannel(ref consumer.In, ref producer.Out);
@@ -136,59 +144,32 @@ namespace SpikingDSE
 
     public class MeshTest : Experiment
     {
+        class Reporter : ConsumerReporter, ProducerReport
+        {
+            public void Consumed(Consumer consumer, long time, object message)
+            {
+                var realMessage = ((MeshFlit)message).Message;
+                Console.WriteLine($"[{time}] {consumer.Name} received message {realMessage}");
+            }
+
+            public void Produced(Producer producer, long time, object message)
+            {
+                var realMessage = ((MeshFlit)message).Message;
+                Console.WriteLine($"[{time}] {producer.Name} sent message {realMessage}");
+            }
+        }
 
         public override void Setup()
         {
-            var producer = sim.AddProcess(new Producer(8, new Packet { ID = 3, Message = "hi" }, name: "producer"));
-            var consumer = sim.AddProcess(new Consumer(name: "consumer"));
-            var locator = new MeshLocator(2, 2);
-            var ni1 = sim.AddProcess(new MeshNI(0, 0, locator, name: "ni1"));
-            var ni2 = sim.AddProcess(new MeshNI(1, 1, locator, name: "ni2"));
-            var routers = new XYRouter[2, 2];
-            for (int y = 0; y < 2; y++)
-            {
-                for (int x = 0; x < 2; x++)
-                {
-                    routers[x, y] = sim.AddProcess(new XYRouter(1, name: $"router {x},{y}"));
-                }
-            }
+            var reporter = new Reporter();
+            var producer = sim.AddProcess(new Producer(4, () => new MeshFlit { DestX = 1, DestY = 1, Message = "hi" }, name: "producer", reporter: reporter));
+            var consumer = sim.AddProcess(new Consumer(name: "consumer", reporter: reporter));
+            var routers = MeshUtils.CreateMesh(sim, 2, 2, (x, y) => new XYRouter(x, y, 1, name: $"router({x},{y})"));
 
-            for (int y = 0; y < 2; y++)
-            {
-                for (int x = 0; x < 2; x++)
-                {
-                    // wire up west side if possible
-                    if (x > 0)
-                    {
-                        sim.AddChannel(ref routers[x, y].outWest, ref routers[x - 1, y].inEast);
-                    }
+            sim.AddChannel(ref routers[0, 0].fromCore, ref producer.Out);
+            sim.AddChannel(ref routers[1, 1].toCore, ref consumer.In);
 
-                    // wire up east side if possible
-                    if (x < 1)
-                    {
-                        sim.AddChannel(ref routers[x, y].outEast, ref routers[x + 1, y].inWest);
-                    }
-
-                    // wire up south side if possible
-                    if (y > 0)
-                    {
-                        sim.AddChannel(ref routers[x, y].outSouth, ref routers[x, y - 1].inNorth);
-                    }
-
-                    // wire up north side if possible
-                    if (y < 1)
-                    {
-                        sim.AddChannel(ref routers[x, y].outNorth, ref routers[x, y + 1].inSouth);
-                    }
-                }
-            }
-            sim.AddChannel(ref routers[1, 1].toCore, ref ni2.FromMesh);
-            sim.AddChannel(ref routers[0, 0].fromCore, ref ni1.ToMesh);
-
-            sim.AddChannel(ref producer.Out, ref ni1.FromCore);
-            sim.AddChannel(ref ni2.ToCore, ref consumer.In);
-
-            simStop.StopCommands = 10_000;
+            simStop.StopTime = 10;
         }
 
         public override void Cleanup()
@@ -201,7 +182,7 @@ namespace SpikingDSE
     {
         public override void Setup()
         {
-            var producer = sim.AddProcess(new Producer(8, "hi"));
+            var producer = sim.AddProcess(new Producer(8, () => "hi"));
             var consumer = sim.AddProcess(new Consumer());
             var fork = sim.AddProcess(new Fork());
             var join = sim.AddProcess(new Join());
@@ -240,7 +221,7 @@ namespace SpikingDSE
         {
             var reporter = new Reporter();
 
-            var producer = sim.AddProcess(new Producer(4, "hi", reporter: reporter));
+            var producer = sim.AddProcess(new Producer(4, () => "hi", reporter: reporter));
             var consumer = sim.AddProcess(new Consumer(reporter: reporter));
 
             sim.AddChannel(ref producer.Out, ref consumer.In);
@@ -283,27 +264,74 @@ namespace SpikingDSE
     {
         private TraceReporter reporter;
 
-        private (float[,] a, float[,] b) SeperateWeights(float[,] weights)
+        private (double[,] a, double[,] b) SeperateWeights(double[,] weights)
         {
-            float[,] a = new float[weights.GetLength(0), weights.GetLength(1)];
-            float[,] b = new float[weights.GetLength(0), weights.GetLength(1)];
+            double[,] a = new double[weights.GetLength(0), weights.GetLength(1)];
+            double[,] b = new double[weights.GetLength(0), weights.GetLength(1)];
 
             // TODO: Copy over the right weights
 
             return (a, b);
         }
 
+        private Func<object, int> CreatePacketToSpike(int srcX, int srcY)
+        {
+            return (object message) =>
+            {
+                var flit = (MeshFlit) message;
+                return (int)flit.Message;
+            };
+        }
+
+        private Func<int, object> CreateSpikeToPacket(int srcX, int srcY)
+        {
+            return (neuron) =>
+            {
+                // TODO: Determine location of neuron
+                int destX, destY;
+                if (neuron < 128)
+                {
+                    destX = 0;
+                    destY = 0;
+                }
+                else if (neuron > 128)
+                {
+                    destX = 0;
+                    destY = 0;
+                }
+                else
+                {
+                    throw new Exception($"Neuron out of range: {neuron}");
+                }
+                return new MeshFlit { DestX = destX, DestY = destY, Message = neuron };
+            };
+        }
+
+        private ODINCore createCore(string name, double[,] weights, int x, int y)
+        {
+            return new ODINCore(256, 
+                name: name,
+                bufferCap: 1,
+                threshold: 30.0,
+                weights: weights,
+                synComputeTime: 2,
+                outputTime: 8,
+                inputTime: 7,
+                transformOut: CreateSpikeToPacket(x, y),
+                transformIn: CreatePacketToSpike(x, y)
+            );
+        }
+
         public override void Setup()
         {
-            reporter = new TraceReporter("");
-            var input = sim.AddProcess(new SpikeSourceTrace("res/exp1/validation.trace", startTime: 4521, reporter: reporter));
-            var output = sim.AddProcess(new SpikeSink(reporter: reporter));
+            reporter = new TraceReporter("res/exp1/result2.trace");
+            var source = sim.AddProcess(new SpikeSourceTrace("res/exp1/validation.trace", startTime: 4521, reporter: reporter, transformOut: CreateSpikeToPacket(-1, 0)));
+            var sink = sim.AddProcess(new SpikeSink(reporter: reporter));
+            var routers = MeshUtils.CreateMesh(sim, 2, 1, (x, y) => new XYRouter(x, y, 1, name: $"router({x},{y})"));
             var weights = WeigthsUtil.ReadFromCSV("res/exp1/weights_256.csv");
-            var core1 = sim.AddProcess(new ODINCore(0, 256, name: "ODIN1", bufferCap: 1, threshold: 30.0, weights: weights, synComputeTime: 2, outputTime: 8, inputTime: 7));
-            var core2 = sim.AddProcess(new ODINCore(1, 256, name: "ODIN2", bufferCap: 1, threshold: 30.0, weights: weights, synComputeTime: 2, outputTime: 8, inputTime: 7));
-
-            sim.AddChannel(ref core1.spikesIn, ref input.spikesOut);
-            sim.AddChannel(ref output.spikesIn, ref core1.spikesOut);
+            var (weights1, weights2) = SeperateWeights(weights);
+            var core1 = sim.AddProcess(createCore("ODIN1", weights1, 0, 0));
+            var core2 = sim.AddProcess(createCore("ODIN2", weights2, 1, 0));
 
             simStop.StopTime = 10;
         }

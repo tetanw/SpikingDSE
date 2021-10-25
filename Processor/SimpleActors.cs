@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -13,14 +14,14 @@ namespace SpikingDSE
         public OutPort Out;
 
         private int interval;
-        private object message;
         private ProducerReport reporter;
+        private Func<object> create;
 
-        public Producer(int interval, object message, string name = "", ProducerReport reporter = null)
+        public Producer(int interval, Func<object> create, string name = "", ProducerReport reporter = null)
         {
-            this.Name = name;
             this.interval = interval;
-            this.message = message;
+            this.create = create;
+            this.Name = name;
             this.reporter = reporter;
         }
 
@@ -28,6 +29,7 @@ namespace SpikingDSE
         {
             while (true)
             {
+                var message = create();
                 yield return env.Send(Out, message);
                 reporter?.Produced(this, env.Now, message);
                 yield return env.Delay(interval);
