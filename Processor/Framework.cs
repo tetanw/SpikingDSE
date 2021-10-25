@@ -124,21 +124,29 @@ namespace SpikingDSE
 
             foreach (var channel in channels)
             {
-                channel.Name = $"{channel.InPort.Name} -> {channel.OutPort.Name}";
+                channel.Name = $"{channel.OutPort.Name} -> {channel.InPort.Name}";
             }
         }
 
-        public (long time, long nrCommands) RunUntil(long stopTime = long.MaxValue, long stopCmds = long.MaxValue)
+        public (bool idled, long time, long nrCommands) RunUntil(long stopTime = long.MaxValue, long stopCmds = long.MaxValue)
         {
             long nrCommands = 0;
             long currentTime = 0;
-            while (ready.Count > 0 && nrCommands < stopCmds)
+            bool idled = false;
+            while (nrCommands < stopCmds)
             {
-                nrCommands++;
+                if (ready.Count == 0)
+                {
+                    idled = true;
+                    break;
+                }
+
                 var currentThread = ready.Dequeue();
+
                 if (currentThread.Time > stopTime)
                     break;
 
+                nrCommands++;
                 currentTime = env.Now;
                 env.Now = currentThread.Time;
                 var runnable = currentThread.Runnable;
@@ -194,12 +202,9 @@ namespace SpikingDSE
                             for (int i = 0; i < select.Ports.Length; i++)
                             {
                                 var port = select.Ports[i];
-                                if (!port.IsBound)
-                                {
-                                    continue;
-                                }
-
                                 var aChannel = channels[port.ChannelHandle];
+                                if (port.IsBound == false)
+                                    continue;
                                 aChannel.ReceiveCmd = select;
                                 aChannel.ReceiveThread = currentThread;
                                 if (aChannel.SendCmd != null)
@@ -229,7 +234,7 @@ namespace SpikingDSE
                 }
             }
 
-            return (currentTime, nrCommands);
+            return (idled, currentTime, nrCommands);
         }
 
         private void DoChannelTransfer(Channel channel)
@@ -253,7 +258,7 @@ namespace SpikingDSE
                 for (int i = 0; i < select.Ports.Length; i++)
                 {
                     var port = select.Ports[i];
-                    if (port == null)
+                    if (port.IsBound == false)
                         continue;
                     var aChannel = channels[port.ChannelHandle];
                     CleanChannel(aChannel);
