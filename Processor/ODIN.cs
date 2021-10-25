@@ -3,18 +3,25 @@ using System.IO;
 
 namespace SpikingDSE
 {
-    public class EventTraceIn : Actor
+    public interface SpikeSourceTraceReporter
+    {
+        public void SpikeSent(SpikeSourceTrace source, int neuron, long time);
+    }
+
+    public class SpikeSourceTrace : Actor
     {
         public OutPort spikesOut;
-        private string path;
-        private StreamWriter sw;
-        private long startTime;
 
-        public EventTraceIn(string path, StreamWriter sw, long startTime = 0)
+        private string path;
+        private long startTime;
+        private SpikeSourceTraceReporter reporter;
+
+
+        public SpikeSourceTrace(string path, long startTime = 0, SpikeSourceTraceReporter reporter = null)
         {
             this.path = path;
-            this.sw = sw;
             this.startTime = startTime;
+            this.reporter = reporter;
         }
 
         private IEnumerable<(int, long)> ReadInputSpikes(string path, int frequency)
@@ -42,20 +49,25 @@ namespace SpikingDSE
             foreach (var (neuron, time) in EventTraceReader.ReadInputs(path, 100_000_000, startTime))
             {
                 yield return env.Send(spikesOut, neuron);
-                sw.WriteLine($"0,{neuron},{env.Now}");
+                reporter?.SpikeSent(this, neuron, env.Now);
             }
         }
+    }
+
+    public interface SpikeSinkReporter
+    {
+        public void SpikeReceived(SpikeSink sink, int neuron, long time);
     }
 
     public class SpikeSink : Actor
     {
         public InPort spikesIn;
 
-        private StreamWriter sw;
+        private SpikeSinkReporter reporter;
 
-        public SpikeSink(StreamWriter sw)
+        public SpikeSink(SpikeSinkReporter reporter = null)
         {
-            this.sw = sw;
+            this.reporter = reporter;
         }
 
         public override IEnumerable<Command> Run()
@@ -64,8 +76,8 @@ namespace SpikingDSE
             {
                 var rcv = env.Receive(spikesIn);
                 yield return rcv;
-                int spike = (int)rcv.Message;
-                sw.WriteLine($"1,{spike},{env.Now}");
+                int neuron = (int)rcv.Message;
+                reporter?.SpikeReceived(this, neuron, env.Now);
             }
         }
     }
@@ -86,10 +98,11 @@ namespace SpikingDSE
         private int inputTime;
         private int outputTime;
 
-        public ODINCore(int coreID, int nrNeurons, double[,] weights = null, int bufferCap = 1, double threshold = 0.1, int synComputeTime = 0, int outputTime = 0, int inputTime = 0)
+        public ODINCore(int coreID, int nrNeurons, string name = "", double[,] weights = null, int bufferCap = 1, double threshold = 0.1, int synComputeTime = 0, int outputTime = 0, int inputTime = 0)
         {
             this.coreID = coreID;
             this.bufferCap = bufferCap;
+            this.Name = name;
             if (weights == null)
             {
                 this.weights = new double[nrNeurons, nrNeurons];

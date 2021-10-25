@@ -35,7 +35,7 @@ namespace SpikingDSE
 
             Cleanup();
 
-            Console.WriteLine($"Simulation was stopped at time: {time}");
+            Console.WriteLine($"Simulation was stopped at time: {time:n}");
             Console.WriteLine($"Running time was: {stopwatch.ElapsedMilliseconds} ms");
             Console.WriteLine($"Commands handled: {nrCommands:n}");
             Console.WriteLine($"Performance was about: {nrCommands / stopwatch.Elapsed.TotalSeconds:n} cmd/s");
@@ -46,11 +46,9 @@ namespace SpikingDSE
         public abstract void Cleanup();
     }
 
-    public class ODINSingleCore : Experiment
+    public class WeigthsUtil
     {
-        private StreamWriter report;
-
-        private double[,] ReadFromCSV(string path)
+        public static double[,] ReadFromCSV(string path)
         {
             double[,] weights = null;
             int currentLine = 0;
@@ -69,9 +67,10 @@ namespace SpikingDSE
                 currentLine++;
             }
 
+            CorrectWeights(weights);
             return weights;
         }
-        private void Swap(int c, int x, int y, double[,] array)
+        private static void Swap(int c, int x, int y, double[,] array)
         {
             // swap index x and y
             var buffer = array[c, x];
@@ -79,7 +78,7 @@ namespace SpikingDSE
             array[c, y] = buffer;
         }
 
-        private void CorrectWeights(double[,] weights)
+        private static void CorrectWeights(double[,] weights)
         {
             for (int x = 0; x < 256; x++)
             {
@@ -92,14 +91,18 @@ namespace SpikingDSE
                 }
             }
         }
+    }
+
+    public class ODINSingleCore : Experiment
+    {
+        private TraceReporter reporter;
 
         public override void Setup()
         {
-            report = new StreamWriter("res/exp1/result.trace");
-            var input = sim.AddProcess(new EventTraceIn("res/exp1/validation.trace", report, startTime: 4521));
-            var output = sim.AddProcess(new SpikeSink(report));
-            var weights = ReadFromCSV("res/exp1/weights_256.csv");
-            CorrectWeights(weights);
+            reporter = new TraceReporter("res/exp1/result.trace");
+            var input = sim.AddProcess(new SpikeSourceTrace("res/exp1/validation.trace", startTime: 4521, reporter: reporter));
+            var output = sim.AddProcess(new SpikeSink(reporter: reporter));
+            var weights = WeigthsUtil.ReadFromCSV("res/exp1/weights_256.csv");
             var core1 = sim.AddProcess(new ODINCore(1, 256, bufferCap: 1, threshold: 30.0, weights: weights, synComputeTime: 2, outputTime: 8, inputTime: 7));
 
             sim.AddChannel(ref core1.spikesIn, ref input.spikesOut);
@@ -108,8 +111,7 @@ namespace SpikingDSE
 
         public override void Cleanup()
         {
-            report.Flush();
-            report.Close();
+            reporter.Cleanup();
         }
     }
 
@@ -247,7 +249,68 @@ namespace SpikingDSE
 
         public override void Cleanup()
         {
-            
+
+        }
+    }
+
+    public class TraceReporter : SpikeSourceTraceReporter, SpikeSinkReporter
+    {
+        private StreamWriter sw;
+
+        public TraceReporter(string reportPath)
+        {
+            this.sw = new StreamWriter(reportPath);
+        }
+
+        public void SpikeReceived(SpikeSink sink, int neuron, long time)
+        {
+            sw.WriteLine($"1,{neuron},{time}");
+        }
+
+        public void SpikeSent(SpikeSourceTrace source, int neuron, long time)
+        {
+            sw.WriteLine($"0,{neuron},{time}");
+        }
+
+        public void Cleanup()
+        {
+            sw.Flush();
+            sw.Close();
+        }
+    }
+
+    public class MultiODIN : Experiment
+    {
+        private TraceReporter reporter;
+
+        private (float[,] a, float[,] b) SeperateWeights(float[,] weights)
+        {
+            float[,] a = new float[weights.GetLength(0), weights.GetLength(1)];
+            float[,] b = new float[weights.GetLength(0), weights.GetLength(1)];
+
+            // TODO: Copy over the right weights
+
+            return (a, b);
+        }
+
+        public override void Setup()
+        {
+            reporter = new TraceReporter("");
+            var input = sim.AddProcess(new SpikeSourceTrace("res/exp1/validation.trace", startTime: 4521, reporter: reporter));
+            var output = sim.AddProcess(new SpikeSink(reporter: reporter));
+            var weights = WeigthsUtil.ReadFromCSV("res/exp1/weights_256.csv");
+            var core1 = sim.AddProcess(new ODINCore(0, 256, name: "ODIN1", bufferCap: 1, threshold: 30.0, weights: weights, synComputeTime: 2, outputTime: 8, inputTime: 7));
+            var core2 = sim.AddProcess(new ODINCore(1, 256, name: "ODIN2", bufferCap: 1, threshold: 30.0, weights: weights, synComputeTime: 2, outputTime: 8, inputTime: 7));
+
+            sim.AddChannel(ref core1.spikesIn, ref input.spikesOut);
+            sim.AddChannel(ref output.spikesIn, ref core1.spikesOut);
+
+            simStop.StopTime = 10;
+        }
+
+        public override void Cleanup()
+        {
+            reporter.Cleanup();
         }
     }
 }
