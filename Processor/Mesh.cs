@@ -1,9 +1,12 @@
+using System;
 using System.Collections.Generic;
 
 namespace SpikingDSE
 {
     public class MeshFlit
     {
+        public int SrcX;
+        public int SrcY;
         public int DestX;
         public int DestY;
         public object Message;
@@ -60,11 +63,6 @@ namespace SpikingDSE
                     // East
                     outPort = outEast;
                 }
-                else if (DX < 0)
-                {
-                    // West
-                    outPort = outWest;
-                }
                 else if (DY > 0)
                 {
                     // North
@@ -82,10 +80,6 @@ namespace SpikingDSE
                 }
 
                 // 4. Send to right port
-                if (!outPort.IsBound)
-                {
-                    throw new System.Exception("Outport was not configured");
-                }
                 yield return env.Send(outPort, flit);
             }
         }

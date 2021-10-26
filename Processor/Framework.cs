@@ -223,7 +223,7 @@ namespace SpikingDSE
                             {
                                 ready.Enqueue(new SimThread
                                 {
-                                    Runnable = process.GetEnumerator(),
+                                    Runnable = process,
                                     Time = currentThread.Time
                                 });
                             }
@@ -364,7 +364,7 @@ namespace SpikingDSE
     public class ParCmd : Command
     {
         // To simulator
-        public IEnumerable<Command>[] Processes;
+        public IEnumerator<Command>[] Processes;
     }
 
     public class Environment
@@ -399,7 +399,7 @@ namespace SpikingDSE
             return new SelectCmd { Ports = ports, Time = Now };
         }
 
-        public ParCmd Parallel(params IEnumerable<Command>[] processes)
+        public ParCmd Parallel(params IEnumerator<Command>[] processes)
         {
             return new ParCmd { Processes = processes };
         }

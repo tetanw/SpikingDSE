@@ -302,7 +302,9 @@ namespace SpikingDSE
             else if (destNeuron < 768)
             {
                 return (-1, 0);
-            } else {
+            }
+            else
+            {
                 throw new Exception($"Can not map neuron {destNeuron}");
             }
         }
@@ -345,13 +347,20 @@ namespace SpikingDSE
             };
         }
 
-        private Func<int, object> CreateSpikeToPacket(NeuronLocator<(int x, int y)> locator, int baseID)
+        private Func<int, object> CreateSpikeToPacket(NeuronLocator<(int x, int y)> locator, int srcX, int srcY, int baseID)
         {
             return (neuron) =>
             {
                 var newNeuron = baseID + neuron;
                 var (destX, destY) = locator.Locate(newNeuron);
-                return new MeshFlit { DestX = destX, DestY = destY, Message = newNeuron };
+                return new MeshFlit
+                {
+                    SrcX = srcX,
+                    SrcY = srcY,
+                    DestX = destX,
+                    DestY = destY,
+                    Message = newNeuron
+                };
             };
         }
 
@@ -364,7 +373,7 @@ namespace SpikingDSE
                 synComputeTime: 2,
                 outputTime: 8,
                 inputTime: 7,
-                transformOut: CreateSpikeToPacket(locator, baseID),
+                transformOut: CreateSpikeToPacket(locator, x, y, baseID),
                 transformIn: CreatePacketToSpike()
             );
         }
@@ -383,7 +392,7 @@ namespace SpikingDSE
 
             // Create mesh
             var routers = MeshUtils.CreateMesh(sim, 2, 1, (x, y) => new XYRouter(x, y, 1, name: $"router({x},{y})"));
-            var source = sim.AddProcess(new SpikeSourceTrace("res/exp1/validation2.trace", startTime: 4521, reporter: reporter, transformOut: CreateSpikeToPacket(locator, 0)));
+            var source = sim.AddProcess(new SpikeSourceTrace("res/exp1/validation2.trace", startTime: 4521, reporter: reporter, transformOut: CreateSpikeToPacket(locator, -1, 0, 0)));
             var sink = sim.AddProcess(new SpikeSink(reporter: reporter, inTransformer: CreatePacketToSpike()));
             sim.AddChannel(ref source.spikesOut, ref routers[0, 0].inWest);
             sim.AddChannel(ref sink.spikesIn, ref routers[0, 0].outWest);
