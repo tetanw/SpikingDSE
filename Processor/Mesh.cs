@@ -7,6 +7,11 @@ namespace SpikingDSE
         public int DestX;
         public int DestY;
         public object Message;
+
+        public override string ToString()
+        {
+            return $"MeshFlit {{ DestX: {DestX}, DestY: {DestY}, Message: {Message} }}";
+        }
     }
 
     public class XYRouter : Actor
@@ -35,6 +40,7 @@ namespace SpikingDSE
 
         public override IEnumerable<Command> Run()
         {
+            // TODO: Seperate receiving and sending threads else, DEADLOCK!
             while (true)
             {
                 // 1. Monitor the inputs for any packet
@@ -121,7 +127,7 @@ namespace SpikingDSE
                     }
 
                     // wire up east side if possible
-                    if (x < 1)
+                    if (x < width - 1)
                     {
                         sim.AddChannel(ref routers[x, y].outEast, ref routers[x + 1, y].inWest);
                     }
@@ -133,7 +139,7 @@ namespace SpikingDSE
                     }
 
                     // wire up north side if possible
-                    if (y < 1)
+                    if (y < height - 1)
                     {
                         sim.AddChannel(ref routers[x, y].outNorth, ref routers[x, y + 1].inSouth);
                     }

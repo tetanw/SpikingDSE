@@ -67,10 +67,12 @@ namespace SpikingDSE
         public InPort spikesIn;
 
         private SpikeSinkReporter reporter;
+        private Func<object, int> inTransformer;
 
-        public SpikeSink(SpikeSinkReporter reporter = null)
+        public SpikeSink(SpikeSinkReporter reporter = null, Func<object, int> inTransformer = null)
         {
             this.reporter = reporter;
+            this.inTransformer = inTransformer;
         }
 
         public override IEnumerable<Command> Run()
@@ -79,7 +81,7 @@ namespace SpikingDSE
             {
                 var rcv = env.Receive(spikesIn);
                 yield return rcv;
-                int neuron = (int)rcv.Message;
+                int neuron = inTransformer == null ? (int)rcv.Message : inTransformer(rcv.Message);
                 reporter?.SpikeReceived(this, neuron, env.Now);
             }
         }
@@ -171,7 +173,7 @@ namespace SpikingDSE
         {
             var rcv = env.Receive(spikesIn, waitBefore: inputTime);
             yield return rcv;
-            var spike = (int)rcv.Message;
+            var spike = transformIn == null ? (int)rcv.Message : transformIn(rcv.Message);
             src = spike;
         }
     }

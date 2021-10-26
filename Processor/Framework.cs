@@ -91,33 +91,33 @@ namespace SpikingDSE
                 foreach (var field in fields)
                 {
                     var value = field.GetValue(actor);
+                    string actorName = string.IsNullOrEmpty(actor.Name) ? actor.GetType().Name : actor.Name;
+                    Port port;
                     if (field.FieldType == typeof(InPort))
                     {
-                        InPort inPort;
                         if (value == null)
                         {
-                            inPort = new InPort() { IsBound = false };
-                            field.SetValue(actor, inPort);
+                            port = new InPort() { IsBound = false };
+                            field.SetValue(actor, port);
                         }
                         else
                         {
-                            inPort = (InPort)value;
+                            port = (InPort)value;
                         }
-                        inPort.Name = $"{actor.Name}.{field.Name}";
+                        port.Name = $"{actorName}.{field.Name}";
                     }
                     else if (field.FieldType == typeof(OutPort))
                     {
-                        OutPort outPort;
                         if (value == null)
                         {
-                            outPort = new OutPort() { IsBound = false };
-                            field.SetValue(actor, outPort);
+                            port = new OutPort() { IsBound = false };
+                            field.SetValue(actor, port);
                         }
                         else
                         {
-                            outPort = (OutPort)value;
+                            port = (OutPort)value;
                         }
-                        outPort.Name = $"{actor.Name}.{field.Name}";
+                        port.Name = $"{actorName}.{field.Name}";
                     }
                 }
             }
@@ -285,6 +285,24 @@ namespace SpikingDSE
             channel.ReceiveThread.Time = newTime;
             ready.Enqueue(channel.SendThread);
             ready.Enqueue(channel.ReceiveThread);
+        }
+
+        public void PrintDeadlockReport()
+        {
+            Console.WriteLine("Waiting messages:");
+            foreach (var channel in channels)
+            {
+                if (channel.SendCmd == null && channel.ReceiveCmd == null)
+                {
+                    continue;
+                }
+
+                if (channel.SendCmd != null)
+                {
+                    Console.WriteLine($"  Waiting to send \"{channel.SendCmd.Message}\" on \"{channel.Name}\" at time {channel.SendCmd.Time}");
+
+                }
+            }
         }
     }
 
