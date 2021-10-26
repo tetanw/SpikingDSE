@@ -111,7 +111,7 @@ namespace SpikingDSE
             var input = sim.AddProcess(new SpikeSourceTrace("res/exp1/validation.trace", startTime: 4521, reporter: reporter));
             var output = sim.AddProcess(new SpikeSink(reporter: reporter));
             var weights = WeigthsUtil.ReadFromCSV("res/exp1/weights_256.csv");
-            var core1 = sim.AddProcess(new ODINCore(256, bufferCap: 1, threshold: 30.0, weights: weights, synComputeTime: 2, outputTime: 8, inputTime: 7));
+            var core1 = sim.AddProcess(new ODINCore(256, threshold: 30.0, weights: weights, synComputeTime: 2, outputTime: 8, inputTime: 7));
 
             sim.AddChannel(ref core1.spikesIn, ref input.spikesOut);
             sim.AddChannel(ref output.spikesIn, ref core1.spikesOut);
@@ -311,7 +311,6 @@ namespace SpikingDSE
         {
             return new ODINCore(256, 
                 name: name,
-                bufferCap: 1,
                 threshold: 30.0,
                 weights: weights,
                 synComputeTime: 2,

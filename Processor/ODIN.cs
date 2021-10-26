@@ -90,8 +90,7 @@ namespace SpikingDSE
         public InPort spikesIn;
         public OutPort spikesOut;
 
-        private Queue<int> buffer = new Queue<int>();
-        private int bufferCap;
+        private int src = -1;
         private int nrNeurons;
         private double threshold;
         private double[,] weights;
@@ -102,9 +101,8 @@ namespace SpikingDSE
         private Func<int, object> transformOut;
         private Func<object, int> transformIn;
 
-        public ODINCore(int nrNeurons, string name = "", double[,] weights = null, int bufferCap = 1, double threshold = 0.1, int synComputeTime = 0, int outputTime = 0, int inputTime = 0, Func<int, object> transformOut = null, Func<object, int> transformIn = null)
+        public ODINCore(int nrNeurons, string name = "", double[,] weights = null, double threshold = 0.1, int synComputeTime = 0, int outputTime = 0, int inputTime = 0, Func<int, object> transformOut = null, Func<object, int> transformIn = null)
         {
-            this.bufferCap = bufferCap;
             this.Name = name;
             if (weights == null)
             {
@@ -128,42 +126,18 @@ namespace SpikingDSE
         {
             while (true)
             {
-                if (buffer.Count == bufferCap)
+                #region Receive()
+                foreach (var cmd in Receive())
                 {
-                    #region Compute()
-                    foreach (var item in Compute())
-                    {
-                        yield return item;
-                    }
-                    #endregion
+                    yield return cmd;
                 }
-                else if (buffer.Count != bufferCap && SpikeReady())
+                #endregion
+                #region Compute()
+                foreach (var cmd in Compute())
                 {
-                    #region Receive()
-                    foreach (var item in Receive())
-                    {
-                        yield return item;
-                    }
-                    #endregion
+                    yield return cmd;
                 }
-                else if (buffer.Count > 0)
-                {
-                    #region Compute()
-                    foreach (var item in Compute())
-                    {
-                        yield return item;
-                    }
-                    #endregion
-                }
-                else
-                {
-                    #region Receive()
-                    foreach (var item in Receive())
-                    {
-                        yield return item;
-                    }
-                    #endregion
-                }
+                #endregion
             }
         }
 
@@ -175,7 +149,6 @@ namespace SpikingDSE
 
         private IEnumerable<Command> Compute()
         {
-            int src = buffer.Dequeue();
             long startNow = env.Now;
             long now = startNow;
             for (int dst = 0; dst < nrNeurons; dst++)
@@ -190,6 +163,7 @@ namespace SpikingDSE
                     now += outputTime;
                 }
             }
+            src = -1;
             yield return env.SleepUntil(now);
         }
 
@@ -197,8 +171,8 @@ namespace SpikingDSE
         {
             var rcv = env.Receive(spikesIn, waitBefore: inputTime);
             yield return rcv;
-            var spike = transformIn == null ? (int)rcv.Message : transformIn(rcv.Message);
-            buffer.Enqueue(spike);
+            var spike = (int)rcv.Message;
+            src = spike;
         }
     }
 }
