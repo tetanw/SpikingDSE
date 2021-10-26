@@ -279,6 +279,41 @@ namespace SpikingDSE
         }
     }
 
+    public class ResTest : Experiment
+    {
+        class Reporter : ProducerReport, ConsumerReporter
+        {
+            public void Consumed(Consumer consumer, long time, object message)
+            {
+                Console.WriteLine($"[{time}] consumer received {message}");
+            }
+
+            public void Produced(Producer producer, long time, object message)
+            {
+                Console.WriteLine($"[{time}] producer sent {message}");
+            }
+        }
+
+        public override void Setup()
+        {
+            var reporter = new Reporter();
+            var producer = sim.AddProcess(new Producer(1, "Hi", name: "producer", reporter: reporter));
+            var fifo = sim.AddProcess(new FIFO(1));
+            var consumer = sim.AddProcess(new Consumer(interval: 3, name: "consumer", reporter: reporter));
+
+            sim.AddChannel(ref producer.Out, ref fifo.input);
+            sim.AddChannel(ref fifo.output, ref consumer.In);
+
+            simStop.StopTime = 20;
+        }
+
+        public override void Cleanup()
+        {
+
+        }
+
+    }
+
     public class MultiODIN : Experiment
     {
         private TraceReporter reporter;

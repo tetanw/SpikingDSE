@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -45,10 +46,12 @@ namespace SpikingDSE
         public InPort In;
 
         private ConsumerReporter reporter;
+        private int interval;
 
-        public Consumer(string name = "", ConsumerReporter reporter = null)
+        public Consumer(string name = "", int interval = 0, ConsumerReporter reporter = null)
         {
             this.reporter = reporter;
+            this.interval = interval;
             this.Name = name;
         }
 
@@ -57,7 +60,7 @@ namespace SpikingDSE
             ReceiveCmd rcv;
             while (true)
             {
-                rcv = env.Receive(In);
+                rcv = env.Receive(In, waitBefore: interval);
                 yield return rcv;
                 reporter?.Consumed(this, env.Now, rcv.Message);
             }
@@ -136,6 +139,60 @@ namespace SpikingDSE
                     yield return env.Send(output, bundle.ToArray());
                     bundle.Clear();
                 }
+            }
+        }
+    }
+
+    public class FIFO : Actor
+    {
+        public InPort input;
+        public OutPort output;
+
+        private int depth;
+        private Queue<object> items = new Queue<object>();
+        private Resource bufferFree;
+        private Resource bufferFilled;
+
+        public FIFO(int depth)
+        {
+            this.depth = depth;
+        }
+
+        public override IEnumerable<Command> Run()
+        {
+            var bufferFreeCreate = env.CreateResource(depth);
+            yield return bufferFreeCreate;
+            bufferFree = bufferFreeCreate.Resource;
+
+            var bufferFilledCreate = env.CreateResource(0);
+            yield return bufferFilledCreate;
+            bufferFilled = bufferFilledCreate.Resource;
+
+            yield return env.Parallel(
+                Send(),
+                Receive()
+            );
+        }
+
+        public IEnumerable<Command> Send()
+        {
+            while (true)
+            {
+                yield return env.Decrease(bufferFilled, 1);
+                yield return env.Send(output, items.Dequeue());
+                yield return env.Increase(bufferFree, 1);
+            }
+        }
+
+        public IEnumerable<Command> Receive()
+        {
+            while (true)
+            {
+                yield return env.Decrease(bufferFree, 1);
+                var rcv = env.Receive(input);
+                yield return rcv;
+                items.Enqueue(rcv.Message);
+                yield return env.Increase(bufferFilled, 1);
             }
         }
     }

@@ -72,6 +72,10 @@ namespace SpikingDSE
                     {
                         new ReportingTest().Run();
                     }
+                    else if (opts.Name.Equals("RESTEST"))
+                    {
+                        new ResTest().Run();
+                    }
                     else
                     {
                         throw new Exception($"Unknown simulation: {opts.Name}");

@@ -6,7 +6,7 @@ namespace SpikingDSE
 {
     // Copied from: https://gist.github.com/paralleltree/31045ab26f69b956052c
     [DebuggerStepThrough]
-    public class PriorityQueue<T> where T : IComparable<T>
+    public sealed class PriorityQueue<T> where T : IComparable<T>
     {
         private List<T> list;
         public int Count { get { return list.Count; } }

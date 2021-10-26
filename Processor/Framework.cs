@@ -33,10 +33,23 @@ namespace SpikingDSE
         }
     }
 
+    public class Resource
+    {
+        public int Handle;
+        public int Amount;
+    }
+
+    class ResourceBlockage
+    {
+        public List<(ResDecreaseCmd, SimThread)> Waiting = new List<(ResDecreaseCmd, SimThread)>();
+        public Resource Resource;
+    }
+
     public class Simulator
     {
         private PriorityQueue<SimThread> ready = new PriorityQueue<SimThread>();
         private List<Channel> channels = new List<Channel>();
+        private List<ResourceBlockage> resourceBlockages = new List<ResourceBlockage>();
         private List<Actor> actors = new List<Actor>();
         private Environment env;
 
@@ -74,6 +87,21 @@ namespace SpikingDSE
         public void AddChannel(ref OutPort outPort, ref InPort inPort)
         {
             AddChannel(ref inPort, ref outPort);
+        }
+
+        public Resource AddResource(int amount)
+        {
+            int newID = resourceBlockages.Count;
+            var resource = new Resource
+            {
+                Handle = newID,
+                Amount = amount
+            };
+            resourceBlockages.Add(new ResourceBlockage()
+            {
+                Resource = resource
+            });
+            return resource;
         }
 
         public void Init()
@@ -139,8 +167,8 @@ namespace SpikingDSE
                 if (currentThread.Time > stopTime)
                     break;
 
-                currentTime = env.Now;
-                env.Now = currentThread.Time;
+                currentTime = currentThread.Time;
+                env.Now = currentTime;
                 var runnable = currentThread.Runnable;
                 bool stillRunning = runnable.MoveNext();
                 if (!stillRunning)
@@ -224,12 +252,51 @@ namespace SpikingDSE
                             }
                             break;
                         }
+                    case ResIncreaseCmd resIncrease:
+                        {
+                            var blockage = resourceBlockages[resIncrease.Resource.Handle];
+                            blockage.Resource.Amount += resIncrease.Amount;
+                            CheckBlockage(blockage, currentTime);
+                            currentThread.Time = currentTime;
+                            ready.Enqueue(currentThread);
+                            break;
+                        }
+                    case ResDecreaseCmd resDecrease:
+                        {
+                            var blockage = resourceBlockages[resDecrease.Resource.Handle];
+                            blockage.Waiting.Add((resDecrease, currentThread));
+                            CheckBlockage(blockage, currentTime);
+                            break;
+                        }
+                    case ResCreateCmd resCreate:
+                        {
+                            var resource = AddResource(resCreate.Initial);
+                            resCreate.Resource = resource;
+                            ready.Enqueue(currentThread);
+                            break;
+                        }
                     default:
                         throw new Exception("Unknown command: " + cmd);
                 }
             }
 
             return (currentTime, nrCommands);
+        }
+
+        private void CheckBlockage(ResourceBlockage blockage, long currentTime)
+        {
+            // Schedule any of the waiting cmds if enough resources are available
+            for (int i = blockage.Waiting.Count - 1; i >= 0; i--)
+            {
+                var (decreaseCmd, waitingThread) = blockage.Waiting[i];
+                if (decreaseCmd.Amount <= blockage.Resource.Amount)
+                {
+                    blockage.Resource.Amount -= decreaseCmd.Amount;
+                    waitingThread.Time = currentTime;
+                    ready.Enqueue(waitingThread);
+                    blockage.Waiting.RemoveAt(i);
+                }
+            }
         }
 
         private void DoChannelTransfer(Channel channel)
@@ -263,7 +330,6 @@ namespace SpikingDSE
             {
                 throw new Exception("Unknown receive command");
             }
-
         }
 
         private void CleanChannel(Channel channel)
@@ -344,6 +410,29 @@ namespace SpikingDSE
         public IEnumerable<Command>[] Processes;
     }
 
+    public class ResIncreaseCmd : Command
+    {
+        // To scheduler
+        public Resource Resource;
+        public int Amount;
+    }
+
+    public class ResDecreaseCmd : Command
+    {
+        // To scheduler
+        public Resource Resource;
+        public int Amount;
+    }
+
+    public class ResCreateCmd : Command
+    {
+        // To scheduler
+        public int Initial;
+
+        // Result
+        public Resource Resource;
+    }
+
     public class Environment
     {
         public SleepCmd Delay(long time)
@@ -379,6 +468,21 @@ namespace SpikingDSE
         public ParCmd Parallel(params IEnumerable<Command>[] processes)
         {
             return new ParCmd { Processes = processes };
+        }
+
+        public ResIncreaseCmd Increase(Resource resource, int amount)
+        {
+            return new ResIncreaseCmd { Resource = resource, Amount = amount };
+        }
+
+        public ResDecreaseCmd Decrease(Resource resource, int amount)
+        {
+            return new ResDecreaseCmd { Resource = resource, Amount = amount };
+        }
+
+        public ResCreateCmd CreateResource(int intial)
+        {
+            return new ResCreateCmd { Initial = intial };
         }
 
         public long Now { get; set; }
