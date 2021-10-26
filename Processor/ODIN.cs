@@ -88,7 +88,6 @@ namespace SpikingDSE
         public OutPort spikesOut;
 
         private int src = -1;
-        private int bufferCap;
         private int coreID;
         private int nrNeurons;
         private double threshold;
