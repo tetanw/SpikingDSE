@@ -241,7 +241,6 @@ namespace SpikingDSE
                         }
                     case ParCmd parallel:
                         {
-                            // FIXME: Am I going to do it like this?
                             foreach (var process in parallel.Processes)
                             {
                                 ready.Enqueue(new SimThread
