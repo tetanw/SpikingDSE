@@ -161,7 +161,8 @@ namespace SpikingDSE
             long nrCommands = 0;
             long currentTime = 0;
             bool idled = false;
-            while (nrCommands < stopCmds)
+            bool exiting = false;
+            while (nrCommands < stopCmds && !exiting)
             {
                 if (ready.Count == 0)
                 {
@@ -277,6 +278,11 @@ namespace SpikingDSE
                             var resource = AddResource(resCreate.Initial);
                             resCreate.Resource = resource;
                             ready.Enqueue(currentThread);
+                            break;
+                        }
+                    case ExitCmd exit:
+                        {
+                            exiting = true;
                             break;
                         }
                     default:
@@ -455,6 +461,11 @@ namespace SpikingDSE
         public Resource Resource;
     }
 
+    public class ExitCmd : Command
+    {
+
+    }
+
     public class Environment
     {
         public SleepCmd Delay(long time)
@@ -505,6 +516,11 @@ namespace SpikingDSE
         public ResCreateCmd CreateResource(int intial)
         {
             return new ResCreateCmd { Initial = intial };
+        }
+
+        public ExitCmd Exit()
+        {
+            return new ExitCmd { };
         }
 
         public long Now { get; set; }
