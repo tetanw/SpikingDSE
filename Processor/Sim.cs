@@ -188,8 +188,8 @@ namespace SpikingDSE
             var consumer = sim.AddProcess(new Consumer(name: "consumer", reporter: reporter));
             var routers = MeshUtils.CreateMesh(sim, 2, 2, (x, y) => new XYRouter(x, y, 1, name: $"router({x},{y})"));
 
-            sim.AddChannel(ref routers[0, 0].fromCore, ref producer.Out);
-            sim.AddChannel(ref routers[1, 1].toCore, ref consumer.In);
+            sim.AddChannel(ref routers[0, 0].inLocal, ref producer.Out);
+            sim.AddChannel(ref routers[1, 1].outLocal, ref consumer.In);
 
             simStop.StopTime = 10;
         }
@@ -345,9 +345,30 @@ namespace SpikingDSE
 
     }
 
-    public class MultiODIN : Experiment
+    public class MultiODINTest : Experiment
     {
-        private TraceReporter reporter;
+        class Reporter : ODINReporter, SpikeSinkReporter, SpikeSourceTraceReporter
+        {
+            public void ProducedSpike(ODINCore core, long time, int neuron)
+            {
+                Console.WriteLine($"[{time}] Core produced output spike {neuron}");
+            }
+
+            public void ReceivedSpike(ODINCore core, long time, int neuron)
+            {
+                Console.WriteLine($"[{time}] Core received output spike {neuron}");
+            }
+
+            public void SpikeReceived(SpikeSink sink, int neuron, long time)
+            {
+                Console.WriteLine($"[{time}] Sink received neuron {neuron}");
+            }
+
+            public void SpikeSent(SpikeSourceTrace source, int neuron, long time)
+            {
+                Console.WriteLine($"[{time}] Source sent neuron {neuron}");
+            }
+        }
 
         private (double[,] a, double[,] b) SeperateWeights(double[,] weights)
         {
@@ -399,7 +420,7 @@ namespace SpikingDSE
             };
         }
 
-        private ODINCore createCore(MeshLocator locator, string name, double[,] weights, int baseID, int x, int y)
+        private ODINCore createCore(MeshLocator locator, string name, double[,] weights, int baseID, int x, int y, Reporter reporter)
         {
             return new ODINCore(256,
                 name: name,
@@ -409,13 +430,14 @@ namespace SpikingDSE
                 outputTime: 8,
                 inputTime: 7,
                 transformOut: CreateSpikeToPacket(locator, x, y, baseID),
-                transformIn: CreatePacketToSpike()
+                transformIn: CreatePacketToSpike(),
+                reporter: reporter
             );
         }
 
         public override void Setup()
         {
-            reporter = new TraceReporter("res/exp1/result2.trace");
+            var reporter = new Reporter();
             // TODO: Let mesh locator do something useful
             var locator = new MeshLocator();
 
@@ -426,24 +448,21 @@ namespace SpikingDSE
             WeigthsUtil.ToCSV("res/weights2.csv", weights2);
 
             // Create mesh
-            var routers = MeshUtils.CreateMesh(sim, 2, 1, (x, y) => new XYRouter(x, y, 1, name: $"router({x},{y})"));
+            var routers = MeshUtils.CreateMesh(sim, 1, 1, (x, y) => new XYRouter(x, y, 1, name: $"router({x},{y})"));
             var source = sim.AddProcess(new SpikeSourceTrace("res/exp1/validation2.trace", startTime: 4521, reporter: reporter, transformOut: CreateSpikeToPacket(locator, -1, 0, 0)));
             var sink = sim.AddProcess(new SpikeSink(reporter: reporter, inTransformer: CreatePacketToSpike()));
             sim.AddChannel(ref source.spikesOut, ref routers[0, 0].inWest);
             sim.AddChannel(ref sink.spikesIn, ref routers[0, 0].outWest);
 
-            var core1 = sim.AddProcess(createCore(locator, "Odin1", weights, 256, 0, 0));
-            sim.AddChannel(ref core1.spikesOut, ref routers[0, 0].fromCore);
-            sim.AddChannel(ref routers[0, 0].toCore, ref core1.spikesIn);
+            var core1 = sim.AddProcess(createCore(locator, "Odin1", weights, 256, 0, 0, reporter));
+            sim.AddChannel(ref core1.spikesOut, ref routers[0, 0].inLocal);
+            sim.AddChannel(ref routers[0, 0].outLocal, ref core1.spikesIn);
 
-            var core2 = sim.AddProcess(createCore(locator, "Odin2", weights, 512, 1, 0));
-            sim.AddChannel(ref core2.spikesOut, ref routers[1, 0].fromCore);
-            sim.AddChannel(ref routers[1, 0].toCore, ref core2.spikesIn);
         }
 
         public override void Cleanup()
         {
-            reporter.Cleanup();
+            
         }
     }
 }

@@ -87,6 +87,12 @@ namespace SpikingDSE
         }
     }
 
+    public interface ODINReporter
+    {
+        public void ReceivedSpike(ODINCore core, long time, int neuron);
+        public void ProducedSpike(ODINCore core, long time, int neuron);
+    }
+
     public class ODINCore : Actor
     {
         public InPort spikesIn;
@@ -102,8 +108,9 @@ namespace SpikingDSE
         private int outputTime;
         private Func<int, object> transformOut;
         private Func<object, int> transformIn;
+        private ODINReporter reporter;
 
-        public ODINCore(int nrNeurons, string name = "", double[,] weights = null, double threshold = 0.1, int synComputeTime = 0, int outputTime = 0, int inputTime = 0, Func<int, object> transformOut = null, Func<object, int> transformIn = null)
+        public ODINCore(int nrNeurons, string name = "", double[,] weights = null, double threshold = 0.1, int synComputeTime = 0, int outputTime = 0, int inputTime = 0, Func<int, object> transformOut = null, Func<object, int> transformIn = null, ODINReporter reporter = null)
         {
             this.Name = name;
             if (weights == null)
@@ -122,6 +129,7 @@ namespace SpikingDSE
             this.inputTime = inputTime;
             this.transformOut = transformOut;
             this.transformIn = transformIn;
+            this.reporter = reporter;
         }
 
         public override IEnumerable<Command> Run()
@@ -154,6 +162,7 @@ namespace SpikingDSE
                 if (pots[dst] >= threshold)
                 {
                     pots[dst] = 0.0;
+                    reporter?.ProducedSpike(this, env.Now, dst);
                     var message = transformOut == null ? dst : transformOut(dst);
                     yield return env.SendAt(spikesOut, message, now);
                     now += outputTime;
@@ -169,6 +178,7 @@ namespace SpikingDSE
             yield return rcv;
             var spike = transformIn == null ? (int)rcv.Message : transformIn(rcv.Message);
             src = spike;
+            reporter?.ReceivedSpike(this, env.Now, spike);
         }
     }
 }

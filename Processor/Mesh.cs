@@ -23,12 +23,15 @@ namespace SpikingDSE
         public InPort inSouth;
         public InPort inEast;
         public InPort inWest;
-        public InPort fromCore;
+        public InPort inLocal;
+
         public OutPort outNorth;
         public OutPort outSouth;
         public OutPort outEast;
         public OutPort outWest;
-        public OutPort toCore;
+        public OutPort outLocal;
+
+        private Queue<MeshFlit> flits = new Queue<MeshFlit>();
 
         public long processingDelay;
         private int x, y;
@@ -47,7 +50,7 @@ namespace SpikingDSE
             while (true)
             {
                 // 1. Monitor the inputs for any packet
-                var select = env.Select(inNorth, inEast, inSouth, inWest, fromCore);
+                var select = env.Select(inNorth, inEast, inSouth, inWest, inLocal);
                 yield return select;
                 MeshFlit flit = (MeshFlit)select.Message;
 
@@ -76,7 +79,7 @@ namespace SpikingDSE
                 else
                 {
                     // Chip
-                    outPort = toCore;
+                    outPort = outLocal;
                 }
 
                 // 4. Send to right port

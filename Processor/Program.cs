@@ -74,7 +74,7 @@ namespace SpikingDSE
                     }
                     else if (opts.Name.Equals("MULTIODIN"))
                     {
-                        new MultiODIN().Run();
+                        new MultiODINTest().Run();
                     }
                     else if (opts.Name.Equals("RESTEST"))
                     {
