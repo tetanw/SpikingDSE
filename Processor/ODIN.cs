@@ -143,12 +143,6 @@ namespace SpikingDSE
             }
         }
 
-        private bool SpikeReady()
-        {
-            // TODO: What needs to happen with this???
-            return false;
-        }
-
         private IEnumerable<Command> Compute()
         {
             long startNow = env.Now;
