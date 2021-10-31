@@ -80,6 +80,10 @@ namespace SpikingDSE
                     {
                         new ResTest().Run();
                     }
+                    else if (opts.Name.Equals("RESPERF"))
+                    {
+                        new ResPerf().Run();
+                    }
                     else
                     {
                         throw new Exception($"Unknown simulation: {opts.Name}");

@@ -25,7 +25,7 @@ namespace SpikingDSE
             this.reporter = reporter;
         }
 
-        public override IEnumerable<Command> Run()
+        public override IEnumerable<Event> Run()
         {
             while (true)
             {
@@ -56,9 +56,9 @@ namespace SpikingDSE
             this.Name = name;
         }
 
-        public override IEnumerable<Command> Run()
+        public override IEnumerable<Event> Run()
         {
-            ReceiveCmd rcv;
+            ReceiveEvent rcv;
             while (true)
             {
                 rcv = env.Receive(In, waitBefore: interval);
@@ -87,7 +87,7 @@ namespace SpikingDSE
             this.reporter = reporter;
         }
 
-        public override IEnumerable<Command> Run()
+        public override IEnumerable<Event> Run()
         {
             while (true)
             {
@@ -124,7 +124,7 @@ namespace SpikingDSE
             this.reporter = reporter;
         }
 
-        public override IEnumerable<Command> Run()
+        public override IEnumerable<Event> Run()
         {
             List<object> bundle = new List<object>();
 
@@ -144,56 +144,47 @@ namespace SpikingDSE
         }
     }
 
-    public class FIFO : Actor
+    public class Buffer : Actor
     {
         public InPort input;
         public OutPort output;
 
         private int depth;
-        private Queue<object> items = new Queue<object>();
-        private Resource bufferFree;
-        private Resource bufferFilled;
+        private FIFO<object> fifo;
 
-        public FIFO(int depth)
+        public Buffer(int depth)
         {
             this.depth = depth;
         }
 
-        public override IEnumerable<Command> Run()
+        public override IEnumerable<Event> Run()
         {
-            var bufferFreeCreate = env.CreateResource(depth);
-            yield return bufferFreeCreate;
-            bufferFree = bufferFreeCreate.Resource;
-
-            var bufferFilledCreate = env.CreateResource(0);
-            yield return bufferFilledCreate;
-            bufferFilled = bufferFilledCreate.Resource;
-
-            yield return env.Parallel(
-                Send(),
-                Receive()
-            );
+            fifo = new FIFO<object>(env, depth);
+            env.Process(Send());
+            env.Process(Receive());
+            yield break;
         }
 
-        public IEnumerable<Command> Send()
+        public IEnumerable<Event> Send()
         {
             while (true)
             {
-                yield return env.Decrease(bufferFilled, 1);
-                yield return env.Send(output, items.Dequeue());
-                yield return env.Increase(bufferFree, 1);
+                yield return fifo.RequestRead();
+                var message = fifo.Read();
+                yield return env.Send(output, message);
+                fifo.ReleaseRead();
             }
         }
 
-        public IEnumerable<Command> Receive()
+        public IEnumerable<Event> Receive()
         {
             while (true)
             {
-                yield return env.Decrease(bufferFree, 1);
+                yield return fifo.RequestWrite();
                 var rcv = env.Receive(input);
                 yield return rcv;
-                items.Enqueue(rcv.Message);
-                yield return env.Increase(bufferFilled, 1);
+                fifo.Write(rcv.Message);
+                fifo.ReleaseWrite();
             }
         }
     }

@@ -9,7 +9,7 @@ namespace SpikingDSE
     public class SimStopConditions
     {
         public long StopTime = long.MaxValue;
-        public long StopCommands = long.MaxValue;
+        public long StopEvents = long.MaxValue;
     }
 
     public abstract class Experiment
@@ -28,27 +28,21 @@ namespace SpikingDSE
             Setup();
 
             sim.Init();
+            Console.WriteLine("Simulation starting");
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
-            var (idled, time, nrCommands) = sim.RunUntil(simStop.StopTime, simStop.StopCommands);
+            var (time, nrEvents) = sim.RunUntil(simStop.StopTime, simStop.StopEvents);
             stopwatch.Stop();
 
             Cleanup();
 
-            if (idled)
-            {
-                Console.WriteLine("Simulation stopped because no more actors could progress");
-                sim.PrintDeadlockReport();
-            }
-            else
-            {
-                Console.WriteLine("Simulation stopped because one of the stopping conditions was reached");
-            }
+            Console.WriteLine("Simulation done");
+            sim.PrintDeadlockReport();
             Console.WriteLine($"Simulation was stopped at time: {time:n}");
             Console.WriteLine($"Running time was: {stopwatch.ElapsedMilliseconds} ms");
-            Console.WriteLine($"Commands handled: {nrCommands:n}");
-            Console.WriteLine($"Performance was about: {nrCommands / stopwatch.Elapsed.TotalSeconds:n} cmd/s");
-            Console.WriteLine($"Time per cmd: {Measurements.FormatSI(stopwatch.Elapsed.TotalSeconds / nrCommands, "s")}");
+            Console.WriteLine($"Events handled: {nrEvents:n}");
+            Console.WriteLine($"Performance was about: {nrEvents / stopwatch.Elapsed.TotalSeconds:n} event/s");
+            Console.WriteLine($"Time per event: {Measurements.FormatSI(stopwatch.Elapsed.TotalSeconds / nrEvents, "s")}");
         }
 
         public abstract void Setup();
@@ -57,16 +51,16 @@ namespace SpikingDSE
 
     public class WeigthsUtil
     {
-        public static double[,] ReadFromCSV(string path)
+        public static int[,] ReadFromCSV(string path)
         {
-            double[,] weights = null;
+            int[,] weights = null;
             int currentLine = 0;
             foreach (var line in File.ReadAllLines(path))
             {
-                double[] numbers = line.Split(",").Select(t => double.Parse(t)).ToArray();
+                int[] numbers = line.Split(",").Select(t => int.Parse(t)).ToArray();
                 if (weights == null)
                 {
-                    weights = new double[numbers.Length, numbers.Length];
+                    weights = new int[numbers.Length, numbers.Length];
                 }
 
                 for (int i = 0; i < numbers.Length; i++)
@@ -79,7 +73,7 @@ namespace SpikingDSE
             CorrectWeights(weights);
             return weights;
         }
-        private static void Swap(int c, int x, int y, double[,] array)
+        private static void Swap(int c, int x, int y, int[,] array)
         {
             // swap index x and y
             var buffer = array[c, x];
@@ -87,7 +81,7 @@ namespace SpikingDSE
             array[c, y] = buffer;
         }
 
-        private static void CorrectWeights(double[,] weights)
+        private static void CorrectWeights(int[,] weights)
         {
             for (int x = 0; x < 256; x++)
             {
@@ -101,7 +95,7 @@ namespace SpikingDSE
             }
         }
 
-        public static void ToCSV(string path, double[,] weights)
+        public static void ToCSV(string path, int[,] weights)
         {
             StreamWriter sw = new StreamWriter(path);
             int width = weights.GetLength(0);
@@ -133,7 +127,7 @@ namespace SpikingDSE
             var input = sim.AddProcess(new SpikeSourceTrace("res/exp1/validation.trace", startTime: 4521, reporter: reporter));
             var output = sim.AddProcess(new SpikeSink(reporter: reporter));
             var weights = WeigthsUtil.ReadFromCSV("res/exp1/weights_256.csv");
-            var core1 = sim.AddProcess(new ODINCore(256, threshold: 30.0, weights: weights, synComputeTime: 2, outputTime: 8, inputTime: 7));
+            var core1 = sim.AddProcess(new ODINCore(256, threshold: 30, weights: weights, synComputeTime: 2, outputTime: 8, inputTime: 7));
 
             sim.AddChannel(ref core1.spikesIn, ref input.spikesOut);
             sim.AddChannel(ref output.spikesIn, ref core1.spikesOut);
@@ -154,7 +148,7 @@ namespace SpikingDSE
 
             sim.AddChannel(ref consumer.In, ref producer.Out);
 
-            simStop.StopCommands = 10_000_000;
+            simStop.StopEvents = 10_000_000;
         }
 
         public override void Cleanup()
@@ -215,7 +209,7 @@ namespace SpikingDSE
             sim.AddChannel(ref fork.out3, ref join.in3);
             sim.AddChannel(ref join.output, ref consumer.In);
 
-            simStop.StopCommands = 100;
+            simStop.StopEvents = 100;
         }
 
         public override void Cleanup()
@@ -328,14 +322,35 @@ namespace SpikingDSE
         public override void Setup()
         {
             var reporter = new Reporter();
-            var producer = sim.AddProcess(new Producer(1, () => "Hi", name: "producer", reporter: reporter));
-            var fifo = sim.AddProcess(new FIFO(1));
+            var producer = sim.AddProcess(new Producer(0, () => "Hi", name: "producer", reporter: reporter));
+            var buffer = sim.AddProcess(new Buffer(5));
             var consumer = sim.AddProcess(new Consumer(interval: 3, name: "consumer", reporter: reporter));
+
+            sim.AddChannel(ref producer.Out, ref buffer.input);
+            sim.AddChannel(ref buffer.output, ref consumer.In);
+
+            simStop.StopTime = 100;
+        }
+
+        public override void Cleanup()
+        {
+            
+        }
+
+    }
+
+     public class ResPerf : Experiment
+    {
+        public override void Setup()
+        {
+            var producer = sim.AddProcess(new Producer(1, () => "Hi", name: "producer"));
+            var fifo = sim.AddProcess(new Buffer(1));
+            var consumer = sim.AddProcess(new Consumer(interval: 3, name: "consumer"));
 
             sim.AddChannel(ref producer.Out, ref fifo.input);
             sim.AddChannel(ref fifo.output, ref consumer.In);
 
-            simStop.StopTime = 20;
+            simStop.StopEvents = 10_000_000;
         }
 
         public override void Cleanup()
@@ -351,29 +366,29 @@ namespace SpikingDSE
         {
             public void ProducedSpike(ODINCore core, long time, int neuron)
             {
-                Console.WriteLine($"[{time}] Core produced output spike {neuron}");
+                // Console.WriteLine($"[{time}] Core produced output spike {neuron}");
             }
 
             public void ReceivedSpike(ODINCore core, long time, int neuron)
             {
-                Console.WriteLine($"[{time}] Core received output spike {neuron}");
+                // Console.WriteLine($"[{time}] Core received output spike {neuron}");
             }
 
             public void SpikeReceived(SpikeSink sink, int neuron, long time)
             {
-                Console.WriteLine($"[{time}] Sink received neuron {neuron}");
+                // Console.WriteLine($"[{time}] Sink received neuron {neuron}");
             }
 
             public void SpikeSent(SpikeSourceTrace source, int neuron, long time)
             {
-                Console.WriteLine($"[{time}] Source sent neuron {neuron}");
+                // Console.WriteLine($"[{time}] Source sent neuron {neuron}");
             }
         }
 
-        private (double[,] a, double[,] b) SeperateWeights(double[,] weights)
+        private (int[,] a, int[,] b) SeperateWeights(int[,] weights)
         {
-            double[,] a = new double[weights.GetLength(0), weights.GetLength(1)];
-            double[,] b = new double[weights.GetLength(0), weights.GetLength(1)];
+            int[,] a = new int[weights.GetLength(0), weights.GetLength(1)];
+            int[,] b = new int[weights.GetLength(0), weights.GetLength(1)];
 
             for (int y = 0; y < 128; y++)
             {
@@ -420,11 +435,11 @@ namespace SpikingDSE
             };
         }
 
-        private ODINCore createCore(MeshLocator locator, string name, double[,] weights, int baseID, int x, int y, Reporter reporter)
+        private ODINCore createCore(MeshLocator locator, string name, int[,] weights, int baseID, int x, int y, Reporter reporter)
         {
             return new ODINCore(256,
                 name: name,
-                threshold: 30.0,
+                threshold: 30,
                 weights: weights,
                 synComputeTime: 2,
                 outputTime: 8,
@@ -448,8 +463,8 @@ namespace SpikingDSE
             WeigthsUtil.ToCSV("res/weights2.csv", weights2);
 
             // Create mesh
-            var routers = MeshUtils.CreateMesh(sim, 1, 1, (x, y) => new XYRouter(x, y, 1, name: $"router({x},{y})"));
-            var source = sim.AddProcess(new SpikeSourceTrace("res/exp1/validation2.trace", startTime: 4521, reporter: reporter, transformOut: CreateSpikeToPacket(locator, -1, 0, 0)));
+            var routers = MeshUtils.CreateMesh(sim, 1, 1, (x, y) => new XYRouter2(x, y, 1, name: $"router({x},{y})"));
+            var source = sim.AddProcess(new SpikeSourceTrace("res/exp1/validation.trace", startTime: 4521, reporter: reporter, transformOut: CreateSpikeToPacket(locator, -1, 0, 0)));
             var sink = sim.AddProcess(new SpikeSink(reporter: reporter, inTransformer: CreatePacketToSpike()));
             sim.AddChannel(ref source.spikesOut, ref routers[0, 0].inWest);
             sim.AddChannel(ref sink.spikesIn, ref routers[0, 0].outWest);
@@ -457,7 +472,6 @@ namespace SpikingDSE
             var core1 = sim.AddProcess(createCore(locator, "Odin1", weights, 256, 0, 0, reporter));
             sim.AddChannel(ref core1.spikesOut, ref routers[0, 0].inLocal);
             sim.AddChannel(ref routers[0, 0].outLocal, ref core1.spikesIn);
-
         }
 
         public override void Cleanup()

@@ -45,7 +45,7 @@ namespace SpikingDSE
             sr.Close();
         }
 
-        public override IEnumerable<Command> Run()
+        public override IEnumerable<Event> Run()
         {
             yield return env.SleepUntil(startTime);
             foreach (var (neuron, time) in EventTraceReader.ReadInputs(path, 100_000_000, startTime))
@@ -75,7 +75,7 @@ namespace SpikingDSE
             this.inTransformer = inTransformer;
         }
 
-        public override IEnumerable<Command> Run()
+        public override IEnumerable<Event> Run()
         {
             while (true)
             {
@@ -100,9 +100,9 @@ namespace SpikingDSE
 
         private int src = -1;
         private int nrNeurons;
-        private double threshold;
-        private double[,] weights;
-        private double[] pots;
+        private int threshold;
+        private int[,] weights;
+        private int[] pots;
         private int synComputeTime;
         private int inputTime;
         private int outputTime;
@@ -110,18 +110,18 @@ namespace SpikingDSE
         private Func<object, int> transformIn;
         private ODINReporter reporter;
 
-        public ODINCore(int nrNeurons, string name = "", double[,] weights = null, double threshold = 0.1, int synComputeTime = 0, int outputTime = 0, int inputTime = 0, Func<int, object> transformOut = null, Func<object, int> transformIn = null, ODINReporter reporter = null)
+        public ODINCore(int nrNeurons, string name = "", int[,] weights = null, int threshold = 0, int synComputeTime = 0, int outputTime = 0, int inputTime = 0, Func<int, object> transformOut = null, Func<object, int> transformIn = null, ODINReporter reporter = null)
         {
             this.Name = name;
             if (weights == null)
             {
-                this.weights = new double[nrNeurons, nrNeurons];
+                this.weights = new int[nrNeurons, nrNeurons];
             }
             else
             {
                 this.weights = weights;
             }
-            this.pots = new double[nrNeurons];
+            this.pots = new int[nrNeurons];
             this.nrNeurons = nrNeurons;
             this.threshold = threshold;
             this.synComputeTime = synComputeTime;
@@ -132,26 +132,16 @@ namespace SpikingDSE
             this.reporter = reporter;
         }
 
-        public override IEnumerable<Command> Run()
+        public override IEnumerable<Event> Run()
         {
             while (true)
             {
-                #region Receive()
-                foreach (var cmd in Receive())
-                {
-                    yield return cmd;
-                }
-                #endregion
-                #region Compute()
-                foreach (var cmd in Compute())
-                {
-                    yield return cmd;
-                }
-                #endregion
+                yield return env.Process(Receive());
+                yield return env.Process(Compute());
             }
         }
 
-        private IEnumerable<Command> Compute()
+        private IEnumerable<Event> Compute()
         {
             long startNow = env.Now;
             long now = startNow;
@@ -161,7 +151,7 @@ namespace SpikingDSE
                 now += synComputeTime;
                 if (pots[dst] >= threshold)
                 {
-                    pots[dst] = 0.0;
+                    pots[dst] = 0;
                     reporter?.ProducedSpike(this, env.Now, dst);
                     var message = transformOut == null ? dst : transformOut(dst);
                     yield return env.SendAt(spikesOut, message, now);
@@ -172,7 +162,7 @@ namespace SpikingDSE
             yield return env.SleepUntil(now);
         }
 
-        private IEnumerable<Command> Receive()
+        private IEnumerable<Event> Receive()
         {
             var rcv = env.Receive(spikesIn, waitBefore: inputTime);
             yield return rcv;
