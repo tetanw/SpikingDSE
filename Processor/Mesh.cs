@@ -103,14 +103,11 @@ namespace SpikingDSE
 
     public class XYRouter2 : MeshRouter
     {
-        public long processingDelay;
-
-        public XYRouter2(int x, int y, long processingDelay, string name = "")
+        public XYRouter2(int x, int y, string name = "")
         {
             this.Name = name;
             this.x = x;
             this.y = y;
-            this.processingDelay = processingDelay;
         }
 
         public override IEnumerable<Event> Run()
