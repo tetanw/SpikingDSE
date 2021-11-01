@@ -123,10 +123,10 @@ namespace SpikingDSE
 
         public override void Setup()
         {
-            reporter = new TraceReporter("res/exp1/result.trace");
-            var input = sim.AddActor(new SpikeSourceTrace("res/exp1/validation.trace", startTime: 4521, reporter: reporter));
+            reporter = new TraceReporter("res/odin/result.trace");
+            var input = sim.AddActor(new SpikeSourceTrace("res/odin/validation.trace", startTime: 4521, reporter: reporter));
             var output = sim.AddActor(new SpikeSink(reporter: reporter));
-            var weights = WeigthsUtil.ReadFromCSV("res/exp1/weights_256.csv");
+            var weights = WeigthsUtil.ReadFromCSV("res/odin/weights_256.csv");
             var core1 = sim.AddActor(new ODINCore(256, threshold: 30, weights: weights, synComputeTime: 2, outputTime: 8, inputTime: 7));
 
             sim.AddChannel(ref core1.spikesIn, ref input.spikesOut);
@@ -362,29 +362,6 @@ namespace SpikingDSE
 
     public class MultiODINTest : Experiment
     {
-        class Reporter : ODINReporter, SpikeSinkReporter, SpikeSourceTraceReporter
-        {
-            public void ProducedSpike(ODINCore core, long time, int neuron)
-            {
-                // Console.WriteLine($"[{time}] Core produced output spike {neuron}");
-            }
-
-            public void ReceivedSpike(ODINCore core, long time, int neuron)
-            {
-                // Console.WriteLine($"[{time}] Core received output spike {neuron}");
-            }
-
-            public void SpikeReceived(SpikeSink sink, int neuron, long time)
-            {
-                // Console.WriteLine($"[{time}] Sink received neuron {neuron}");
-            }
-
-            public void SpikeSent(SpikeSourceTrace source, int neuron, long time)
-            {
-                // Console.WriteLine($"[{time}] Source sent neuron {neuron}");
-            }
-        }
-
         private (int[,] a, int[,] b) SeperateWeights(int[,] weights)
         {
             int[,] a = new int[weights.GetLength(0), weights.GetLength(1)];
@@ -435,7 +412,7 @@ namespace SpikingDSE
             };
         }
 
-        private ODINCore createCore(MeshLocator locator, string name, int[,] weights, int baseID, int x, int y, Reporter reporter)
+        private ODINCore createCore(MeshLocator locator, string name, int[,] weights, int baseID, int x, int y)
         {
             return new ODINCore(256,
                 name: name,
@@ -445,31 +422,30 @@ namespace SpikingDSE
                 outputTime: 8,
                 inputTime: 7,
                 transformOut: CreateSpikeToPacket(locator, x, y, baseID),
-                transformIn: CreatePacketToSpike(),
-                reporter: reporter
+                transformIn: CreatePacketToSpike()
             );
         }
 
         public override void Setup()
         {
-            var reporter = new Reporter();
+            var reporter = new TraceReporter("res/multi-odin/result.trace");
             // TODO: Let mesh locator do something useful
             var locator = new MeshLocator();
 
             // Create cores
-            var weights = WeigthsUtil.ReadFromCSV("res/exp1/weights_256.csv");
+            var weights = WeigthsUtil.ReadFromCSV("res/multi-odin/weights_256.csv");
             var (weights1, weights2) = SeperateWeights(weights);
-            WeigthsUtil.ToCSV("res/weights1.csv", weights1);
-            WeigthsUtil.ToCSV("res/weights2.csv", weights2);
+            WeigthsUtil.ToCSV("res/multi-odin/weights1.csv", weights1);
+            WeigthsUtil.ToCSV("res/multi-odin/weights2.csv", weights2);
 
             // Create mesh
             var routers = MeshUtils.CreateMesh(sim, 1, 1, (x, y) => new XYRouter2(x, y, name: $"router({x},{y})"));
-            var source = sim.AddActor(new SpikeSourceTrace("res/exp1/validation.trace", startTime: 4521, reporter: reporter, transformOut: CreateSpikeToPacket(locator, -1, 0, 0)));
+            var source = sim.AddActor(new SpikeSourceTrace("res/multi-odin/validation.trace", startTime: 4521, reporter: reporter, transformOut: CreateSpikeToPacket(locator, -1, 0, 0)));
             var sink = sim.AddActor(new SpikeSink(reporter: reporter, inTransformer: CreatePacketToSpike()));
             sim.AddChannel(ref source.spikesOut, ref routers[0, 0].inWest);
             sim.AddChannel(ref sink.spikesIn, ref routers[0, 0].outWest);
 
-            var core1 = sim.AddActor(createCore(locator, "Odin1", weights, 256, 0, 0, reporter));
+            var core1 = sim.AddActor(createCore(locator, "odin1", weights, 256, 0, 0));
             sim.AddChannel(ref core1.spikesOut, ref routers[0, 0].inLocal);
             sim.AddChannel(ref routers[0, 0].outLocal, ref core1.spikesIn);
         }
