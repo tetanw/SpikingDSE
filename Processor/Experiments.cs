@@ -27,7 +27,7 @@ namespace SpikingDSE
         {
             Setup();
 
-            sim.Init();
+            sim.Compile();
             Console.WriteLine("Simulation starting");
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
@@ -124,10 +124,10 @@ namespace SpikingDSE
         public override void Setup()
         {
             reporter = new TraceReporter("res/exp1/result.trace");
-            var input = sim.AddProcess(new SpikeSourceTrace("res/exp1/validation.trace", startTime: 4521, reporter: reporter));
-            var output = sim.AddProcess(new SpikeSink(reporter: reporter));
+            var input = sim.AddActor(new SpikeSourceTrace("res/exp1/validation.trace", startTime: 4521, reporter: reporter));
+            var output = sim.AddActor(new SpikeSink(reporter: reporter));
             var weights = WeigthsUtil.ReadFromCSV("res/exp1/weights_256.csv");
-            var core1 = sim.AddProcess(new ODINCore(256, threshold: 30, weights: weights, synComputeTime: 2, outputTime: 8, inputTime: 7));
+            var core1 = sim.AddActor(new ODINCore(256, threshold: 30, weights: weights, synComputeTime: 2, outputTime: 8, inputTime: 7));
 
             sim.AddChannel(ref core1.spikesIn, ref input.spikesOut);
             sim.AddChannel(ref output.spikesIn, ref core1.spikesOut);
@@ -143,8 +143,8 @@ namespace SpikingDSE
     {
         public override void Setup()
         {
-            var producer = sim.AddProcess(new Producer(8, () => "hi", name: "P1"));
-            var consumer = sim.AddProcess(new Consumer(name: "C1"));
+            var producer = sim.AddActor(new Producer(8, () => "hi", name: "P1"));
+            var consumer = sim.AddActor(new Consumer(name: "C1"));
 
             sim.AddChannel(ref consumer.In, ref producer.Out);
 
@@ -178,8 +178,8 @@ namespace SpikingDSE
         public override void Setup()
         {
             var reporter = new Reporter();
-            var producer = sim.AddProcess(new Producer(4, () => new MeshFlit { DestX = 1, DestY = 1, Message = "hi" }, name: "producer", reporter: reporter));
-            var consumer = sim.AddProcess(new Consumer(name: "consumer", reporter: reporter));
+            var producer = sim.AddActor(new Producer(4, () => new MeshFlit { DestX = 1, DestY = 1, Message = "hi" }, name: "producer", reporter: reporter));
+            var consumer = sim.AddActor(new Consumer(name: "consumer", reporter: reporter));
             var routers = MeshUtils.CreateMesh(sim, 2, 2, (x, y) => new XYRouter(x, y, 1, name: $"router({x},{y})"));
 
             sim.AddChannel(ref routers[0, 0].inLocal, ref producer.Out);
@@ -198,10 +198,10 @@ namespace SpikingDSE
     {
         public override void Setup()
         {
-            var producer = sim.AddProcess(new Producer(8, () => "hi"));
-            var consumer = sim.AddProcess(new Consumer());
-            var fork = sim.AddProcess(new Fork());
-            var join = sim.AddProcess(new Join());
+            var producer = sim.AddActor(new Producer(8, () => "hi"));
+            var consumer = sim.AddActor(new Consumer());
+            var fork = sim.AddActor(new Fork());
+            var join = sim.AddActor(new Join());
 
             sim.AddChannel(ref producer.Out, ref fork.input);
             sim.AddChannel(ref fork.out1, ref join.in1);
@@ -237,8 +237,8 @@ namespace SpikingDSE
         {
             var reporter = new Reporter();
 
-            var producer = sim.AddProcess(new Producer(4, () => "hi", reporter: reporter));
-            var consumer = sim.AddProcess(new Consumer(reporter: reporter));
+            var producer = sim.AddActor(new Producer(4, () => "hi", reporter: reporter));
+            var consumer = sim.AddActor(new Consumer(reporter: reporter));
 
             sim.AddChannel(ref producer.Out, ref consumer.In);
             simStop.StopTime = 10;
@@ -322,9 +322,9 @@ namespace SpikingDSE
         public override void Setup()
         {
             var reporter = new Reporter();
-            var producer = sim.AddProcess(new Producer(0, () => "Hi", name: "producer", reporter: reporter));
-            var buffer = sim.AddProcess(new Buffer(5));
-            var consumer = sim.AddProcess(new Consumer(interval: 3, name: "consumer", reporter: reporter));
+            var producer = sim.AddActor(new Producer(0, () => "Hi", name: "producer", reporter: reporter));
+            var buffer = sim.AddActor(new Buffer(5));
+            var consumer = sim.AddActor(new Consumer(interval: 3, name: "consumer", reporter: reporter));
 
             sim.AddChannel(ref producer.Out, ref buffer.input);
             sim.AddChannel(ref buffer.output, ref consumer.In);
@@ -343,9 +343,9 @@ namespace SpikingDSE
     {
         public override void Setup()
         {
-            var producer = sim.AddProcess(new Producer(1, () => "Hi", name: "producer"));
-            var fifo = sim.AddProcess(new Buffer(1));
-            var consumer = sim.AddProcess(new Consumer(interval: 3, name: "consumer"));
+            var producer = sim.AddActor(new Producer(1, () => "Hi", name: "producer"));
+            var fifo = sim.AddActor(new Buffer(1));
+            var consumer = sim.AddActor(new Consumer(interval: 3, name: "consumer"));
 
             sim.AddChannel(ref producer.Out, ref fifo.input);
             sim.AddChannel(ref fifo.output, ref consumer.In);
@@ -464,12 +464,12 @@ namespace SpikingDSE
 
             // Create mesh
             var routers = MeshUtils.CreateMesh(sim, 1, 1, (x, y) => new XYRouter2(x, y, name: $"router({x},{y})"));
-            var source = sim.AddProcess(new SpikeSourceTrace("res/exp1/validation.trace", startTime: 4521, reporter: reporter, transformOut: CreateSpikeToPacket(locator, -1, 0, 0)));
-            var sink = sim.AddProcess(new SpikeSink(reporter: reporter, inTransformer: CreatePacketToSpike()));
+            var source = sim.AddActor(new SpikeSourceTrace("res/exp1/validation.trace", startTime: 4521, reporter: reporter, transformOut: CreateSpikeToPacket(locator, -1, 0, 0)));
+            var sink = sim.AddActor(new SpikeSink(reporter: reporter, inTransformer: CreatePacketToSpike()));
             sim.AddChannel(ref source.spikesOut, ref routers[0, 0].inWest);
             sim.AddChannel(ref sink.spikesIn, ref routers[0, 0].outWest);
 
-            var core1 = sim.AddProcess(createCore(locator, "Odin1", weights, 256, 0, 0, reporter));
+            var core1 = sim.AddActor(createCore(locator, "Odin1", weights, 256, 0, 0, reporter));
             sim.AddChannel(ref core1.spikesOut, ref routers[0, 0].inLocal);
             sim.AddChannel(ref routers[0, 0].outLocal, ref core1.spikesIn);
         }

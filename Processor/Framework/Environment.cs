@@ -4,11 +4,11 @@ namespace SpikingDSE
 {
     public sealed class Environment
     {
-        private Simulator sim;
+        private Scheduler sched;
 
-        public Environment(Simulator sim)
+        public Environment(Scheduler sched)
         {
-            this.sim = sim;
+            this.sched = sched;
         }
 
         public SleepEvent Delay(long time)
@@ -55,13 +55,13 @@ namespace SpikingDSE
 
         public ProcessWaitEvent Process(IEnumerable<Event> runnable)
         {
-            var process = sim.AddProcess(runnable);
+            var process = sched.AddProcess(runnable);
             return new ProcessWaitEvent { Process = process };
         }
 
         public Resource CreateResource(int intial)
         {
-            return sim.CreateResource(intial);
+            return sched.CreateResource(intial);
         }
 
         public ResReqEvent RequestResource(Resource resource, int amount)
@@ -71,12 +71,12 @@ namespace SpikingDSE
 
         public void IncreaseResource(Resource resource, int amount)
         {
-            sim.Increase(resource, 1);
+            sched.Increase(resource, 1);
         }
 
         public void DecreaseResource(Resource resource, int amount)
         {
-            sim.Decrease(resource, 1);
+            sched.Decrease(resource, 1);
         }
 
         public Process CurrentThread { get; set; }

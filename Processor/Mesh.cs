@@ -272,7 +272,7 @@ namespace SpikingDSE
             {
                 for (int x = 0; x < width; x++)
                 {
-                    routers[x, y] = sim.AddProcess(constructRouter(x, y));
+                    routers[x, y] = sim.AddActor(constructRouter(x, y));
                 }
             }
 
