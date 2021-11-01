@@ -44,18 +44,25 @@ namespace SpikingDSE
             };
         }
 
-        private ODINCore createCore(LayerMeshLocator locator, string name, int[,] weights, int baseID, int x, int y)
+        private ODINCore addCore(LayerMeshLocator locator, MeshRouter[,] routers, string name, int[,] weights, int baseID, int start, int end, int x, int y)
         {
-            return new ODINCore(256,
+            var myWeights = SeparateWeights(weights, start, end);
+            var core = new ODINCore(256,
                 name: name,
                 threshold: 30,
-                weights: weights,
+                weights: myWeights,
                 synComputeTime: 2,
                 outputTime: 8,
                 inputTime: 7,
                 transformOut: CreateSpikeToPacket(locator, x, y, baseID),
                 transformIn: CreatePacketToSpike()
             );
+            sim.AddActor(core);
+            sim.AddChannel(ref core.spikesOut, ref routers[x, y].inLocal);
+            sim.AddChannel(ref routers[x, y].outLocal, ref core.spikesIn);
+
+            locator.AddMapping(new Layer(start, end), new MeshCoord(x, y));
+            return core;
         }
 
         public override void Setup()
@@ -63,41 +70,28 @@ namespace SpikingDSE
             var reporter = new TraceReporter("res/multi-odin/result.trace");
             // TODO: Mapper does not yet seem correct
             var locator = new LayerMeshLocator();
-            locator.AddMapping(new Layer(0, 32), new MeshCoord(0, 0));
-            locator.AddMapping(new Layer(32, 64), new MeshCoord(1, 0));
-            locator.AddMapping(new Layer(64, 96), new MeshCoord(2, 0));
-            locator.AddMapping(new Layer(96, 128), new MeshCoord(3, 0));
-            locator.AddMapping(new Layer(256, 1280), new MeshCoord(-1, 0));
+            locator.AddMapping(new Layer(32, 64), new MeshCoord(2, 0));
+            locator.AddMapping(new Layer(64, 96), new MeshCoord(1, 1));
+            locator.AddMapping(new Layer(96, 128), new MeshCoord(2, 1));
 
             // Create cores
             var weights = WeigthsUtil.ReadFromCSV("res/multi-odin/weights_256.csv");
 
             // Create mesh
-            var routers = MeshUtils.CreateMesh(sim, 4, 1, (x, y) => new XYRouter2(x, y, name: $"router({x},{y})"));
-            var source = sim.AddActor(new SpikeSourceTrace("res/multi-odin/validation.trace", startTime: 4521, reporter: reporter, transformOut: CreateSpikeToPacket(locator, -1, 0, 0)));
+            var routers = MeshUtils.CreateMesh(sim, 3, 2, (x, y) => new XYRouter2(x, y, name: $"router({x},{y})"));
+
+            // Create source-sink
+            var source = sim.AddActor(new SpikeSourceTrace("res/multi-odin/validation.trace", startTime: 4521, reporter: reporter, transformOut: CreateSpikeToPacket(locator, 0, 0, 0)));
             var sink = sim.AddActor(new SpikeSink(reporter: reporter, inTransformer: CreatePacketToSpike()));
-            sim.AddChannel(ref source.spikesOut, ref routers[0, 0].inWest);
-            sim.AddChannel(ref sink.spikesIn, ref routers[0, 0].outWest);
+            sim.AddChannel(ref source.spikesOut, ref routers[0, 1].inLocal);
+            sim.AddChannel(ref routers[0, 0].outLocal, ref sink.spikesIn);
+            locator.AddMapping(new Layer(256, 1280), new MeshCoord(0, 0));
 
-            var weights1 = SeparateWeights(weights, 0, 32);
-            var core1 = sim.AddActor(createCore(locator, "odin1", weights1, 256, 0, 0));
-            sim.AddChannel(ref core1.spikesOut, ref routers[0, 0].inLocal);
-            sim.AddChannel(ref routers[0, 0].outLocal, ref core1.spikesIn);
-
-            var weights2 = SeparateWeights(weights, 32, 64);
-            var core2 = sim.AddActor(createCore(locator, "odin2", weights2, 512, 0, 0));
-            sim.AddChannel(ref core2.spikesOut, ref routers[1, 0].inLocal);
-            sim.AddChannel(ref routers[1, 0].outLocal, ref core2.spikesIn);
-
-            var weights3 = SeparateWeights(weights, 64, 96);
-            var core3 = sim.AddActor(createCore(locator, "odin3", weights3, 768, 0, 0));
-            sim.AddChannel(ref core3.spikesOut, ref routers[2, 0].inLocal);
-            sim.AddChannel(ref routers[2, 0].outLocal, ref core3.spikesIn);
-
-            var weights4 = SeparateWeights(weights, 96, 128);
-            var core4 = sim.AddActor(createCore(locator, "odin4", weights4, 1024, 0, 0));
-            sim.AddChannel(ref core4.spikesOut, ref routers[3, 0].inLocal);
-            sim.AddChannel(ref routers[3, 0].outLocal, ref core4.spikesIn);
+            // add cores
+            var core1 = addCore(locator, routers, "odin1", weights, 256, 0, 32, 1, 0);
+            var core2 = addCore(locator, routers, "odin2", weights, 256, 32, 64, 2, 0);
+            var core3 = addCore(locator, routers, "odin3", weights, 256, 64, 96, 1, 1);
+            var core4 = addCore(locator, routers, "odin4", weights, 256, 96, 128, 2, 1);
         }
 
         public override void Cleanup()
