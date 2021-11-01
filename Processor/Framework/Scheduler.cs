@@ -143,10 +143,9 @@ namespace SpikingDSE
         {
             foreach (var actor in actors)
             {
-                actor.Init(env);
                 ready.Enqueue(new Process
                 {
-                    Runnable = actor.Run().GetEnumerator(),
+                    Runnable = actor.Run(env).GetEnumerator(),
                     Time = 0
                 });
 

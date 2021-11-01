@@ -38,7 +38,7 @@ namespace SpikingDSE
             this.processingDelay = processingDelay;
         }
 
-        public override IEnumerable<Event> Run()
+        public override IEnumerable<Event> Run(Environment env)
         {
             while (true)
             {
@@ -110,7 +110,7 @@ namespace SpikingDSE
             this.y = y;
         }
 
-        public override IEnumerable<Event> Run()
+        public override IEnumerable<Event> Run(Environment env)
         {
             var inBuffers = new FIFO<MeshFlit>[5];
             var outBuffers = new FIFO<MeshFlit>[5];
@@ -122,18 +122,18 @@ namespace SpikingDSE
                 if (inPort.IsBound)
                 {
                     inBuffers[dir] = new FIFO<MeshFlit>(env, 1);
-                    env.Process(InLink(inPort, inBuffers[dir], signal));
+                    env.Process(InLink(env, inPort, inBuffers[dir], signal));
                 }
 
                 var outPort = GetOutputPort(dir);
                 if (outPort.IsBound)
                 {
                     outBuffers[dir] = new FIFO<MeshFlit>(env, 1);
-                    env.Process(OutLink(outPort, outBuffers[dir], signal));
+                    env.Process(OutLink(env, outPort, outBuffers[dir], signal));
                 }
             }
 
-            env.Process(Switch(inBuffers, outBuffers, signal));
+            env.Process(Switch(env, inBuffers, outBuffers, signal));
 
             yield break;
         }
@@ -158,7 +158,7 @@ namespace SpikingDSE
             else throw new Exception("Unknown direction");
         }
 
-        private IEnumerable<Event> Switch(FIFO<MeshFlit>[] inBuffers, FIFO<MeshFlit>[] outBuffers, Signal signal)
+        private IEnumerable<Event> Switch(Environment env, FIFO<MeshFlit>[] inBuffers, FIFO<MeshFlit>[] outBuffers, Signal signal)
         {
             while (true)
             {
@@ -203,7 +203,7 @@ namespace SpikingDSE
         }
 
 
-        private IEnumerable<Event> OutLink(OutPort outPort, FIFO<MeshFlit> buffer, Signal signal)
+        private IEnumerable<Event> OutLink(Environment env, OutPort outPort, FIFO<MeshFlit> buffer, Signal signal)
         {
             while (true)
             {
@@ -215,7 +215,7 @@ namespace SpikingDSE
             }
         }
 
-        private IEnumerable<Event> InLink(InPort inPort, FIFO<MeshFlit> buffer, Signal signal)
+        private IEnumerable<Event> InLink(Environment env, InPort inPort, FIFO<MeshFlit> buffer, Signal signal)
         {
             while (true)
             {

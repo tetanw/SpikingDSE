@@ -25,7 +25,7 @@ namespace SpikingDSE
             this.reporter = reporter;
         }
 
-        public override IEnumerable<Event> Run()
+        public override IEnumerable<Event> Run(Environment env)
         {
             while (true)
             {
@@ -56,7 +56,7 @@ namespace SpikingDSE
             this.Name = name;
         }
 
-        public override IEnumerable<Event> Run()
+        public override IEnumerable<Event> Run(Environment env)
         {
             ReceiveEvent rcv;
             while (true)
@@ -87,7 +87,7 @@ namespace SpikingDSE
             this.reporter = reporter;
         }
 
-        public override IEnumerable<Event> Run()
+        public override IEnumerable<Event> Run(Environment env)
         {
             while (true)
             {
@@ -124,7 +124,7 @@ namespace SpikingDSE
             this.reporter = reporter;
         }
 
-        public override IEnumerable<Event> Run()
+        public override IEnumerable<Event> Run(Environment env)
         {
             List<object> bundle = new List<object>();
 
@@ -157,15 +157,15 @@ namespace SpikingDSE
             this.depth = depth;
         }
 
-        public override IEnumerable<Event> Run()
+        public override IEnumerable<Event> Run(Environment env)
         {
             fifo = new FIFO<object>(env, depth);
-            env.Process(Send());
-            env.Process(Receive());
+            env.Process(Send(env));
+            env.Process(Receive(env));
             yield break;
         }
 
-        public IEnumerable<Event> Send()
+        public IEnumerable<Event> Send(Environment env)
         {
             while (true)
             {
@@ -176,7 +176,7 @@ namespace SpikingDSE
             }
         }
 
-        public IEnumerable<Event> Receive()
+        public IEnumerable<Event> Receive(Environment env)
         {
             while (true)
             {

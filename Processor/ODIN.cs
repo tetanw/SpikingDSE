@@ -45,7 +45,7 @@ namespace SpikingDSE
             sr.Close();
         }
 
-        public override IEnumerable<Event> Run()
+        public override IEnumerable<Event> Run(Environment env)
         {
             yield return env.SleepUntil(startTime);
             foreach (var (neuron, time) in EventTraceReader.ReadInputs(path, 100_000_000, startTime))
@@ -75,7 +75,7 @@ namespace SpikingDSE
             this.inTransformer = inTransformer;
         }
 
-        public override IEnumerable<Event> Run()
+        public override IEnumerable<Event> Run(Environment env)
         {
             while (true)
             {
@@ -132,16 +132,16 @@ namespace SpikingDSE
             this.reporter = reporter;
         }
 
-        public override IEnumerable<Event> Run()
+        public override IEnumerable<Event> Run(Environment env)
         {
             while (true)
             {
-                yield return env.Process(Receive());
-                yield return env.Process(Compute());
+                yield return env.Process(Receive(env));
+                yield return env.Process(Compute(env));
             }
         }
 
-        private IEnumerable<Event> Compute()
+        private IEnumerable<Event> Compute(Environment env)
         {
             long startNow = env.Now;
             long now = startNow;
@@ -162,7 +162,7 @@ namespace SpikingDSE
             yield return env.SleepUntil(now);
         }
 
-        private IEnumerable<Event> Receive()
+        private IEnumerable<Event> Receive(Environment env)
         {
             var rcv = env.Receive(spikesIn, waitBefore: inputTime);
             yield return rcv;
