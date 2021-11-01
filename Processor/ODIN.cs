@@ -98,6 +98,7 @@ namespace SpikingDSE
         public InPort spikesIn;
         public OutPort spikesOut;
 
+        // TODO: Rather not pass between and receive by using this variable
         private int src = -1;
         private int nrNeurons;
         private int threshold;

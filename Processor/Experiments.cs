@@ -276,34 +276,6 @@ namespace SpikingDSE
         }
     }
 
-    public interface NeuronLocator<T>
-    {
-        public T Locate(int neuron);
-    }
-
-    public class MeshLocator : NeuronLocator<(int x, int y)>
-    {
-        public (int x, int y) Locate(int destNeuron)
-        {
-            if (destNeuron < 128)
-            {
-                return (0, 0);
-            }
-            else if (destNeuron < 256)
-            {
-                return (1, 0);
-            }
-            else if (destNeuron < 768)
-            {
-                return (-1, 0);
-            }
-            else
-            {
-                throw new Exception($"Can not map neuron {destNeuron}");
-            }
-        }
-    }
-
     public class ResTest : Experiment
     {
         class Reporter : ProducerReport, ConsumerReporter
@@ -334,12 +306,12 @@ namespace SpikingDSE
 
         public override void Cleanup()
         {
-            
+
         }
 
     }
 
-     public class ResPerf : Experiment
+    public class ResPerf : Experiment
     {
         public override void Setup()
         {
@@ -367,7 +339,7 @@ namespace SpikingDSE
             int[,] a = new int[weights.GetLength(0), weights.GetLength(1)];
             int[,] b = new int[weights.GetLength(0), weights.GetLength(1)];
 
-            for (int y = 0; y < 128; y++)
+            for (int y = 0; y < 64; y++)
             {
                 for (int x = 0; x < 256; x++)
                 {
@@ -375,7 +347,7 @@ namespace SpikingDSE
                 }
             }
 
-            for (int y = 128; y < 256; y++)
+            for (int y = 64; y < 128; y++)
             {
                 for (int x = 0; x < 256; x++)
                 {
@@ -395,7 +367,7 @@ namespace SpikingDSE
             };
         }
 
-        private Func<int, object> CreateSpikeToPacket(NeuronLocator<(int x, int y)> locator, int srcX, int srcY, int baseID)
+        private Func<int, object> CreateSpikeToPacket(NeuronLocator<MeshCoord> locator, int srcX, int srcY, int baseID)
         {
             return (neuron) =>
             {
@@ -412,7 +384,7 @@ namespace SpikingDSE
             };
         }
 
-        private ODINCore createCore(MeshLocator locator, string name, int[,] weights, int baseID, int x, int y)
+        private ODINCore createCore(LayerMeshLocator locator, string name, int[,] weights, int baseID, int x, int y)
         {
             return new ODINCore(256,
                 name: name,
@@ -429,8 +401,12 @@ namespace SpikingDSE
         public override void Setup()
         {
             var reporter = new TraceReporter("res/multi-odin/result.trace");
-            // TODO: Let mesh locator do something useful
-            var locator = new MeshLocator();
+            // TODO: Mapper does not yet seem correct
+            var locator = new LayerMeshLocator();
+            locator.AddMapping(new Layer(0, 64), new MeshCoord(0, 0));
+            locator.AddMapping(new Layer(64, 128), new MeshCoord(1, 0));
+            locator.AddMapping(new Layer(256, 512), new MeshCoord(-1, 0));
+            locator.AddMapping(new Layer(512, 768), new MeshCoord(-1, 0));
 
             // Create cores
             var weights = WeigthsUtil.ReadFromCSV("res/multi-odin/weights_256.csv");
@@ -439,20 +415,24 @@ namespace SpikingDSE
             WeigthsUtil.ToCSV("res/multi-odin/weights2.csv", weights2);
 
             // Create mesh
-            var routers = MeshUtils.CreateMesh(sim, 1, 1, (x, y) => new XYRouter2(x, y, name: $"router({x},{y})"));
+            var routers = MeshUtils.CreateMesh(sim, 2, 1, (x, y) => new XYRouter2(x, y, name: $"router({x},{y})"));
             var source = sim.AddActor(new SpikeSourceTrace("res/multi-odin/validation.trace", startTime: 4521, reporter: reporter, transformOut: CreateSpikeToPacket(locator, -1, 0, 0)));
             var sink = sim.AddActor(new SpikeSink(reporter: reporter, inTransformer: CreatePacketToSpike()));
             sim.AddChannel(ref source.spikesOut, ref routers[0, 0].inWest);
             sim.AddChannel(ref sink.spikesIn, ref routers[0, 0].outWest);
 
-            var core1 = sim.AddActor(createCore(locator, "odin1", weights, 256, 0, 0));
+            var core1 = sim.AddActor(createCore(locator, "odin1", weights1, 256, 0, 0));
             sim.AddChannel(ref core1.spikesOut, ref routers[0, 0].inLocal);
             sim.AddChannel(ref routers[0, 0].outLocal, ref core1.spikesIn);
+
+            var core2 = sim.AddActor(createCore(locator, "odin2", weights2, 512, 0, 0));
+            sim.AddChannel(ref core2.spikesOut, ref routers[1, 0].inLocal);
+            sim.AddChannel(ref routers[1, 0].outLocal, ref core2.spikesIn);
         }
 
         public override void Cleanup()
         {
-            
+
         }
     }
 }
