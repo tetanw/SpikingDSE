@@ -79,6 +79,21 @@ namespace SpikingDSE
             sched.Decrease(resource, 1);
         }
 
+        public void Notify(Signal signal)
+        {
+            sched.Notify(signal);
+        }
+
+        public Signal CreateSignal()
+        {
+            return sched.CreateSignal();
+        }
+
+        public SignalWaitEvent Wait(Signal signal)
+        {
+            return new SignalWaitEvent { Signal = signal };
+        }
+
         public Process CurrentThread { get; set; }
         public long Now { get; set; }
     }

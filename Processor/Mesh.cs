@@ -114,7 +114,7 @@ namespace SpikingDSE
         {
             var inBuffers = new FIFO<MeshFlit>[5];
             var outBuffers = new FIFO<MeshFlit>[5];
-            var signal = new Signal(env);
+            var signal = env.CreateSignal();
 
             for (int dir = 0; dir < 5; dir++)
             {
@@ -164,7 +164,7 @@ namespace SpikingDSE
             {
                 // 1. Wait for a new packet to arrive at an input
                 // or a new packet to be sent from the output
-                yield return signal.Wait(env);
+                yield return env.Wait(signal);
 
                 // 2. If an input was ready then we need to just check whether 
                 // that new input needs to be routed. If an output is ready we need
@@ -211,7 +211,7 @@ namespace SpikingDSE
                 var flit = buffer.Read();
                 yield return env.Send(outPort, flit);
                 buffer.ReleaseRead();
-                signal.Notify(env);
+                env.Notify(signal);
             }
         }
 
@@ -224,7 +224,7 @@ namespace SpikingDSE
                 yield return rcv;
                 buffer.Write((MeshFlit)rcv.Message);
                 buffer.ReleaseWrite();
-                signal.Notify(env);
+                env.Notify(signal);
             }
         }
 

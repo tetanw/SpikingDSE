@@ -59,4 +59,9 @@ namespace SpikingDSE
         // Result
         public object Value;
     }
+
+    public class SignalWaitEvent : Event
+    {
+        public Signal Signal;
+    }
 }

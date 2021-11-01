@@ -40,6 +40,11 @@ namespace SpikingDSE
         public int Amount;
     }
 
+    public sealed class Signal
+    {
+        public List<Process> Waiting;
+    }
+
     public sealed class Scheduler
     {
         private PriorityQueue<Process> ready = new PriorityQueue<Process>();
@@ -54,6 +59,22 @@ namespace SpikingDSE
         public Scheduler()
         {
             this.env = new Environment(this);
+        }
+
+        public Signal CreateSignal()
+        {
+            var signal = new Signal();
+            return signal;
+        }
+
+        public void Notify(Signal signal)
+        {
+            foreach (var thread in signal.Waiting)
+            {
+                thread.Time = currentTime;
+                ready.Enqueue(thread);
+            }
+            signal.Waiting.Clear();
         }
 
         public void Increase(Resource resource, int amount)
@@ -271,6 +292,13 @@ namespace SpikingDSE
                         if (processWait.Process.Waiting == null)
                             processWait.Process.Waiting = new List<Process>();
                         processWait.Process.Waiting.Add(currentThread);
+                        break;
+                    }
+                case SignalWaitEvent signalWait:
+                    {
+                        if (signalWait.Signal.Waiting == null)
+                            signalWait.Signal.Waiting = new List<Process>();
+                        signalWait.Signal.Waiting.Add(currentThread);
                         break;
                     }
                 default:
