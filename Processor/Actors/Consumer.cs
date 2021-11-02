@@ -9,7 +9,7 @@ namespace SpikingDSE
 
     public class Consumer : Actor
     {
-        public InPort In;
+        public InPort In = new InPort();
 
         private ConsumerReporter reporter;
         private int interval;

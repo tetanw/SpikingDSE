@@ -26,8 +26,8 @@ namespace SpikingDSE
             var consumer = sim.AddActor(new Consumer(name: "consumer", reporter: reporter));
             var routers = MeshUtils.CreateMesh(sim, 2, 2, (x, y) => new XYRouter(x, y, 1, name: $"router({x},{y})"));
 
-            sim.AddChannel(ref routers[0, 0].inLocal, ref producer.Out);
-            sim.AddChannel(ref routers[1, 1].outLocal, ref consumer.In);
+            sim.AddChannel(routers[0, 0].inLocal, producer.output);
+            sim.AddChannel(routers[1, 1].outLocal, consumer.In);
 
             simStop.StopTime = 10;
         }

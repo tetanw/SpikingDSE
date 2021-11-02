@@ -24,8 +24,8 @@ namespace SpikingDSE
             var buffer = sim.AddActor(new Buffer(5));
             var consumer = sim.AddActor(new Consumer(interval: 3, name: "consumer", reporter: reporter));
 
-            sim.AddChannel(ref producer.Out, ref buffer.input);
-            sim.AddChannel(ref buffer.output, ref consumer.In);
+            sim.AddChannel(producer.output, buffer.input);
+            sim.AddChannel(buffer.output, consumer.In);
 
             simStop.StopTime = 100;
         }

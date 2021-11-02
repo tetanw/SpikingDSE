@@ -9,10 +9,10 @@ namespace SpikingDSE
 
     public class Fork : Actor
     {
-        public InPort input;
-        public OutPort out1;
-        public OutPort out2;
-        public OutPort out3;
+        public InPort input = new InPort();
+        public OutPort out1 = new OutPort();
+        public OutPort out2 = new OutPort();
+        public OutPort out3 = new OutPort();
 
         private ForkReporter reporter;
 

@@ -10,7 +10,7 @@ namespace SpikingDSE
 
     public class Producer : Actor
     {
-        public OutPort Out;
+        public OutPort output = new OutPort();
 
         private int interval;
         private ProducerReport reporter;
@@ -29,7 +29,7 @@ namespace SpikingDSE
             while (true)
             {
                 var message = create();
-                yield return env.Send(Out, message);
+                yield return env.Send(output, message);
                 reporter?.Produced(this, env.Now, message);
                 yield return env.Delay(interval);
             }

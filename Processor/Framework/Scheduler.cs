@@ -15,6 +15,11 @@ namespace SpikingDSE
         {
             return Time.CompareTo(other.Time);
         }
+
+        public override string ToString()
+        {
+            return Runnable.ToString();
+        }
     }
 
     public sealed class Channel
@@ -108,15 +113,15 @@ namespace SpikingDSE
             return process;
         }
 
-        public void AddChannel(ref InPort inPort, ref OutPort outPort)
+        public void AddChannel(InPort inPort, OutPort outPort)
         {
-            if (inPort != null || outPort != null)
+            if (inPort.IsBound || outPort.IsBound)
             {
                 throw new Exception("Port already bound");
             }
 
-            inPort = new InPort() { IsBound = true };
-            outPort = new OutPort() { IsBound = true };
+            inPort.IsBound = true;
+            outPort.IsBound = true;
             var channel = new Channel
             {
                 OutPort = outPort,
@@ -134,9 +139,9 @@ namespace SpikingDSE
             return process;
         }
 
-        public void AddChannel(ref OutPort outPort, ref InPort inPort)
+        public void AddChannel(OutPort outPort, InPort inPort)
         {
-            AddChannel(ref inPort, ref outPort);
+            AddChannel(inPort, outPort);
         }
 
         public void Compile()

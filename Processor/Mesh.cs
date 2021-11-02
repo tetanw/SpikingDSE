@@ -89,16 +89,16 @@ namespace SpikingDSE
     {
         protected int x, y;
 
-        public InPort inNorth;
-        public InPort inSouth;
-        public InPort inEast;
-        public InPort inWest;
-        public InPort inLocal;
-        public OutPort outNorth;
-        public OutPort outSouth;
-        public OutPort outEast;
-        public OutPort outWest;
-        public OutPort outLocal;
+        public InPort inNorth = new InPort();
+        public InPort inSouth = new InPort();
+        public InPort inEast = new InPort();
+        public InPort inWest = new InPort();
+        public InPort inLocal = new InPort();
+        public OutPort outNorth = new OutPort();
+        public OutPort outSouth = new OutPort();
+        public OutPort outEast = new OutPort();
+        public OutPort outWest = new OutPort();
+        public OutPort outLocal = new OutPort();
     }
 
     public class XYRouter2 : MeshRouter
@@ -292,25 +292,25 @@ namespace SpikingDSE
                     // wire up west side if possible
                     if (x > 0)
                     {
-                        sim.AddChannel(ref routers[x, y].outWest, ref routers[x - 1, y].inEast);
+                        sim.AddChannel(routers[x, y].outWest, routers[x - 1, y].inEast);
                     }
 
                     // wire up east side if possible
                     if (x < width - 1)
                     {
-                        sim.AddChannel(ref routers[x, y].outEast, ref routers[x + 1, y].inWest);
+                        sim.AddChannel(routers[x, y].outEast, routers[x + 1, y].inWest);
                     }
 
                     // wire up south side if possible
                     if (y > 0)
                     {
-                        sim.AddChannel(ref routers[x, y].outSouth, ref routers[x, y - 1].inNorth);
+                        sim.AddChannel(routers[x, y].outSouth, routers[x, y - 1].inNorth);
                     }
 
                     // wire up north side if possible
                     if (y < height - 1)
                     {
-                        sim.AddChannel(ref routers[x, y].outNorth, ref routers[x, y + 1].inSouth);
+                        sim.AddChannel(routers[x, y].outNorth, routers[x, y + 1].inSouth);
                     }
                 }
             }

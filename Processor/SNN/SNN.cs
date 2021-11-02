@@ -1,40 +1,71 @@
+using System;
 using System.IO;
 using System.Linq;
+using System.Collections.Generic;
 
 namespace SpikingDSE
 {
-    public class Layer
+    public abstract class Layer
     {
-        public int startID;
-        public int endID;
-
-        public Layer(int start, int end)
-        {
-            this.startID = start;
-            this.endID = end;
-        }
+        
     }
 
-    public class ODINLayer
+    public class InputLayer : Layer
     {
+        private string name;
+        public readonly IEnumerable<int> inputSpikes;
+
+        public InputLayer(IEnumerable<int> inputSpikes, string name = null)
+        {
+            this.inputSpikes = inputSpikes;
+            this.name = name;
+            this.Size = 128;
+        }
+
+        public int Size { get; private set; }
+    }
+
+    public abstract class HiddenLayer : Layer
+    {
+        public abstract int SetBaseID(int baseID);
+        public abstract bool Accepts(int neuron);
+    }
+
+    public class ODINLayer : HiddenLayer
+    {
+        public int baseID;
         public int[] pots;
         public int[,] weights;
+        public int threshold;
 
-        public ODINLayer(int[,] weights, string name = "")
+        public ODINLayer(int[,] weights, int baseID = 0, int threshold = 30, string name = "")
         {
+            this.baseID = baseID;
             int from = weights.GetLength(0);
             int to = weights.GetLength(1);
             this.weights = weights;
             pots = new int[to];
             this.Size = to;
             this.Name = name;
+            this.threshold = threshold;
         }
 
         public int Size { get; }
         public string Name { get; }
+
+        public override bool Accepts(int neuron)
+        {
+            return neuron > 0 && neuron < 128;
+        }
+
+        public override int SetBaseID(int baseID)
+        {
+            this.baseID = baseID;
+            return baseID + Size;
+        }
     }
 
-        public class WeigthsUtil
+    public class WeigthsUtil
     {
         public static int[,] ReadFromCSV(string path)
         {
@@ -102,13 +133,5 @@ namespace SpikingDSE
         }
     }
 
-    public class SNNUtils
-    {
-        public static ODINLayer ReadFromCSV(string weightsPath, string name = null)
-        {
-            int[,] weights = WeigthsUtil.ReadFromCSV(weightsPath);
-
-            return new ODINLayer(weights, name);
-        }
-    }
+   
 }

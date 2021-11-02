@@ -14,14 +14,14 @@ namespace SpikingDSE
             return scheduler.CreateResource(initial);
         }
 
-        public void AddChannel(ref InPort inPort, ref OutPort outPort)
+        public void AddChannel(InPort inPort, OutPort outPort)
         {
-            scheduler.AddChannel(ref inPort, ref outPort);
+            scheduler.AddChannel(inPort, outPort);
         }
 
-        public void AddChannel(ref OutPort outPort, ref InPort inPort)
+        public void AddChannel(OutPort outPort, InPort inPort)
         {
-            scheduler.AddChannel(ref outPort, ref inPort);
+            scheduler.AddChannel(outPort, inPort);
         }
 
         public T AddActor<T>(T process) where T : Actor

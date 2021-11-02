@@ -7,7 +7,7 @@ namespace SpikingDSE
             var producer = sim.AddActor(new Producer(8, () => "hi", name: "P1"));
             var consumer = sim.AddActor(new Consumer(name: "C1"));
 
-            sim.AddChannel(ref consumer.In, ref producer.Out);
+            sim.AddChannel(consumer.In, producer.output);
 
             simStop.StopEvents = 10_000_000;
         }

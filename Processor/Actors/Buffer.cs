@@ -4,8 +4,8 @@ namespace SpikingDSE
 {
     public class Buffer : Actor
     {
-        public InPort input;
-        public OutPort output;
+        public InPort input = new InPort();
+        public OutPort output = new OutPort();
 
         private int depth;
         private FIFO<object> fifo;

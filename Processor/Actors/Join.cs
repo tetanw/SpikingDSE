@@ -9,10 +9,10 @@ namespace SpikingDSE
 
     public class Join : Actor
     {
-        public InPort in1;
-        public InPort in2;
-        public InPort in3;
-        public OutPort output;
+        public InPort in1 = new InPort();
+        public InPort in2 = new InPort();
+        public InPort in3 = new InPort();
+        public OutPort output = new OutPort();
 
         private JoinReporter reporter;
 

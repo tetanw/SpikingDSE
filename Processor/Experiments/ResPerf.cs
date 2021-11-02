@@ -8,8 +8,8 @@ namespace SpikingDSE
             var fifo = sim.AddActor(new Buffer(1));
             var consumer = sim.AddActor(new Consumer(interval: 3, name: "consumer"));
 
-            sim.AddChannel(ref producer.Out, ref fifo.input);
-            sim.AddChannel(ref fifo.output, ref consumer.In);
+            sim.AddChannel(producer.output, fifo.input);
+            sim.AddChannel(fifo.output, consumer.In);
 
             simStop.StopEvents = 10_000_000;
         }

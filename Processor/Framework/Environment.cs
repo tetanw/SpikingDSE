@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace SpikingDSE
@@ -25,7 +26,7 @@ namespace SpikingDSE
         {
             if (!port.IsBound)
             {
-                throw new System.Exception("Port is not bound!");
+                throw new Exception("Port is not bound!");
             }
             return new SendEvent { Port = port, Message = message, Time = Now };
         }
@@ -34,7 +35,7 @@ namespace SpikingDSE
         {
             if (!port.IsBound)
             {
-                throw new System.Exception("Port is not bound!");
+                throw new Exception("Port is not bound!");
             }
             return new SendEvent { Port = port, Message = message, Time = time };
         }
@@ -43,7 +44,7 @@ namespace SpikingDSE
         {
             if (!port.IsBound)
             {
-                throw new System.Exception("Port is not bound!");
+                throw new Exception("Port is not bound!");
             }
             return new ReceiveEvent { Port = port, Time = Now + waitBefore };
         }

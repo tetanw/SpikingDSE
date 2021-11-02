@@ -9,46 +9,41 @@ namespace SpikingDSE
         public void SpikeSent(SpikeSourceTrace source, int neuron, long time);
     }
 
-    public class SpikeSourceTrace : Actor
+    public class SpikeSourceTrace : Actor, Source
     {
-        public OutPort spikesOut;
+        public OutPort spikesOut = new OutPort();
 
-        private string path;
+        private InputLayer inputLayer;
         private long startTime;
         private SpikeSourceTraceReporter reporter;
         private Func<int, object> outTransformer;
 
-        public SpikeSourceTrace(string path, long startTime = 0, SpikeSourceTraceReporter reporter = null, Func<int, object> transformOut = null)
+        public SpikeSourceTrace(long startTime = 0, SpikeSourceTraceReporter reporter = null, string name = null)
         {
-            this.path = path;
+            this.Name = name;
             this.startTime = startTime;
             this.reporter = reporter;
-            this.outTransformer = transformOut;
         }
 
-        private IEnumerable<(int, long)> ReadInputSpikes(string path, int frequency)
+        public OutPort GetOut()
         {
-            long clkPeriodPs = 1_000_000_000_000 / frequency;
-            StreamReader sr = new StreamReader(path);
-            sr.ReadLine();
-            sr.ReadLine();
-            sr.ReadLine();
-            sr.ReadLine();
-            string line;
-            while ((line = sr.ReadLine()) != null)
-            {
-                var parts = line.Split(",");
-                long time = long.Parse(parts[0]) / clkPeriodPs;
-                int neuron = int.Parse(parts[1]);
-                yield return (neuron, time);
-            }
-            sr.Close();
+            return spikesOut;
+        }
+
+        public void LoadLayer(InputLayer inputLayer)
+        {
+            this.inputLayer = inputLayer;
+        }
+
+        public void LoadOutTransformer(Func<int, object> outTransformer)
+        {
+            this.outTransformer = outTransformer;
         }
 
         public override IEnumerable<Event> Run(Environment env)
         {
             yield return env.SleepUntil(startTime);
-            foreach (var (neuron, time) in EventTraceReader.ReadInputs(path, 100_000_000, startTime))
+            foreach (var neuron in inputLayer.inputSpikes)
             {
                 var message = outTransformer == null ? neuron : outTransformer(neuron);
                 yield return env.Send(spikesOut, message);
@@ -62,16 +57,27 @@ namespace SpikingDSE
         public void SpikeReceived(SpikeSink sink, int neuron, long time);
     }
 
-    public class SpikeSink : Actor
+    public class SpikeSink : Actor, Sink
     {
-        public InPort spikesIn;
+        public InPort spikesIn = new InPort();
 
         private SpikeSinkReporter reporter;
         private Func<object, int> inTransformer;
 
-        public SpikeSink(SpikeSinkReporter reporter = null, Func<object, int> inTransformer = null)
+        public SpikeSink(SpikeSinkReporter reporter = null, Func<object, int> inTransformer = null, string name = null)
         {
+            this.Name = name;
             this.reporter = reporter;
+            this.inTransformer = inTransformer;
+        }
+
+        public InPort GetIn()
+        {
+            return spikesIn;
+        }
+
+        public void LoadInTransformer(Func<object, int> inTransformer)
+        {
             this.inTransformer = inTransformer;
         }
 
@@ -93,44 +99,79 @@ namespace SpikingDSE
         public void ProducedSpike(ODINCore core, long time, int neuron);
     }
 
-    public class ODINCore : Actor
+    public struct ODINDelayModel
     {
-        public InPort spikesIn;
-        public OutPort spikesOut;
+        public int InputTime;
+        public int ComputeTime;
+        public int OutputTime;
+    }
+
+    public class ODINCore : Actor, Core
+    {
+        public InPort spikesIn = new InPort();
+        public OutPort spikesOut = new OutPort();
 
         // TODO: Rather not pass between and receive by using this variable
         private int src = -1;
+        private ODINLayer layer;
+        private ODINDelayModel delayModel;
         private int nrNeurons;
-        private int threshold;
-        private int[,] weights;
-        private int[] pots;
-        private int synComputeTime;
-        private int inputTime;
-        private int outputTime;
-        private Func<int, object> transformOut;
-        private Func<object, int> transformIn;
+        private int nrNeuronsFilled = 0;
+        private Func<int, object> outTransformer;
+        private Func<object, int> inTransformer;
         private ODINReporter reporter;
 
-        public ODINCore(int nrNeurons, string name = "", int[,] weights = null, int threshold = 0, int synComputeTime = 0, int outputTime = 0, int inputTime = 0, Func<int, object> transformOut = null, Func<object, int> transformIn = null, ODINReporter reporter = null)
+        public ODINCore(int nrNeurons, ODINDelayModel delayModel, string name = "", ODINReporter reporter = null)
         {
             this.Name = name;
-            if (weights == null)
+            this.nrNeurons = nrNeurons;
+            this.delayModel = delayModel;
+            this.reporter = reporter;
+        }
+
+        public bool AcceptsLayer(Layer layer)
+        {
+            if (!(layer is ODINLayer))
             {
-                this.weights = new int[nrNeurons, nrNeurons];
+                return false;
+            }
+            var odinLayer = (ODINLayer)layer;
+            if (nrNeuronsFilled + odinLayer.Size > nrNeurons)
+            {
+                return false;
             }
             else
             {
-                this.weights = weights;
+                return true;
             }
-            this.pots = new int[nrNeurons];
-            this.nrNeurons = nrNeurons;
-            this.threshold = threshold;
-            this.synComputeTime = synComputeTime;
-            this.outputTime = outputTime;
-            this.inputTime = inputTime;
-            this.transformOut = transformOut;
-            this.transformIn = transformIn;
-            this.reporter = reporter;
+        }
+
+        public InPort GetIn()
+        {
+            return spikesIn;
+        }
+
+        public OutPort GetOut()
+        {
+            return spikesOut;
+        }
+
+        public void LoadInTransformer(Func<object, int> inTransformer)
+        {
+            this.inTransformer = inTransformer;
+        }
+
+        public void AddLayer(Layer layer)
+        {
+            if (this.layer != null)
+                throw new Exception("Only accepts 1 layer");
+
+            this.layer = (ODINLayer)layer;
+        }
+
+        public void LoadOutTransformer(Func<int, object> outTransformer)
+        {
+            this.outTransformer = outTransformer;
         }
 
         public override IEnumerable<Event> Run(Environment env)
@@ -148,15 +189,16 @@ namespace SpikingDSE
             long now = startNow;
             for (int dst = 0; dst < nrNeurons; dst++)
             {
-                pots[dst] += weights[src, dst];
-                now += synComputeTime;
-                if (pots[dst] >= threshold)
+                layer.pots[dst] += layer.weights[src, dst];
+                now += delayModel.ComputeTime;
+                if (layer.pots[dst] >= layer.threshold)
                 {
-                    pots[dst] = 0;
+                    layer.pots[dst] = 0;
                     reporter?.ProducedSpike(this, env.Now, dst);
-                    var message = transformOut == null ? dst : transformOut(dst);
+                    int neuron = dst + layer.baseID;
+                    var message = outTransformer == null ? neuron : outTransformer(neuron);
                     yield return env.SendAt(spikesOut, message, now);
-                    now += outputTime;
+                    now += delayModel.OutputTime;
                 }
             }
             src = -1;
@@ -165,9 +207,9 @@ namespace SpikingDSE
 
         private IEnumerable<Event> Receive(Environment env)
         {
-            var rcv = env.Receive(spikesIn, waitBefore: inputTime);
+            var rcv = env.Receive(spikesIn, waitBefore: delayModel.InputTime);
             yield return rcv;
-            var spike = transformIn == null ? (int)rcv.Message : transformIn(rcv.Message);
+            var spike = inTransformer == null ? (int)rcv.Message : inTransformer(rcv.Message);
             src = spike;
             reporter?.ReceivedSpike(this, env.Now, spike);
         }

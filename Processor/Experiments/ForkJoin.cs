@@ -9,11 +9,11 @@ namespace SpikingDSE
             var fork = sim.AddActor(new Fork());
             var join = sim.AddActor(new Join());
 
-            sim.AddChannel(ref producer.Out, ref fork.input);
-            sim.AddChannel(ref fork.out1, ref join.in1);
-            sim.AddChannel(ref fork.out2, ref join.in2);
-            sim.AddChannel(ref fork.out3, ref join.in3);
-            sim.AddChannel(ref join.output, ref consumer.In);
+            sim.AddChannel(producer.output, fork.input);
+            sim.AddChannel(fork.out1, join.in1);
+            sim.AddChannel(fork.out2, join.in2);
+            sim.AddChannel(fork.out3, join.in3);
+            sim.AddChannel(join.output, consumer.In);
 
             simStop.StopEvents = 100;
         }
