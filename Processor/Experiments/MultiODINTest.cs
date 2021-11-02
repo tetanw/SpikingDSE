@@ -4,12 +4,14 @@ namespace SpikingDSE
 {
     public class MultiODINTest : Experiment
     {
-        private int[,] SeparateWeights(int[,] weights, int start, int end)
+        private int[,] SeparateWeights(int[,] weights, int start, int end, int N)
         {
-            int[,] res = new int[256, 256];
+            int inputWidth = weights.GetLength(0);
+
+            int[,] res = new int[N, N];
             for (int y = start; y < end; y++)
             {
-                for (int x = 0; x < 256; x++)
+                for (int x = 0; x < inputWidth; x++)
                 {
                     res[y, x] = weights[x, y];
                 }
@@ -46,7 +48,7 @@ namespace SpikingDSE
 
         private ODINCore addCore(LayerMeshLocator locator, MeshRouter[,] routers, string name, int[,] weights, int baseID, int start, int end, int x, int y)
         {
-            var myWeights = SeparateWeights(weights, start, end);
+            var myWeights = SeparateWeights(weights, start, end, 256);
             var core = new ODINCore(256,
                 name: name,
                 threshold: 30,
