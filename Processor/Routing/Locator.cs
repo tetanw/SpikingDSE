@@ -18,5 +18,10 @@ namespace SpikingDSE
             x = this.x;
             y = this.y;
         }
+
+        public override string ToString()
+        {
+            return $"({x},{y})";
+        }
     }
 }

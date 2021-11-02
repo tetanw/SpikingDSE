@@ -11,8 +11,47 @@ namespace SpikingDSE
             this.Value = value;
         }
 
-        public MeshCoord Coord;
-        public T Value;
+        public WithLocation(MeshCoord coord, T value)
+        {
+            this.Coord = coord;
+            this.Value = value;
+        }
+
+        public readonly MeshCoord Coord;
+        public readonly T Value;
+
+        public void Deconstruct(out MeshCoord coord, out T value)
+        {
+            coord = this.Coord;
+            value = this.Value;
+        }
+
+        public override string ToString()
+        {
+            return $"Coord: {Coord}, Value: {Value}";
+        }
+    }
+
+    public struct NeuronRange
+    {
+        public readonly int Start;
+        public readonly int End;
+
+        public NeuronRange(int start, int end)
+        {
+            this.Start = start;
+            this.End = end;
+        }
+
+        public bool Contains(int number)
+        {
+            return number >= Start && number < End;
+        }
+
+        public override string ToString()
+        {
+            return $"[{Start}, {End})";
+        }
     }
 
     public class MeshMapping
@@ -25,7 +64,7 @@ namespace SpikingDSE
         private List<WithLocation<Source>> sources;
         private List<WithLocation<Sink>> sinks;
         private List<WithLocation<Core>> cores;
-        private List<WithLocation<HiddenLayer>> mappedLayers;
+        private List<WithLocation<NeuronRange>> inputRanges;
 
         public MeshMapping(Simulator sim)
         {
@@ -98,20 +137,24 @@ namespace SpikingDSE
                 throw new Exception("Can not have more than 1 sink");
 
             // Map all source layers
-            sources[0].Value.LoadLayer(inputLayer);
+            var (sourceLoc, source) = sources[0];
+            source.LoadLayer(inputLayer);
 
             // Mapp all of the hidden layers to cores
-            mappedLayers = new List<WithLocation<HiddenLayer>>();
             int lastID = inputLayer.Size;
+            var ranges = new List<WithLocation<NeuronRange>>();
+            ranges.Add(new WithLocation<NeuronRange>(sourceLoc, new NeuronRange(0, lastID)));
             foreach (var layer in hiddenLayers)
             {
-                foreach (var core in cores)
+                foreach (var (coreLoc, core) in cores)
                 {
-                    if (core.Value.AcceptsLayer(layer))
+                    if (core.AcceptsLayer(layer))
                     {
-                        lastID = layer.SetBaseID(lastID);
-                        core.Value.AddLayer(layer);
-                        mappedLayers.Add(new WithLocation<HiddenLayer>(core.Coord.x, core.Coord.y, layer));
+                        int newID = layer.SetBaseID(lastID);
+                        var range = new NeuronRange(lastID, newID);
+                        ranges.Add(new WithLocation<NeuronRange>(coreLoc, range));
+                        lastID = newID;
+                        core.AddLayer(layer);
                         break;
                     }
 
@@ -119,25 +162,29 @@ namespace SpikingDSE
                 }
             }
 
-            foreach (var sink in sinks)
+            inputRanges = new List<WithLocation<NeuronRange>>();
+            for (int i = 1; i < ranges.Count; i++)
             {
-                sink.Value.LoadInTransformer(GetSpikeFromFlit);
+                var prevRange = ranges[i - 1].Value;
+                var curLoc = ranges[i].Coord;
+                inputRanges.Add(new WithLocation<NeuronRange>(curLoc, prevRange));
             }
-            foreach (var core in cores)
+
+            foreach (var (_, sink) in sinks)
             {
-                core.Value.LoadInTransformer(GetSpikeFromFlit);
+                sink.LoadInTransformer(GetSpikeFromFlit);
+            }
+            foreach (var (_, core) in cores)
+            {
+                core.LoadInTransformer(GetSpikeFromFlit);
             }
 
             var sinkLoc = sinks[0].Coord;
-            foreach (var core in cores)
+            foreach (var (coord, core) in cores)
             {
-                core.Value.LoadOutTransformer(SpikeToFlit(sinkLoc, core.Coord));
+                core.LoadOutTransformer(SpikeToFlit(sinkLoc, coord));
             }
-            foreach (var source in sources)
-            {
-                source.Value.LoadOutTransformer(SpikeToFlit(sinkLoc, source.Coord));
-            }
-
+            source.LoadOutTransformer(SpikeToFlit(sinkLoc, sourceLoc));
         }
 
         private int GetSpikeFromFlit(object obj)
@@ -151,11 +198,11 @@ namespace SpikingDSE
             return (int neuron) =>
             {
                 MeshCoord destCoord = sinkLoc;
-                foreach (var layer in mappedLayers)
+                foreach (var (loc, range) in inputRanges)
                 {
-                    if (layer.Value.Accepts(neuron))
+                    if (range.Contains(neuron))
                     {
-                        destCoord = layer.Coord;
+                        destCoord = loc;
                         break;
                     }
                 }

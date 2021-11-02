@@ -28,7 +28,6 @@ namespace SpikingDSE
     public abstract class HiddenLayer : Layer
     {
         public abstract int SetBaseID(int baseID);
-        public abstract bool Accepts(int neuron);
     }
 
     public class ODINLayer : HiddenLayer
@@ -52,11 +51,6 @@ namespace SpikingDSE
 
         public int Size { get; }
         public string Name { get; }
-
-        public override bool Accepts(int neuron)
-        {
-            return neuron > 0 && neuron < 128;
-        }
 
         public override int SetBaseID(int baseID)
         {
