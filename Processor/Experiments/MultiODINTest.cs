@@ -68,11 +68,7 @@ namespace SpikingDSE
         public override void Setup()
         {
             var reporter = new TraceReporter("res/multi-odin/result.trace");
-            // TODO: Mapper does not yet seem correct
             var locator = new LayerMeshLocator();
-            locator.AddMapping(new Layer(32, 64), new MeshCoord(2, 0));
-            locator.AddMapping(new Layer(64, 96), new MeshCoord(1, 1));
-            locator.AddMapping(new Layer(96, 128), new MeshCoord(2, 1));
 
             // Create cores
             var weights = WeigthsUtil.ReadFromCSV("res/multi-odin/weights_256.csv");
