@@ -8,7 +8,7 @@ namespace SpikingDSE
         {
             reporter = new TraceReporter("res/odin/result.trace");
             var input = sim.AddActor(new SpikeSourceTrace(startTime: 4521, reporter: reporter));
-            var inLayer = new InputLayer(EventTraceReader.ReadInputs("res/odin/validation.trace"));
+            var inLayer = new InputLayer(128, EventTraceReader.ReadInputs("res/odin/validation.trace"));
             input.LoadLayer(inLayer);
             var output = sim.AddActor(new SpikeSink(reporter: reporter));
 

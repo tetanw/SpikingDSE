@@ -7,7 +7,7 @@ namespace SpikingDSE
 {
     public abstract class Layer
     {
-        
+        public int Size { get; protected set; }
     }
 
     public class InputLayer : Layer
@@ -15,31 +15,31 @@ namespace SpikingDSE
         private string name;
         public readonly IEnumerable<int> inputSpikes;
 
-        public InputLayer(IEnumerable<int> inputSpikes, string name = null)
+        public InputLayer(int size, IEnumerable<int> inputSpikes, string name = null)
         {
             this.inputSpikes = inputSpikes;
             this.name = name;
-            this.Size = 128;
+            this.Size = size;
         }
-
-        public int Size { get; private set; }
     }
 
     public abstract class HiddenLayer : Layer
     {
-        public abstract int SetBaseID(int baseID);
+        public abstract void SetNeuronRange(NeuronRange range);
+        public abstract void SetInputRange(NeuronRange range);
     }
 
     public class ODINLayer : HiddenLayer
     {
-        public int baseID;
         public int[] pots;
         public int[,] weights;
         public int threshold;
 
-        public ODINLayer(int[,] weights, int baseID = 0, int threshold = 30, string name = "")
+        public NeuronRange NeuronRange;
+        public NeuronRange InputRange;
+
+        public ODINLayer(int[,] weights, int threshold = 30, string name = "")
         {
-            this.baseID = baseID;
             int from = weights.GetLength(0);
             int to = weights.GetLength(1);
             this.weights = weights;
@@ -49,13 +49,16 @@ namespace SpikingDSE
             this.threshold = threshold;
         }
 
-        public int Size { get; }
         public string Name { get; }
 
-        public override int SetBaseID(int baseID)
+        public override void SetInputRange(NeuronRange range)
         {
-            this.baseID = baseID;
-            return baseID + Size;
+            this.InputRange = range;
+        }
+
+        public override void SetNeuronRange(NeuronRange range)
+        {
+            this.NeuronRange = range;
         }
     }
 

@@ -196,7 +196,7 @@ namespace SpikingDSE
                 {
                     layer.pots[dst] = 0;
                     reporter?.ProducedSpike(this, env.Now, dst);
-                    int neuron = dst + layer.baseID;
+                    int neuron = dst + layer.NeuronRange.Start;
                     var message = outTransformer == null ? neuron : outTransformer(neuron);
                     yield return env.SendAt(spikesOut, message, now);
                     now += delayModel.OutputTime;
@@ -211,7 +211,7 @@ namespace SpikingDSE
             var rcv = env.Receive(spikesIn, waitBefore: delayModel.InputTime);
             yield return rcv;
             var spike = inTransformer == null ? (int)rcv.Message : inTransformer(rcv.Message);
-            src = spike;
+            src = spike - layer.InputRange.Start;
             reporter?.ReceivedSpike(this, env.Now, spike);
         }
     }

@@ -151,10 +151,10 @@ namespace SpikingDSE
                 {
                     if (core.AcceptsLayer(layer))
                     {
-                        int newID = layer.SetBaseID(lastID);
-                        var range = new NeuronRange(lastID, newID);
-                        ranges.Add(new WithLocation<NeuronRange>(coreLoc, range));
-                        lastID = newID;
+                        var neuronRange = new NeuronRange(lastID, lastID + layer.Size);
+                        layer.SetNeuronRange(neuronRange);
+                        ranges.Add(new WithLocation<NeuronRange>(coreLoc, neuronRange));
+                        lastID += layer.Size;
                         core.AddLayer(layer);
                         layerFound = true;
                         break;
@@ -170,8 +170,10 @@ namespace SpikingDSE
             inputRanges = new List<WithLocation<NeuronRange>>();
             for (int i = 1; i < ranges.Count; i++)
             {
+                var layer = hiddenLayers[i - 1];
                 var prevRange = ranges[i - 1].Value;
                 var curLoc = ranges[i].Coord;
+                layer.SetInputRange(prevRange);
                 inputRanges.Add(new WithLocation<NeuronRange>(curLoc, prevRange));
             }
 
@@ -179,11 +181,11 @@ namespace SpikingDSE
             {
                 sink.LoadInTransformer(GetSpikeFromFlit);
             }
+
             foreach (var (_, core) in cores)
             {
                 core.LoadInTransformer(GetSpikeFromFlit);
             }
-
             var sinkLoc = sinks[0].Coord;
             foreach (var (coord, core) in cores)
             {
