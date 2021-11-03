@@ -167,6 +167,7 @@ namespace SpikingDSE
                 throw new Exception("Only accepts 1 layer");
 
             this.layer = (ODINLayer)layer;
+            nrNeuronsFilled += this.layer.Size;
         }
 
         public void LoadOutTransformer(Func<int, object> outTransformer)

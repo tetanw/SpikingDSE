@@ -146,6 +146,7 @@ namespace SpikingDSE
             ranges.Add(new WithLocation<NeuronRange>(sourceLoc, new NeuronRange(0, lastID)));
             foreach (var layer in hiddenLayers)
             {
+                bool layerFound = false;
                 foreach (var (coreLoc, core) in cores)
                 {
                     if (core.AcceptsLayer(layer))
@@ -155,9 +156,13 @@ namespace SpikingDSE
                         ranges.Add(new WithLocation<NeuronRange>(coreLoc, range));
                         lastID = newID;
                         core.AddLayer(layer);
+                        layerFound = true;
                         break;
                     }
+                }
 
+                if (!layerFound)
+                {
                     throw new Exception($"Could not find core for layer {layer}");
                 }
             }
