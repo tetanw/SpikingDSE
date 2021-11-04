@@ -103,11 +103,16 @@ namespace SpikingDSE
 
     public class XYRouter2 : MeshRouter
     {
-        public XYRouter2(int x, int y, string name = "")
+        private int inputBufferSize;
+        private int outputBufferSize;
+
+        public XYRouter2(int x, int y, string name = "", int inputBufferSize = 1, int outputBufferSize = 1)
         {
-            this.Name = name;
             this.x = x;
             this.y = y;
+            this.Name = name;
+            this.inputBufferSize = inputBufferSize;
+            this.outputBufferSize = outputBufferSize;
         }
 
         public override IEnumerable<Event> Run(Environment env)
@@ -121,14 +126,14 @@ namespace SpikingDSE
                 var inPort = GetInputPort(dir);
                 if (inPort.IsBound)
                 {
-                    inBuffers[dir] = new FIFO<MeshFlit>(env, 1);
+                    inBuffers[dir] = new FIFO<MeshFlit>(env, inputBufferSize);
                     env.Process(InLink(env, inPort, inBuffers[dir], signal));
                 }
 
                 var outPort = GetOutputPort(dir);
                 if (outPort.IsBound)
                 {
-                    outBuffers[dir] = new FIFO<MeshFlit>(env, 1);
+                    outBuffers[dir] = new FIFO<MeshFlit>(env, outputBufferSize);
                     env.Process(OutLink(env, outPort, outBuffers[dir], signal));
                 }
             }
