@@ -1,22 +1,20 @@
+using System;
 using System.Collections.Generic;
 
 namespace SpikingDSE
 {
-    public interface ConsumerReporter
-    {
-        public void Consumed(Consumer consumer, long time, object message);
-    }
+    public delegate void Consumed(Consumer consumer, long time, object message);
 
     public class Consumer : Actor
     {
+        public Consumed Consumed;
+
         public InPort In = new InPort();
 
-        private ConsumerReporter reporter;
         private int interval;
 
-        public Consumer(string name = "", int interval = 0, ConsumerReporter reporter = null)
+        public Consumer(string name = "", int interval = 0)
         {
-            this.reporter = reporter;
             this.interval = interval;
             this.Name = name;
         }
@@ -28,7 +26,7 @@ namespace SpikingDSE
             {
                 rcv = env.Receive(In, waitBefore: interval);
                 yield return rcv;
-                reporter?.Consumed(this, env.Now, rcv.Message);
+                Consumed?.Invoke(this, env.Now, rcv.Message);
             }
         }
     }

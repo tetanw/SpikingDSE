@@ -4,7 +4,7 @@ namespace SpikingDSE
 {
     public class MeshTest : Experiment
     {
-        class Reporter : ConsumerReporter, ProducerReport
+        class Reporter
         {
             public void Consumed(Consumer consumer, long time, object message)
             {
@@ -22,8 +22,10 @@ namespace SpikingDSE
         public override void Setup()
         {
             var reporter = new Reporter();
-            var producer = sim.AddActor(new Producer(4, () => new MeshFlit { DestX = 1, DestY = 1, Message = "hi" }, name: "producer", reporter: reporter));
-            var consumer = sim.AddActor(new Consumer(name: "consumer", reporter: reporter));
+            var producer = sim.AddActor(new Producer(4, () => new MeshFlit { DestX = 1, DestY = 1, Message = "hi" }, name: "producer"));
+            producer.Produced += reporter.Produced;
+            var consumer = sim.AddActor(new Consumer(name: "consumer"));
+            consumer.Consumed += reporter.Consumed;
             var routers = MeshUtils.CreateMesh(sim, 2, 2, (x, y) => new XYRouter(x, y, 1, name: $"router({x},{y})"));
 
             sim.AddChannel(routers[0, 0].inLocal, producer.output);

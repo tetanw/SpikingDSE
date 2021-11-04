@@ -4,7 +4,7 @@ namespace SpikingDSE
 {
     public class ReportingTest : Experiment
     {
-        public class Reporter : ProducerReport, ConsumerReporter
+        public class Reporter
         {
             public void Consumed(Consumer consumer, long time, object message)
             {
@@ -21,8 +21,10 @@ namespace SpikingDSE
         {
             var reporter = new Reporter();
 
-            var producer = sim.AddActor(new Producer(4, () => "hi", reporter: reporter));
-            var consumer = sim.AddActor(new Consumer(reporter: reporter));
+            var producer = sim.AddActor(new Producer(4, () => "hi"));
+            producer.Produced += reporter.Produced;
+            var consumer = sim.AddActor(new Consumer());
+            consumer.Consumed += reporter.Consumed;
 
             sim.AddChannel(producer.output, consumer.In);
             simStop.StopTime = 10;

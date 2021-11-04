@@ -4,7 +4,7 @@ namespace SpikingDSE
 {
     public class ResTest : Experiment
     {
-        class Reporter : ProducerReport, ConsumerReporter
+        class Reporter
         {
             public void Consumed(Consumer consumer, long time, object message)
             {
@@ -20,9 +20,11 @@ namespace SpikingDSE
         public override void Setup()
         {
             var reporter = new Reporter();
-            var producer = sim.AddActor(new Producer(0, () => "Hi", name: "producer", reporter: reporter));
+            var producer = sim.AddActor(new Producer(0, () => "Hi", name: "producer"));
+            producer.Produced = reporter.Produced;
             var buffer = sim.AddActor(new Buffer(5));
-            var consumer = sim.AddActor(new Consumer(interval: 3, name: "consumer", reporter: reporter));
+            var consumer = sim.AddActor(new Consumer(interval: 3, name: "consumer"));
+            consumer.Consumed = reporter.Consumed;
 
             sim.AddChannel(producer.output, buffer.input);
             sim.AddChannel(buffer.output, consumer.In);

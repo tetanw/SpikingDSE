@@ -90,7 +90,7 @@ namespace SpikingDSE
             hiddenLayers.Add(hiddenLayer);
         }
 
-        public void AddSource<T>(int x, int y, T source) where T : Actor, Source
+        public T AddSource<T>(int x, int y, T source) where T : Actor, Source
         {
             if (sources == null)
                 sources = new List<WithLocation<Source>>();
@@ -100,9 +100,11 @@ namespace SpikingDSE
             actors[x, y] = source;
             var output = source.GetOut();
             sim.AddChannel(output, routers[x, y].inLocal);
+
+            return source;
         }
 
-        public void AddSink<T>(int x, int y, T sink) where T : Actor, Sink
+        public T AddSink<T>(int x, int y, T sink) where T : Actor, Sink
         {
             if (sinks == null)
                 sinks = new List<WithLocation<Sink>>();
@@ -112,9 +114,11 @@ namespace SpikingDSE
             actors[x, y] = sink;
             var input = sink.GetIn();
             sim.AddChannel(routers[x, y].outLocal, input);
+
+            return sink;
         }
 
-        public void AddCore<T>(int x, int y, T core) where T : Actor, Core
+        public T AddCore<T>(int x, int y, T core) where T : Actor, Core
         {
             if (cores == null)
                 cores = new List<WithLocation<Core>>();
@@ -126,6 +130,8 @@ namespace SpikingDSE
             var coreOut = core.GetOut();
             sim.AddChannel(coreOut, routers[x, y].inLocal);
             sim.AddChannel(routers[x, y].outLocal, coreIn);
+
+            return core;
         }
 
         public void Compile()

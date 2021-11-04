@@ -36,7 +36,8 @@ namespace SpikingDSE
             // mapping.AddCore(1, 0, new ODINCore(256, delayModel, name: "odin3"));
             // mapping.AddCore(1, 1, new ODINCore(256, delayModel, name: "odin4"));
             mapping.AddSource(2, 1, new SpikeSourceTrace(name: "source"));
-            mapping.AddSink(2, 0, new SpikeSink(name: "sink", reporter: reporter));
+            var sink = mapping.AddSink(2, 0, new SpikeSink(name: "sink"));
+            sink.SpikeReceived += reporter.SpikeReceived;
 
             // Compile
             mapping.Compile();

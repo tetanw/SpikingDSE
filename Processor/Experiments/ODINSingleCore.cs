@@ -7,10 +7,12 @@ namespace SpikingDSE
         public override void Setup()
         {
             reporter = new TraceReporter("res/odin/result.trace");
-            var input = sim.AddActor(new SpikeSourceTrace(startTime: 4521, reporter: reporter));
+            var input = sim.AddActor(new SpikeSourceTrace(startTime: 4521));
+            input.SpikeSent = reporter.SpikeSent;
             var inLayer = new InputLayer(128, EventTraceReader.ReadInputs("res/odin/validation.trace"));
             input.LoadLayer(inLayer);
-            var output = sim.AddActor(new SpikeSink(reporter: reporter));
+            var output = sim.AddActor(new SpikeSink());
+            output.SpikeReceived += reporter.SpikeReceived;
 
             var delayModel = new ODINDelayModel
             {

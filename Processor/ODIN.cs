@@ -4,25 +4,22 @@ using System.IO;
 
 namespace SpikingDSE
 {
-    public interface SpikeSourceTraceReporter
-    {
-        public void SpikeSent(SpikeSourceTrace source, int neuron, long time);
-    }
+    public delegate void SpikeSent(SpikeSourceTrace source, int neuron, long time);
 
     public class SpikeSourceTrace : Actor, Source
     {
+        public SpikeSent SpikeSent;
+
         public OutPort spikesOut = new OutPort();
 
         private InputLayer inputLayer;
         private long startTime;
-        private SpikeSourceTraceReporter reporter;
         private Func<int, object> outTransformer;
 
-        public SpikeSourceTrace(long startTime = 0, SpikeSourceTraceReporter reporter = null, string name = null)
+        public SpikeSourceTrace(long startTime = 0, string name = null)
         {
             this.Name = name;
             this.startTime = startTime;
-            this.reporter = reporter;
         }
 
         public OutPort GetOut()
@@ -47,27 +44,24 @@ namespace SpikingDSE
             {
                 var message = outTransformer == null ? neuron : outTransformer(neuron);
                 yield return env.Send(spikesOut, message);
-                reporter?.SpikeSent(this, neuron, env.Now);
+                SpikeSent?.Invoke(this, neuron, env.Now);
             }
         }
     }
 
-    public interface SpikeSinkReporter
-    {
-        public void SpikeReceived(SpikeSink sink, int neuron, long time);
-    }
+    public delegate void SpikeReceived(SpikeSink sink, int neuron, long time);
 
     public class SpikeSink : Actor, Sink
     {
+        public SpikeReceived SpikeReceived;
+
         public InPort spikesIn = new InPort();
 
-        private SpikeSinkReporter reporter;
         private Func<object, int> inTransformer;
 
-        public SpikeSink(SpikeSinkReporter reporter = null, Func<object, int> inTransformer = null, string name = null)
+        public SpikeSink(Func<object, int> inTransformer = null, string name = null)
         {
             this.Name = name;
-            this.reporter = reporter;
             this.inTransformer = inTransformer;
         }
 
@@ -88,16 +82,13 @@ namespace SpikingDSE
                 var rcv = env.Receive(spikesIn);
                 yield return rcv;
                 int neuron = inTransformer == null ? (int)rcv.Message : inTransformer(rcv.Message);
-                reporter?.SpikeReceived(this, neuron, env.Now);
+                SpikeReceived?.Invoke(this, neuron, env.Now);
             }
         }
     }
 
-    public interface ODINReporter
-    {
-        public void ReceivedSpike(ODINCore core, long time, int neuron);
-        public void ProducedSpike(ODINCore core, long time, int neuron);
-    }
+    public delegate void ReceivedSpike(ODINCore core, long time, int neuron);
+    public delegate void ProducedSpike(ODINCore core, long time, int neuron);
 
     public struct ODINDelayModel
     {
@@ -108,6 +99,9 @@ namespace SpikingDSE
 
     public class ODINCore : Actor, Core
     {
+        public ProducedSpike ProducedSpike;
+        public ReceivedSpike ReceivedSpike;
+
         public InPort spikesIn = new InPort();
         public OutPort spikesOut = new OutPort();
 
@@ -119,14 +113,12 @@ namespace SpikingDSE
         private int nrNeuronsFilled = 0;
         private Func<int, object> outTransformer;
         private Func<object, int> inTransformer;
-        private ODINReporter reporter;
 
-        public ODINCore(int nrNeurons, ODINDelayModel delayModel, string name = "", ODINReporter reporter = null)
+        public ODINCore(int nrNeurons, ODINDelayModel delayModel, string name = "")
         {
             this.Name = name;
             this.nrNeurons = nrNeurons;
             this.delayModel = delayModel;
-            this.reporter = reporter;
         }
 
         public bool AcceptsLayer(Layer layer)
@@ -195,7 +187,7 @@ namespace SpikingDSE
                 if (layer.pots[dst] >= layer.threshold)
                 {
                     layer.pots[dst] = 0;
-                    reporter?.ProducedSpike(this, env.Now, dst);
+                    ProducedSpike?.Invoke(this, env.Now, dst);
                     int neuron = dst + layer.NeuronRange.Start;
                     var message = outTransformer == null ? neuron : outTransformer(neuron);
                     yield return env.SendAt(spikesOut, message, now);
@@ -212,7 +204,7 @@ namespace SpikingDSE
             yield return rcv;
             var spike = inTransformer == null ? (int)rcv.Message : inTransformer(rcv.Message);
             src = spike - layer.InputRange.Start;
-            reporter?.ReceivedSpike(this, env.Now, spike);
+            ReceivedSpike?.Invoke(this, env.Now, spike);
         }
     }
 }

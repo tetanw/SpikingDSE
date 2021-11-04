@@ -1,3 +1,5 @@
+using System;
+
 namespace SpikingDSE
 {
     public class ProducerConsumer : Experiment
@@ -9,7 +11,7 @@ namespace SpikingDSE
 
             sim.AddChannel(consumer.In, producer.output);
 
-            simStop.StopEvents = 10_000_000;
+            simStop.StopEvents = 100_000_000;
         }
 
         public override void Cleanup()

@@ -47,7 +47,7 @@ namespace SpikingDSE
         public abstract void Cleanup();
     }
 
-    public class TraceReporter : SpikeSourceTraceReporter, SpikeSinkReporter
+    public class TraceReporter
     {
         private StreamWriter sw;
 

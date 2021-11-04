@@ -3,25 +3,23 @@ using System.Collections.Generic;
 
 namespace SpikingDSE
 {
-    public interface ProducerReport
-    {
-        public void Produced(Producer producer, long time, object message);
-    }
+
+    public delegate void Produced(Producer producer, long time, object message);
 
     public class Producer : Actor
     {
+        public Produced Produced;
+
         public OutPort output = new OutPort();
 
         private int interval;
-        private ProducerReport reporter;
         private Func<object> create;
 
-        public Producer(int interval, Func<object> create, string name = "", ProducerReport reporter = null)
+        public Producer(int interval, Func<object> create, string name = "")
         {
             this.interval = interval;
             this.create = create;
             this.Name = name;
-            this.reporter = reporter;
         }
 
         public override IEnumerable<Event> Run(Environment env)
@@ -30,7 +28,7 @@ namespace SpikingDSE
             {
                 var message = create();
                 yield return env.Send(output, message);
-                reporter?.Produced(this, env.Now, message);
+                Produced?.Invoke(this, env.Now, message);
                 yield return env.Delay(interval);
             }
         }
