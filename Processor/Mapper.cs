@@ -4,6 +4,18 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace SpikingDSE
 {
+    struct MeshCoord
+    {
+        public readonly int x;
+        public readonly int y;
+
+        public MeshCoord(int x, int y)
+        {
+            this.x = x;
+            this.y = y;
+        }
+    }
+
     struct WithLocation<T>
     {
         public WithLocation(int x, int y, T value)

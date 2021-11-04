@@ -2,6 +2,7 @@ using System.Collections.Generic;
 
 namespace SpikingDSE
 {
+    // TODO: Maybe integrate this into the scheduler
     public sealed class FIFO<T>
     {
         private Environment env;
@@ -74,6 +75,7 @@ namespace SpikingDSE
             get => items.Count;
         }
 
+        // FIXME: Shouldn't this be based on the resource??
         public bool IsFull
         {
             get => itemsEmpty.Amount == 0;
