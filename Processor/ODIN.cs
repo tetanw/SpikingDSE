@@ -6,7 +6,7 @@ namespace SpikingDSE
 {
     public delegate void SpikeSent(SpikeSourceTrace source, int neuron, long time);
 
-    public class SpikeSourceTrace : Actor, Source
+    public sealed class SpikeSourceTrace : Actor, Source
     {
         public SpikeSent SpikeSent;
 
@@ -51,7 +51,7 @@ namespace SpikingDSE
 
     public delegate void SpikeReceived(SpikeSink sink, int neuron, long time);
 
-    public class SpikeSink : Actor, Sink
+    public sealed class SpikeSink : Actor, Sink
     {
         public SpikeReceived SpikeReceived;
 
@@ -97,7 +97,7 @@ namespace SpikingDSE
         public int OutputTime;
     }
 
-    public class ODINCore : Actor, Core
+    public sealed class ODINCore : Actor, Core
     {
         public ProducedSpike ProducedSpike;
         public ReceivedSpike ReceivedSpike;

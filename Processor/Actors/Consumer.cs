@@ -5,7 +5,7 @@ namespace SpikingDSE
 {
     public delegate void Consumed(Consumer consumer, long time, object message);
 
-    public class Consumer : Actor
+    public sealed class Consumer : Actor
     {
         public Consumed Consumed;
 

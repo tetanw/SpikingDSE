@@ -7,7 +7,7 @@ namespace SpikingDSE
 
     }
 
-    public class Join : Actor
+    public sealed class Join : Actor
     {
         public InPort in1 = new InPort();
         public InPort in2 = new InPort();

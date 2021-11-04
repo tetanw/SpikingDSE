@@ -7,7 +7,7 @@ namespace SpikingDSE
         public void MessageSent(Fork fork, OutPort port, object message);
     }
 
-    public class Fork : Actor
+    public sealed class Fork : Actor
     {
         public InPort input = new InPort();
         public OutPort out1 = new OutPort();

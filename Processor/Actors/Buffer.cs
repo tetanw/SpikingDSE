@@ -2,7 +2,7 @@ using System.Collections.Generic;
 
 namespace SpikingDSE
 {
-    public class Buffer : Actor
+    public sealed class Buffer : Actor
     {
         public InPort input = new InPort();
         public OutPort output = new OutPort();

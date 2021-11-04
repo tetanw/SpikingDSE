@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace SpikingDSE
 {
-    public class MeshFlit
+    public sealed class MeshFlit
     {
         public int SrcX;
         public int SrcY;
@@ -17,7 +17,7 @@ namespace SpikingDSE
         }
     }
 
-    public class MeshDir
+    public sealed class MeshDir
     {
         public const int North = 0;
         public const int East = 1;
@@ -26,7 +26,7 @@ namespace SpikingDSE
         public const int Local = 4;
     }
 
-    public class XYRouter : MeshRouter
+    public sealed class XYRouter : MeshRouter
     {
         public long processingDelay;
 
@@ -101,7 +101,7 @@ namespace SpikingDSE
         public OutPort outLocal = new OutPort();
     }
 
-    public class XYRouter2 : MeshRouter
+    public sealed class XYRouter2 : MeshRouter
     {
         private int inputBufferSize;
         private int outputBufferSize;
@@ -265,7 +265,7 @@ namespace SpikingDSE
         }
     }
 
-    public class MeshUtils
+    public sealed class MeshUtils
     {
         public delegate MeshRouter ConstructRouter(int x, int y);
 

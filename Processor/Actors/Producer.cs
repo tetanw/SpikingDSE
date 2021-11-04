@@ -6,7 +6,7 @@ namespace SpikingDSE
 
     public delegate void Produced(Producer producer, long time, object message);
 
-    public class Producer : Actor
+    public sealed class Producer : Actor
     {
         public Produced Produced;
 
