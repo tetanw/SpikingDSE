@@ -102,6 +102,13 @@ namespace SpikingDSE
             return resource;
         }
 
+        public void EndReceive(ReceiveEvent ev, long newTime)
+        {
+            var channel = channels[ev.Port.ChannelHandle];
+            channel.SendProcess.Time = newTime;
+            ready.Enqueue(channel.SendProcess);
+        }
+
         public Process AddProcess(IEnumerable<Event> runnable)
         {
             var process = new Process
@@ -345,7 +352,7 @@ namespace SpikingDSE
                 var rcv = channel.ReceiveEvent as ReceiveEvent;
                 rcv.Message = channel.SendEvent.Message;
                 long newTime = Math.Max(channel.SendEvent.Time, rcv.Time);
-                QueueThreads(channel, newTime);
+                QueueThreads(channel, newTime, rcv.BlockSender);
                 CleanChannel(channel);
             }
             else if (channel.ReceiveEvent is SelectEvent)
@@ -354,7 +361,7 @@ namespace SpikingDSE
                 select.Message = channel.SendEvent.Message;
                 select.Port = channel.InPort;
                 long newTime = Math.Max(channel.SendEvent.Time, select.Time);
-                QueueThreads(channel, newTime);
+                QueueThreads(channel, newTime, false);
 
                 for (int i = 0; i < select.Ports.Length; i++)
                 {
@@ -379,11 +386,14 @@ namespace SpikingDSE
             channel.ReceiveProcess = null;
         }
 
-        private void QueueThreads(Channel channel, long newTime)
+        private void QueueThreads(Channel channel, long newTime, bool blockSender)
         {
-            channel.SendProcess.Time = newTime;
+            if (!blockSender)
+            {
+                channel.SendProcess.Time = newTime;
+                ready.Enqueue(channel.SendProcess);
+            }
             channel.ReceiveProcess.Time = newTime;
-            ready.Enqueue(channel.SendProcess);
             ready.Enqueue(channel.ReceiveProcess);
         }
 

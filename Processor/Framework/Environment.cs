@@ -40,13 +40,19 @@ namespace SpikingDSE
             return new SendEvent { Port = port, Message = message, Time = time };
         }
 
-        public ReceiveEvent Receive(InPort port, long waitBefore = 0)
+        public ReceiveEvent Receive(InPort port, long waitBefore = 0, bool blockSender = false)
         {
             if (!port.IsBound)
             {
                 throw new Exception("Port is not bound!");
             }
-            return new ReceiveEvent { Port = port, Time = Now + waitBefore };
+            return new ReceiveEvent { Port = port, Time = Now + waitBefore, BlockSender = blockSender };
+        }
+
+        public void EndReceive(ReceiveEvent ev)
+        {
+            // TODO: Test whether this will work
+            sched.EndReceive(ev, Now);
         }
 
         public SelectEvent Select(params InPort[] ports)

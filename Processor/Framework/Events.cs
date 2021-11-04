@@ -27,6 +27,7 @@ namespace SpikingDSE
     {
         // To scheduler
         public InPort Port;
+        public bool BlockSender;
         public long Time;
 
         // Result
