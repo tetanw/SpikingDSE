@@ -171,8 +171,14 @@ namespace SpikingDSE
         {
             while (true)
             {
-                yield return env.Process(Receive(env));
-                yield return env.Process(Compute(env));
+                foreach (var ev in Receive(env))
+                {
+                    yield return ev;
+                }
+                foreach (var ev in Compute(env))
+                {
+                    yield return ev;
+                }
             }
         }
 
