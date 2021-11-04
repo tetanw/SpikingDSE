@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace SpikingDSE
 {
@@ -32,110 +33,94 @@ namespace SpikingDSE
         }
     }
 
-    public struct NeuronRange
+    public class Mesh
     {
-        public readonly int Start;
-        public readonly int End;
+        private Simulator sim;
+        private MeshRouter[,] routers;
+        public Actor[,] actors;
+        public readonly int width, height;
 
-        public NeuronRange(int start, int end)
+        public Mesh(Simulator sim, int width, int height, MeshUtils.ConstructRouter construct)
         {
-            this.Start = start;
-            this.End = end;
+            this.sim = sim;
+            this.width = width;
+            this.height = height;
+
+            routers = MeshUtils.CreateMesh(sim, width, height, construct);
+            actors = new Actor[width, height];
         }
 
-        public bool Contains(int number)
+        public T AddActor<T>(int x, int y, [DisallowNull] T actor) where T : Actor
         {
-            return number >= Start && number < End;
+            sim.AddActor(actor);
+
+            actors[x, y] = actor;
+
+            if (actor is Sender)
+            {
+                var sender = actor as Sender;
+                var output = sender.GetOut();
+                sim.AddChannel(output, routers[x, y].inLocal);
+            }
+
+            if (actor is Receiver)
+            {
+                var sender = actor as Receiver;
+                var input = sender.GetIn();
+                sim.AddChannel(routers[x, y].outLocal, input);
+            }
+
+            return actor;
         }
 
-        public override string ToString()
-        {
-            return $"[{Start}, {End})";
-        }
+
     }
 
-    public class MeshMapping
+    public class MeshFirstFitMapper
     {
-        private MeshRouter[,] routers;
-        private Actor[,] actors;
-        private Simulator sim;
-        private InputLayer inputLayer;
-        private List<HiddenLayer> hiddenLayers;
         private List<WithLocation<Source>> sources;
         private List<WithLocation<Sink>> sinks;
         private List<WithLocation<Core>> cores;
         private List<WithLocation<NeuronRange>> inputRanges;
 
-        public MeshMapping(Simulator sim)
+        public MeshFirstFitMapper()
         {
-            this.sim = sim;
+
         }
 
-        public void CreateMesh(int width, int height)
+        private void SortActors(Mesh mesh)
         {
-            routers = MeshUtils.CreateMesh(sim, width, height, (x, y) => new XYRouter2(x, y, name: $"router({x},{y})"));
-            actors = new Actor[width, height];
+            sinks = new List<WithLocation<Sink>>();
+            sources = new List<WithLocation<Source>>();
+            cores = new List<WithLocation<Core>>();
+
+            for (int y = 0; y < mesh.height; y++)
+            {
+                for (int x = 0; x < mesh.width; x++)
+                {
+                    var actor = mesh.actors[x, y];
+                    if (actor is Sink)
+                    {
+                        sinks.Add(new WithLocation<Sink>(x, y, actor as Sink));
+                    }
+                    
+                    if (actor is Source)
+                    {
+                        sources.Add(new WithLocation<Source>(x, y, actor as Source));
+                    }
+
+                    if (actor is Core)
+                    {
+                        cores.Add(new WithLocation<Core>(x, y, actor as Core));
+                    }
+                }
+            }
         }
 
-        public void AddInputLayer(InputLayer inputLayer)
+        public void Compile(Mesh mesh, SNN snn)
         {
-            this.inputLayer = inputLayer;
-        }
+            SortActors(mesh);
 
-        public void AddHiddenLayer(HiddenLayer hiddenLayer)
-        {
-            if (hiddenLayers == null)
-                hiddenLayers = new List<HiddenLayer>();
-
-            hiddenLayers.Add(hiddenLayer);
-        }
-
-        public T AddSource<T>(int x, int y, T source) where T : Actor, Source
-        {
-            if (sources == null)
-                sources = new List<WithLocation<Source>>();
-            sources.Add(new WithLocation<Source>(x, y, source));
-            sim.AddActor(source);
-
-            actors[x, y] = source;
-            var output = source.GetOut();
-            sim.AddChannel(output, routers[x, y].inLocal);
-
-            return source;
-        }
-
-        public T AddSink<T>(int x, int y, T sink) where T : Actor, Sink
-        {
-            if (sinks == null)
-                sinks = new List<WithLocation<Sink>>();
-            sinks.Add(new WithLocation<Sink>(x, y, sink));
-            sim.AddActor(sink);
-
-            actors[x, y] = sink;
-            var input = sink.GetIn();
-            sim.AddChannel(routers[x, y].outLocal, input);
-
-            return sink;
-        }
-
-        public T AddCore<T>(int x, int y, T core) where T : Actor, Core
-        {
-            if (cores == null)
-                cores = new List<WithLocation<Core>>();
-            cores.Add(new WithLocation<Core>(x, y, core));
-            sim.AddActor(core);
-
-            actors[x, y] = core;
-            var coreIn = core.GetIn();
-            var coreOut = core.GetOut();
-            sim.AddChannel(coreOut, routers[x, y].inLocal);
-            sim.AddChannel(routers[x, y].outLocal, coreIn);
-
-            return core;
-        }
-
-        public void Compile()
-        {
             if (sources.Count > 1)
                 throw new Exception("Can not have more than 1 source");
 
@@ -144,13 +129,13 @@ namespace SpikingDSE
 
             // Map all source layers
             var (sourceLoc, source) = sources[0];
-            source.LoadLayer(inputLayer);
+            source.LoadLayer(snn.inputLayer);
 
             // Mapp all of the hidden layers to cores
-            int lastID = inputLayer.Size;
+            int lastID = snn.inputLayer.Size;
             var ranges = new List<WithLocation<NeuronRange>>();
             ranges.Add(new WithLocation<NeuronRange>(sourceLoc, new NeuronRange(0, lastID)));
-            foreach (var layer in hiddenLayers)
+            foreach (var layer in snn.hiddenLayers)
             {
                 bool layerFound = false;
                 foreach (var (coreLoc, core) in cores)
@@ -176,7 +161,7 @@ namespace SpikingDSE
             inputRanges = new List<WithLocation<NeuronRange>>();
             for (int i = 1; i < ranges.Count; i++)
             {
-                var layer = hiddenLayers[i - 1];
+                var layer = snn.hiddenLayers[i - 1];
                 var prevRange = ranges[i - 1].Value;
                 var curLoc = ranges[i].Coord;
                 layer.SetInputRange(prevRange);

@@ -130,5 +130,44 @@ namespace SpikingDSE
         }
     }
 
-   
+    public struct NeuronRange
+    {
+        public readonly int Start;
+        public readonly int End;
+
+        public NeuronRange(int start, int end)
+        {
+            this.Start = start;
+            this.End = end;
+        }
+
+        public bool Contains(int number)
+        {
+            return number >= Start && number < End;
+        }
+
+        public override string ToString()
+        {
+            return $"[{Start}, {End})";
+        }
+    }
+
+    public class SNN
+    {
+        public void AddInputLayer(InputLayer inputLayer)
+        {
+            this.inputLayer = inputLayer;
+        }
+
+        public void AddHiddenLayer(HiddenLayer hiddenLayer)
+        {
+            if (hiddenLayers == null)
+                hiddenLayers = new List<HiddenLayer>();
+
+            hiddenLayers.Add(hiddenLayer);
+        }
+
+        public InputLayer inputLayer;
+        public List<HiddenLayer> hiddenLayers;
+    }
 }
