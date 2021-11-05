@@ -4,19 +4,23 @@ using System.IO;
 
 namespace SpikingDSE
 {
-    public delegate void SpikeSent(SpikeSourceTrace source, int neuron, long time);
+    public delegate void SpikeSent(Controller controller, int neuron, long time);
+    public delegate void SpikeReceived(Controller sink, int neuron, long time);
 
-    public sealed class SpikeSourceTrace : Actor, Source
+    public sealed class Controller : Actor, Source, Sink
     {
         public SpikeSent SpikeSent;
+        public SpikeReceived SpikeReceived;
 
+        public InPort spikesIn = new InPort();
         public OutPort spikesOut = new OutPort();
 
         private InputLayer inputLayer;
         private long startTime;
         private Func<int, object> outTransformer;
+        private Func<object, int> inTransformer;
 
-        public SpikeSourceTrace(long startTime = 0, string name = null)
+        public Controller(long startTime = 0, string name = null)
         {
             this.Name = name;
             this.startTime = startTime;
@@ -39,6 +43,14 @@ namespace SpikingDSE
 
         public override IEnumerable<Event> Run(Environment env)
         {
+            env.Process(Sender(env));
+            env.Process(Receiver(env));
+
+            yield break;
+        }
+
+        private IEnumerable<Event> Sender(Environment env)
+        {
             yield return env.SleepUntil(startTime);
             foreach (var neuron in inputLayer.inputSpikes)
             {
@@ -47,22 +59,16 @@ namespace SpikingDSE
                 SpikeSent?.Invoke(this, neuron, env.Now);
             }
         }
-    }
 
-    public delegate void SpikeReceived(SpikeSink sink, int neuron, long time);
-
-    public sealed class SpikeSink : Actor, Sink
-    {
-        public SpikeReceived SpikeReceived;
-
-        public InPort spikesIn = new InPort();
-
-        private Func<object, int> inTransformer;
-
-        public SpikeSink(Func<object, int> inTransformer = null, string name = null)
+        private IEnumerable<Event> Receiver(Environment env)
         {
-            this.Name = name;
-            this.inTransformer = inTransformer;
+            while (true)
+            {
+                var rcv = env.Receive(spikesIn);
+                yield return rcv;
+                int neuron = inTransformer == null ? (int)rcv.Message : inTransformer(rcv.Message);
+                SpikeReceived?.Invoke(this, neuron, env.Now);
+            }
         }
 
         public InPort GetIn()
@@ -73,17 +79,6 @@ namespace SpikingDSE
         public void LoadInTransformer(Func<object, int> inTransformer)
         {
             this.inTransformer = inTransformer;
-        }
-
-        public override IEnumerable<Event> Run(Environment env)
-        {
-            while (true)
-            {
-                var rcv = env.Receive(spikesIn);
-                yield return rcv;
-                int neuron = inTransformer == null ? (int)rcv.Message : inTransformer(rcv.Message);
-                SpikeReceived?.Invoke(this, neuron, env.Now);
-            }
         }
     }
 
@@ -96,6 +91,10 @@ namespace SpikingDSE
         public int ComputeTime;
         public int OutputTime;
     }
+
+    public record ODINEvent();
+    public sealed record NeuronTimeRef() : ODINEvent;
+    public sealed record NeuronSpike(int neuron) : ODINEvent;
 
     public sealed class ODINCore : Actor, Core
     {
@@ -175,6 +174,7 @@ namespace SpikingDSE
                 {
                     yield return ev;
                 }
+
                 foreach (var ev in Compute(env))
                 {
                     yield return ev;

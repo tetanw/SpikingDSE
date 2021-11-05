@@ -34,9 +34,9 @@ namespace SpikingDSE
             // mapping.AddCore(0, 1, new ODINCore(256, delayModel, name: "odin2"));
             // mapping.AddCore(1, 0, new ODINCore(256, delayModel, name: "odin3"));
             // mapping.AddCore(1, 1, new ODINCore(256, delayModel, name: "odin4"));
-            mesh.AddActor(2, 1, new SpikeSourceTrace(name: "source"));
-            var sink = mesh.AddActor(2, 0, new SpikeSink(name: "sink"));
-            sink.SpikeReceived += reporter.SpikeReceived;
+            var controller = mesh.AddActor(2, 1, new Controller(name: "source"));
+            controller.SpikeReceived += reporter.SpikeReceived;
+            controller.SpikeSent += reporter.SpikeSent;
 
             // Compile
             var mapper = new MeshFirstFitMapper();

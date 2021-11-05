@@ -56,12 +56,12 @@ namespace SpikingDSE
             this.sw = new StreamWriter(reportPath);
         }
 
-        public void SpikeReceived(SpikeSink sink, int neuron, long time)
+        public void SpikeReceived(Controller controller, int neuron, long time)
         {
             sw.WriteLine($"1,{neuron},{time}");
         }
 
-        public void SpikeSent(SpikeSourceTrace source, int neuron, long time)
+        public void SpikeSent(Controller source, int neuron, long time)
         {
             sw.WriteLine($"0,{neuron},{time}");
         }

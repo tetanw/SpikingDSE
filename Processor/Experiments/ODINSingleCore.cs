@@ -7,12 +7,11 @@ namespace SpikingDSE
         public override void Setup()
         {
             reporter = new TraceReporter("res/odin/result.trace");
-            var input = sim.AddActor(new SpikeSourceTrace(startTime: 4521));
-            input.SpikeSent = reporter.SpikeSent;
+            var controller = sim.AddActor(new Controller(startTime: 4521));
+            controller.SpikeSent = reporter.SpikeSent;
+            controller.SpikeReceived += reporter.SpikeReceived;
             var inLayer = new InputLayer(128, EventTraceReader.ReadInputs("res/odin/validation.trace"));
-            input.LoadLayer(inLayer);
-            var output = sim.AddActor(new SpikeSink());
-            output.SpikeReceived += reporter.SpikeReceived;
+            controller.LoadLayer(inLayer);
 
             var delayModel = new ODINDelayModel
             {
@@ -25,8 +24,8 @@ namespace SpikingDSE
             var layer = new ODINLayer(weights, threshold: 30, name: "hidden");
             core1.AddLayer(layer);
 
-            sim.AddChannel(core1.spikesIn, input.spikesOut);
-            sim.AddChannel(output.spikesIn, core1.spikesOut);
+            sim.AddChannel(core1.spikesIn, controller.spikesOut);
+            sim.AddChannel(controller.spikesIn, core1.spikesOut);
         }
 
         public override void Cleanup()
