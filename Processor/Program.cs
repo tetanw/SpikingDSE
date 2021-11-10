@@ -84,6 +84,10 @@ namespace SpikingDSE
                     {
                         new ResPerf().Run();
                     }
+                    else if (opts.Name.Equals("ToyProblem"))
+                    {
+                        new ToyProblem().Run();
+                    }
                     else
                     {
                         throw new Exception($"Unknown simulation: {opts.Name}");
