@@ -388,13 +388,13 @@ namespace SpikingDSE
 
         private void QueueThreads(Channel channel, long newTime, bool blockSender)
         {
+            channel.ReceiveProcess.Time = newTime;
+            ready.Enqueue(channel.ReceiveProcess);
             if (!blockSender)
             {
                 channel.SendProcess.Time = newTime;
                 ready.Enqueue(channel.SendProcess);
             }
-            channel.ReceiveProcess.Time = newTime;
-            ready.Enqueue(channel.ReceiveProcess);
         }
 
         public void PrintDeadlockReport()
