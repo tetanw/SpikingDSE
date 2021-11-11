@@ -5,6 +5,9 @@
 		},
 		{
 			"path": "Processor"
+		},
+		{
+			"path": "..\\SRNN-ICONs2020"
 		}
 	],
 	"settings": {}
