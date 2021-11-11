@@ -114,7 +114,6 @@ public sealed class ODINCore : Actor, Core
 
     private IEnumerable<Event> Compute(Environment env)
     {
-        // FIXME: Debug
         var inputSpike = (ODINSpikeEvent)received;
         ReceivedSpike?.Invoke(this, env.Now, inputSpike);
 
