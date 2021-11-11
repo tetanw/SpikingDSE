@@ -73,22 +73,22 @@ namespace SpikingDSE
             var input = new InputLayer(new TensorFile("res/multi-odin/images_csv_1.csv"), name: "input");
             snn.AddLayer(input);
             var hidden1 = new RLIFLayer(
-                WeigthsUtil.Normalize(WeigthsUtil.ReadFromCSV("res/multi-odin/weights_i_2_h1_n.csv", headers: true), scale: 8.0, bias: 0.0),
-                WeigthsUtil.Normalize(WeigthsUtil.ReadFromCSV("res/multi-odin/weights_h1_2_h1_n.csv", headers: true), scale: 8.0, bias: 0.0),
+                WeigthsUtil.Normalize(WeigthsUtil.ReadFromCSVDouble("res/multi-odin/weights_i_2_h1_n.csv", headers: true), scale: 8.0, bias: 0.0),
+                WeigthsUtil.Normalize(WeigthsUtil.ReadFromCSVDouble("res/multi-odin/weights_h1_2_h1_n.csv", headers: true), scale: 8.0, bias: 0.0),
                 name: "hidden1"
             );
             var hidden1Conv = RLIF2LIF(hidden1);
             // WeigthsUtil.ToCSV("res/multi-odin/test-weights.csv", hidden1Conv.weights);
             snn.AddLayer(hidden1Conv);
             var hidden2 = new RLIFLayer(
-                WeigthsUtil.Normalize(WeigthsUtil.ReadFromCSV("res/multi-odin/weights_h1_2_h2_n.csv", headers: true), scale: 8.0, bias: 0.0),
-                WeigthsUtil.Normalize(WeigthsUtil.ReadFromCSV("res/multi-odin/weights_h2_2_h2_n.csv", headers: true), scale: 8.0, bias: 0.0),
+                WeigthsUtil.Normalize(WeigthsUtil.ReadFromCSVDouble("res/multi-odin/weights_h1_2_h2_n.csv", headers: true), scale: 8.0, bias: 0.0),
+                WeigthsUtil.Normalize(WeigthsUtil.ReadFromCSVDouble("res/multi-odin/weights_h2_2_h2_n.csv", headers: true), scale: 8.0, bias: 0.0),
                 name: "hidden2"
             );
             var hidden2Conv = RLIF2LIF(hidden2);
             snn.AddLayer(hidden2Conv);
             var output = new LIFLayer(
-                WeigthsUtil.Normalize(WeigthsUtil.ReadFromCSV("res/multi-odin/weights_h2o_n.csv", headers: true), scale: 8.0, bias: 0.0),
+                WeigthsUtil.Normalize(WeigthsUtil.ReadFromCSVDouble("res/multi-odin/weights_h2o_n.csv", headers: true), scale: 8.0, bias: 0.0),
                 name: "output"
             );
             snn.AddLayer(output);
