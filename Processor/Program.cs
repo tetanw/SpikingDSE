@@ -84,6 +84,10 @@ namespace SpikingDSE
                     {
                         new ToyProblem().Run();
                     }
+                    else if (opts.Name.Equals("SingleOdin"))
+                    {
+                        new ODINSingleCore().Run();
+                    }
                     else
                     {
                         throw new Exception($"Unknown simulation: {opts.Name}");

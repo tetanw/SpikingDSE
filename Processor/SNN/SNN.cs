@@ -36,16 +36,15 @@ namespace SpikingDSE
 
         public LIFLayer(int[,] weights, int threshold = 30, int leakage = 0, bool refractory = true, string name = "")
         {
-            int size = weights.GetLength(0);
+            this.InputSize = weights.GetLength(0);
+            this.Size = weights.GetLength(1);
             this.weights = weights;
-            this.pots = new int[size];
-            this.spiked = new bool[size];
+            this.pots = new int[Size];
+            this.spiked = new bool[Size];
             this.threshold = threshold;
             this.leakage = leakage;
             this.refractory = refractory;
             this.Name = name;
-            this.InputSize = weights.GetLength(0);
-            this.Size = weights.GetLength(1);
         }
 
         public void Leak()
@@ -125,20 +124,30 @@ namespace SpikingDSE
             return post;
         }
 
-        public static double[,] ReadFromCSV(string path, bool headers = false, bool applyCorrection = false)
+        public static double[,] ReadFromCSVDouble(string path, bool headers = false, bool applyCorrection = false)
         {
-            double[,] weights = null;
+            return ReadFromCSV(path, double.Parse, headers, applyCorrection);
+        }
+
+        public static int[,] ReadFromCSVInt(string path, bool headers = false, bool applyCorrection = false)
+        {
+            return ReadFromCSV(path, int.Parse, headers, applyCorrection);
+        }
+
+        private static T[,] ReadFromCSV<T>(string path, Func<string, T> conv, bool headers = false, bool applyCorrection = false)
+        {
+            T[,] weights = null;
             int currentLine = 0;
             var lines = File.ReadAllLines(path).Skip(headers ? 1 : 0).ToArray();
             for (int i = 0; i < lines.Length; i++)
             {
                 var line = lines[i];
-                double[] numbers = line.Split(",").Skip(headers ? 1 : 0).Select(t => double.Parse(t)).ToArray();
+                T[] numbers = line.Split(",").Skip(headers ? 1 : 0).Select(conv).ToArray();
                 if (weights == null)
                 {
                     int nrSrc = numbers.Length;
                     int nrDest = lines.Length;
-                    weights = new double[nrSrc, nrDest];
+                    weights = new T[nrSrc, nrDest];
                 }
 
                 for (int j = 0; j < numbers.Length; j++)
@@ -156,7 +165,7 @@ namespace SpikingDSE
             return weights;
         }
 
-        private static void Swap(int c, int x, int y, double[,] array)
+        private static void Swap<T>(int c, int x, int y, T[,] array)
         {
             // swap index x and y
             var buffer = array[c, x];
@@ -164,11 +173,14 @@ namespace SpikingDSE
             array[c, y] = buffer;
         }
 
-        private static void CorrectWeights(double[,] weights)
+        private static void CorrectWeights<T>(T[,] weights)
         {
-            for (int x = 0; x < 256; x++)
+            int width = weights.GetLength(0);
+            int height = weights.GetLength(1);
+
+            for (int x = 0; x < width; x++)
             {
-                for (int y = 0; y < 256; y += 8)
+                for (int y = 0; y < height; y += 8)
                 {
                     Swap(x, y + 0, y + 7, weights);
                     Swap(x, y + 1, y + 6, weights);
