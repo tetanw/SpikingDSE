@@ -120,16 +120,18 @@ public sealed class ODINCore : Actor, Core
 
         LIFLayer lif = (layer as LIFLayer);
         lif.Integrate(inputSpike.neuron);
-        int prevSpike = 0;
         long syncTime = -1;
+        long start = env.Now;
+        int nrOutputSpikes = 0;
         foreach (var outputSpike in lif.Threshold())
         {
-            syncTime = env.Now + (outputSpike - prevSpike) * delayModel.ComputeTime + delayModel.OutputTime;
+            nrOutputSpikes++;
+            syncTime = start + (outputSpike + 1) * delayModel.ComputeTime + (nrOutputSpikes - 1) * delayModel.OutputTime;
             var outEvent = new ODINSpikeEvent(layer, outputSpike);
             ProducedSpike?.Invoke(this, syncTime, outEvent);
             yield return env.SendAt(output, outEvent, syncTime);
         }
-        syncTime = env.Now + (256 - prevSpike) * delayModel.ComputeTime;
+        syncTime = start + nrNeurons * delayModel.ComputeTime + nrOutputSpikes * delayModel.OutputTime;
         yield return env.SleepUntil(syncTime);
     }
 

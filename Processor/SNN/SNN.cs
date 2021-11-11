@@ -175,9 +175,12 @@ namespace SpikingDSE
 
         private static void CorrectWeights<T>(T[,] weights)
         {
-            for (int x = 0; x < 256; x++)
+            int width = weights.GetLength(0);
+            int height = weights.GetLength(1);
+
+            for (int x = 0; x < width; x++)
             {
-                for (int y = 0; y < 256; y += 8)
+                for (int y = 0; y < height; y += 8)
                 {
                     Swap(x, y + 0, y + 7, weights);
                     Swap(x, y + 1, y + 6, weights);
