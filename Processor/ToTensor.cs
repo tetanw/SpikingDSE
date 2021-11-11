@@ -16,17 +16,17 @@ namespace SpikingDSE
             this.sw = new StreamWriter(File.OpenWrite(outputTensorPath));
 
             sw.Write(",");
-            for (int i = 0; i < tensor.NrNeurons - 1; i++)
+            for (int i = 0; i < tensor.NrNeurons() - 1; i++)
             {
                 sw.Write($"{i},");
             }
-            sw.WriteLine(tensor.NrNeurons);
+            sw.WriteLine(tensor.NrNeurons());
         }
 
         private void EmitOutputs(int TS, List<int> outputs)
         {
             sw.Write($"{TS}");
-            for (int i = 0; i < tensor.NrNeurons; i++)
+            for (int i = 0; i < tensor.NrNeurons(); i++)
             {
                 if (outputs.Contains(i))
                 {

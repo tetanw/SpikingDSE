@@ -5,88 +5,158 @@ using System.Collections.Generic;
 
 namespace SpikingDSE
 {
-    public abstract class Layer
+    public class Layer
     {
+        public int InputSize { get; protected set; }
         public int Size { get; protected set; }
+        public string Name { get; protected set; }
     }
 
     public class InputLayer : Layer
     {
-        private string name;
-        public readonly IEnumerable<int> inputSpikes;
+        public readonly ISpikeSource spikeSource;
 
-        public InputLayer(int size, IEnumerable<int> inputSpikes, string name = null)
+        public InputLayer(ISpikeSource spikeSource, string name = null)
         {
-            this.inputSpikes = inputSpikes;
-            this.name = name;
-            this.Size = size;
+            this.spikeSource = spikeSource;
+            this.Name = name;
+            this.InputSize = -1;
+            this.Size = spikeSource.NrNeurons();
         }
     }
 
-    public abstract class HiddenLayer : Layer
-    {
-        public abstract void SetNeuronRange(NeuronRange range);
-        public abstract void SetInputRange(NeuronRange range);
-    }
-
-    public class ODINLayer : HiddenLayer
+    public class LIFLayer : Layer
     {
         public int[] pots;
         public int[,] weights;
         public int threshold;
+        public int leakage;
+        public bool[] spiked;
+        private bool refractory;
 
-        public NeuronRange NeuronRange;
-        public NeuronRange InputRange;
-
-        public ODINLayer(int[,] weights, int threshold = 30, string name = "")
+        public LIFLayer(int[,] weights, int threshold = 30, int leakage = 0, bool refractory = true, string name = "")
         {
-            int from = weights.GetLength(0);
-            int to = weights.GetLength(1);
+            int size = weights.GetLength(0);
             this.weights = weights;
-            pots = new int[to];
-            this.Size = to;
-            this.Name = name;
+            this.pots = new int[size];
+            this.spiked = new bool[size];
             this.threshold = threshold;
+            this.leakage = leakage;
+            this.refractory = refractory;
+            this.Name = name;
+            this.InputSize = weights.GetLength(0);
+            this.Size = weights.GetLength(1);
         }
 
-        public string Name { get; }
-
-        public override void SetInputRange(NeuronRange range)
+        public void Leak()
         {
-            this.InputRange = range;
+            for (int dst = 0; dst < Size; dst++)
+            {
+                if (spiked[dst])
+                {
+                    spiked[dst] = false;
+                    pots[dst] = 0;
+                }
+                pots[dst] = Math.Max(0, pots[dst] - leakage);
+            }
         }
 
-        public override void SetNeuronRange(NeuronRange range)
+        public void Integrate(int neuron)
         {
-            this.NeuronRange = range;
+            for (int dst = 0; dst < Size; dst++)
+            {
+                pots[dst] += weights[neuron, dst];
+            }
+        }
+
+        public IEnumerable<int> Threshold()
+        {
+            for (int dst = 0; dst < Size; dst++)
+            {
+                if (spiked[dst] && refractory)
+                    continue;
+
+                if (pots[dst] >= threshold)
+                {
+                    pots[dst] = 0;
+                    spiked[dst] = true;
+                    yield return dst;
+                }
+            }
+        }
+    }
+
+    public class RLIFLayer : Layer
+    {
+        public readonly int[,] inWeights;
+        public readonly int[,] recWeights;
+
+        public RLIFLayer(int[,] inWeights, int[,] recWeights, string name)
+        {
+            this.inWeights = inWeights;
+            this.recWeights = recWeights;
+            this.Name = name;
+            this.InputSize = inWeights.GetLength(0);
+            this.Size = inWeights.GetLength(1);
+        }
+
+        public void Leak()
+        {
+
         }
     }
 
     public class WeigthsUtil
     {
-        public static int[,] ReadFromCSV(string path)
+        public static int[,] Normalize(double[,] pre, double scale = 1.0, double bias = 0.0)
         {
-            int[,] weights = null;
-            int currentLine = 0;
-            foreach (var line in File.ReadAllLines(path))
+            int width = pre.GetLength(0);
+            int height = pre.GetLength(1);
+
+            int[,] post = new int[width, height];
+            for (int y = 0; y < height; y++)
             {
-                int[] numbers = line.Split(",").Select(t => int.Parse(t)).ToArray();
+                for (int x = 0; x < width; x++)
+                {
+                    post[x, y] = (int)(pre[x, y] * scale + bias);
+                }
+            }
+
+            return post;
+        }
+
+        public static double[,] ReadFromCSV(string path, bool headers = false, bool applyCorrection = false)
+        {
+            double[,] weights = null;
+            int currentLine = 0;
+            var lines = File.ReadAllLines(path).Skip(headers ? 1 : 0).ToArray();
+            for (int i = 0; i < lines.Length; i++)
+            {
+                var line = lines[i];
+                double[] numbers = line.Split(",").Skip(headers ? 1 : 0).Select(t => double.Parse(t)).ToArray();
                 if (weights == null)
                 {
-                    weights = new int[numbers.Length, numbers.Length];
+                    int nrSrc = numbers.Length;
+                    int nrDest = lines.Length;
+                    weights = new double[nrSrc, nrDest];
                 }
 
-                for (int i = 0; i < numbers.Length; i++)
+                for (int j = 0; j < numbers.Length; j++)
                 {
-                    weights[i, currentLine] = numbers[i];
+                    weights[j, currentLine] = numbers[j];
                 }
                 currentLine++;
             }
 
-            CorrectWeights(weights);
+            if (applyCorrection)
+            {
+                CorrectWeights(weights);
+            }
+
             return weights;
         }
-        private static void Swap(int c, int x, int y, int[,] array)
+
+        private static void Swap(int c, int x, int y, double[,] array)
         {
             // swap index x and y
             var buffer = array[c, x];
@@ -94,7 +164,7 @@ namespace SpikingDSE
             array[c, y] = buffer;
         }
 
-        private static void CorrectWeights(int[,] weights)
+        private static void CorrectWeights(double[,] weights)
         {
             for (int x = 0; x < 256; x++)
             {
@@ -154,20 +224,54 @@ namespace SpikingDSE
 
     public class SNN
     {
-        public void AddInputLayer(InputLayer inputLayer)
+        public List<Layer> layers = new List<Layer>();
+
+        public void AddLayer(Layer layer)
         {
-            this.inputLayer = inputLayer;
+            layers.Add(layer);
         }
 
-        public void AddHiddenLayer(HiddenLayer hiddenLayer)
+        public List<Layer> GetAllLayers()
         {
-            if (hiddenLayers == null)
-                hiddenLayers = new List<HiddenLayer>();
-
-            hiddenLayers.Add(hiddenLayer);
+            return layers;
         }
 
-        public InputLayer inputLayer;
-        public List<HiddenLayer> hiddenLayers;
+        public int FindIndex(Layer layer)
+        {
+            for (int i = 0; i < layers.Count; i++)
+            {
+                var l = layers[i];
+                if (l == layer)
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        public Layer GetSourceLayer(Layer layer)
+        {
+            int index = FindIndex(layer);
+            if (index == -1) return null;
+            return index == 0 ? null : layers[index - 1];
+        }
+
+        public Layer GetDestLayer(Layer layer)
+        {
+            int index = FindIndex(layer);
+            if (index == -1) return null;
+            return index == layers.Count - 1 ? null : layers[index + 1];
+        }
+
+        public bool IsInputLayer(Layer layer)
+        {
+            return FindIndex(layer) == 0;
+        }
+
+        public bool IsOutputLayer(Layer layer)
+        {
+            return FindIndex(layer) == layers.Count - 1;
+        }
     }
 }

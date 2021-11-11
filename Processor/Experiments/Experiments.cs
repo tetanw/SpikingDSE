@@ -47,30 +47,4 @@ namespace SpikingDSE
         public abstract void Cleanup();
     }
 
-    public class TraceReporter
-    {
-        private StreamWriter sw;
-
-        public TraceReporter(string reportPath)
-        {
-            this.sw = new StreamWriter(reportPath);
-        }
-
-        public void SpikeReceived(Controller controller, int neuron, long time)
-        {
-            sw.WriteLine($"1,{neuron},{time}");
-        }
-
-        public void SpikeSent(Controller source, int neuron, long time)
-        {
-            sw.WriteLine($"0,{neuron},{time}");
-        }
-
-        public void Cleanup()
-        {
-            sw.Flush();
-            sw.Close();
-        }
-    }
-
 }

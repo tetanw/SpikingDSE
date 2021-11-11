@@ -9,6 +9,7 @@ namespace SpikingDSE
     {
         public bool NextTimestep();
         public List<int> NeuronSpikes();
+        public int NrNeurons();
     }
 
     public class TensorFile : ISpikeSource
@@ -16,6 +17,7 @@ namespace SpikingDSE
         private StreamReader input;
         private int baseID;
         private List<int> inputSpikes = new List<int>();
+        private int nrNeurons;
 
         public TensorFile(string inputPath, int baseID = 0)
         {
@@ -24,12 +26,10 @@ namespace SpikingDSE
 
             // skip the header on both files
             string header = input.ReadLine();
-            NrNeurons = int.Parse(header.Split(",").Last()) + 1;
+            nrNeurons = int.Parse(header.Split(",").Last()) + 1;
         }
 
         public bool IsDone { get; private set; }
-
-        public int NrNeurons { get; private set; }
 
         public List<int> NeuronSpikes()
         {
@@ -58,6 +58,8 @@ namespace SpikingDSE
 
             return true;
         }
+
+        public int NrNeurons() => nrNeurons;
     }
 
     public class TensorFileGroup : ISpikeSource
@@ -72,7 +74,7 @@ namespace SpikingDSE
             for (int i = 0; i < inputFiles.Length; i++)
             {
                 tensorFiles[i] = new TensorFile(inputFiles[i], baseNeuronID);
-                baseNeuronID += tensorFiles[i].NrNeurons;
+                baseNeuronID += tensorFiles[i].NrNeurons();
             }
         }
 
@@ -107,10 +109,12 @@ namespace SpikingDSE
             int[] sizes = new int[tensorFiles.Length];
             for (int i = 0; i < tensorFiles.Length; i++)
             {
-                sizes[i] = tensorFiles[i].NrNeurons;
+                sizes[i] = tensorFiles[i].NrNeurons();
             }
             return sizes;
         }
+
+        public int NrNeurons() => tensorFiles.Sum((tf) => tf.NrNeurons());
     }
 
     public enum EventType
@@ -179,51 +183,5 @@ namespace SpikingDSE
         public EventType CurrentType { get; private set; }
         public int CurrentNeuronID { get; private set; }
         public long CurrentTime { get; private set; }
-    }
-
-    public class SpikeBuffer
-    {
-        private ISpikeSource source;
-        private bool isDone;
-        private List<int> neuronSpikes;
-
-        public SpikeBuffer(ISpikeSource source)
-        {
-            this.source = source;
-
-            NextTimestep();
-        }
-
-        public int PopNeuronSpike()
-        {
-            int neuronSpike = neuronSpikes[0];
-            neuronSpikes.RemoveAt(0);
-            return neuronSpike;
-        }
-
-        public void NextTimestep()
-        {
-            if (neuronSpikes != null && neuronSpikes.Count > 0)
-            {
-                throw new Exception("Still spikes left");
-            }
-
-            this.isDone = source.NextTimestep();
-            neuronSpikes = new List<int>(source.NeuronSpikes());
-
-            TS++;
-        }
-
-        public int TS { get; private set; } = -1;
-
-        public bool IsDone
-        {
-            get => isDone;
-        }
-
-        public bool IsEmpty
-        {
-            get => neuronSpikes.Count == 0;
-        }
     }
 }

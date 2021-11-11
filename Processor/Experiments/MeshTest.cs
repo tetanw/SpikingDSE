@@ -22,7 +22,7 @@ namespace SpikingDSE
         public override void Setup()
         {
             var reporter = new Reporter();
-            var producer = sim.AddActor(new Producer(4, () => new MeshFlit { DestX = 1, DestY = 1, Message = "hi" }, name: "producer"));
+            var producer = sim.AddActor(new Producer(4, () => new MeshFlit { Dest = new MeshCoord(1, 1), Message = "hi" }, name: "producer"));
             producer.Produced += reporter.Produced;
             var consumer = sim.AddActor(new Consumer(name: "consumer"));
             consumer.Consumed += reporter.Consumed;

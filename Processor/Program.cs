@@ -56,10 +56,6 @@ namespace SpikingDSE
                     {
                         new ProducerConsumer().Run();
                     }
-                    else if (opts.Name.Equals("ODIN"))
-                    {
-                        new ODINSingleCore().Run();
-                    }
                     else if (opts.Name.Equals("MESHTEST"))
                     {
                         new MeshTest().Run();
