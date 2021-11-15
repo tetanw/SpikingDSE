@@ -25,25 +25,33 @@ namespace SpikingDSE
         }
     }
 
+    public enum ResetMode
+    {
+        Zero,
+        Subtract
+    }
+
     public class LIFLayer : Layer
     {
-        public int[] pots;
-        public int[,] weights;
-        public int threshold;
-        public int leakage;
+        public double[] pots;
+        public double[,] weights;
+        public double threshold;
+        public double leakage;
         public bool[] spiked;
         private bool refractory;
+        public ResetMode resetMode;
 
-        public LIFLayer(int[,] weights, int threshold = 30, int leakage = 0, bool refractory = true, string name = "")
+        public LIFLayer(double[,] weights, double threshold = 30, double leakage = 0, bool refractory = true, ResetMode resetMode = ResetMode.Zero, string name = "")
         {
             this.InputSize = weights.GetLength(0);
             this.Size = weights.GetLength(1);
             this.weights = weights;
-            this.pots = new int[Size];
+            this.pots = new double[Size];
             this.spiked = new bool[Size];
             this.threshold = threshold;
             this.leakage = leakage;
             this.refractory = refractory;
+            this.resetMode = resetMode;
             this.Name = name;
         }
 
@@ -54,9 +62,8 @@ namespace SpikingDSE
                 if (spiked[dst])
                 {
                     spiked[dst] = false;
-                    pots[dst] = 0;
                 }
-                pots[dst] = Math.Max(0, pots[dst] - leakage);
+                pots[dst] = pots[dst] * leakage;
             }
         }
 
@@ -64,7 +71,7 @@ namespace SpikingDSE
         {
             for (int dst = 0; dst < Size; dst++)
             {
-                pots[dst] += weights[neuron, dst];
+                pots[dst] += weights[neuron, dst] / leakage;
             }
         }
 
@@ -77,7 +84,12 @@ namespace SpikingDSE
 
                 if (pots[dst] >= threshold)
                 {
-                    pots[dst] = 0;
+                    if (resetMode == ResetMode.Zero)
+                        pots[dst] = 0;
+                    else if (resetMode == ResetMode.Subtract)
+                        pots[dst] -= threshold;
+                    else
+                        throw new Exception("Unknown reset behaviour");
                     spiked[dst] = true;
                     yield return dst;
                 }
@@ -87,10 +99,10 @@ namespace SpikingDSE
 
     public class RLIFLayer : Layer
     {
-        public readonly int[,] inWeights;
-        public readonly int[,] recWeights;
+        public readonly double[,] inWeights;
+        public readonly double[,] recWeights;
 
-        public RLIFLayer(int[,] inWeights, int[,] recWeights, string name)
+        public RLIFLayer(double[,] inWeights, double[,] recWeights, string name)
         {
             this.inWeights = inWeights;
             this.recWeights = recWeights;
@@ -107,17 +119,17 @@ namespace SpikingDSE
 
     public class WeigthsUtil
     {
-        public static int[,] Normalize(double[,] pre, double scale = 1.0, double bias = 0.0)
+        public static double[,] Normalize(double[,] pre, double scale = 1.0, double bias = 0.0)
         {
             int width = pre.GetLength(0);
             int height = pre.GetLength(1);
 
-            int[,] post = new int[width, height];
+            double[,] post = new double[width, height];
             for (int y = 0; y < height; y++)
             {
                 for (int x = 0; x < width; x++)
                 {
-                    post[x, y] = (int)(pre[x, y] * scale + bias);
+                    post[x, y] = pre[x, y] * scale + bias;
                 }
             }
 
@@ -190,7 +202,7 @@ namespace SpikingDSE
             }
         }
 
-        public static void ToCSV(string path, int[,] weights)
+        public static void ToCSV<T>(string path, T[,] weights)
         {
             StreamWriter sw = new StreamWriter(path);
             int width = weights.GetLength(0);

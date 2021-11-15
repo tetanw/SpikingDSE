@@ -4,17 +4,26 @@ namespace SpikingDSE
 {
     public class MultiODINTest : Experiment
     {
+        private SNN snn;
         private MeshRouter[,] routers;
         private TraceReporter trace;
         private TensorReporter tensor;
+        private MemReporter mem;
 
         private ODINController AddController(SNN snn, int x, int y)
         {
             var controllerCoord = new MeshCoord(x, y);
             var controller = sim.AddActor(new ODINController(controllerCoord, snn, 0, 100_000, name: "controller"));
             // controller.TimeAdvanced += (_, ts) => trace.AdvanceTimestep(ts);
-            controller.TimeAdvanced += (_, ts) => tensor.AdvanceTimestep(ts);
-            controller.SpikeReceived += (_, _, spike) => tensor.InformSpike(spike.layer, spike.neuron);
+            controller.TimeAdvanced += (_, ts) =>
+            {
+                tensor.AdvanceTimestep(ts);
+                Console.WriteLine($"Advanced to timestep: {ts}");
+            };
+            controller.SpikeReceived += (_, _, spike) =>
+            {
+                tensor.InformSpike(spike.layer, spike.neuron);
+            };
             sim.AddChannel(controller.spikesOut, routers[x, y].inLocal);
             sim.AddChannel(routers[x, y].outLocal, controller.spikesIn);
             return controller;
@@ -24,6 +33,10 @@ namespace SpikingDSE
         {
             var coreCoord = new MeshCoord(x, y);
             var core = sim.AddActor(new ODINCore(coreCoord, size, delayModel, enableRefractory: true, name: name));
+            core.ReceivedTimeref += (_, _, ts, layer) =>
+            {
+                mem.AdvanceLayer(layer, ts, layer.pots);
+            };
             // core.ReceivedSpike += (_, time, ev) => trace.OutputSpike(ev.neuron, time);
             // core.ProducedSpike += (_, time, ev) => trace.InputSpike(ev.neuron, time);
             // core.ReceivedTimeref += (_, time) => trace.TimeRef(time);
@@ -37,8 +50,7 @@ namespace SpikingDSE
 
         private LIFLayer RLIF2LIF(RLIFLayer rlif)
         {
-            // FIXME: Debug
-            int[,] newWeights = new int[rlif.Size + rlif.InputSize, rlif.Size];
+            double[,] newWeights = new double[rlif.Size + rlif.InputSize, rlif.Size];
             // all feed-forward connections
             for (int src = 0; src < rlif.InputSize; src++)
             {
@@ -66,29 +78,39 @@ namespace SpikingDSE
             // 3. Both excitatory and inhibitory spikes can be used together
             // 4. Leakage is proportional to current voltage instead of a constant????
 
-            trace = new TraceReporter("res/multi-odin/result.trace");
+            // trace = new TraceReporter("res/multi-odin/result.trace");
 
             // SNN
-            var snn = new SNN();
-            var input = new InputLayer(new TensorFile("res/multi-odin/images_csv_1.csv"), name: "input");
+            double alpha = Math.Exp(-1.0 * 1.0 / 10.0);
+            double beta = 1 - alpha;
+            snn = new SNN();
+            var input = new InputLayer(new TensorFile("res/multi-odin/validation/input_0.csv"), name: "input");
             snn.AddLayer(input);
             var hidden1 = new RLIFLayer(
-                WeigthsUtil.Normalize(WeigthsUtil.ReadFromCSVDouble("res/multi-odin/weights_i_2_h1_n.csv", headers: true), scale: 8.0, bias: 0.0),
-                WeigthsUtil.Normalize(WeigthsUtil.ReadFromCSVDouble("res/multi-odin/weights_h1_2_h1_n.csv", headers: true), scale: 8.0, bias: 0.0),
+                WeigthsUtil.Normalize(WeigthsUtil.ReadFromCSVDouble("res/multi-odin/validation/weights_i_2_h1_n.csv", headers: true), scale: beta),
+                WeigthsUtil.Normalize(WeigthsUtil.ReadFromCSVDouble("res/multi-odin/validation/weights_h1_2_h1_n.csv", headers: true), scale: beta),
                 name: "hidden1"
             );
             var hidden1Conv = RLIF2LIF(hidden1);
+            hidden1Conv.leakage = alpha;
+            hidden1Conv.threshold = 0.01;
+            hidden1Conv.resetMode = ResetMode.Subtract;
             // WeigthsUtil.ToCSV("res/multi-odin/test-weights.csv", hidden1Conv.weights);
             snn.AddLayer(hidden1Conv);
+
             var hidden2 = new RLIFLayer(
-                WeigthsUtil.Normalize(WeigthsUtil.ReadFromCSVDouble("res/multi-odin/weights_h1_2_h2_n.csv", headers: true), scale: 8.0, bias: 0.0),
-                WeigthsUtil.Normalize(WeigthsUtil.ReadFromCSVDouble("res/multi-odin/weights_h2_2_h2_n.csv", headers: true), scale: 8.0, bias: 0.0),
+                WeigthsUtil.Normalize(WeigthsUtil.ReadFromCSVDouble("res/multi-odin/validation/weights_h1_2_h2_n.csv", headers: true), scale: beta),
+                WeigthsUtil.Normalize(WeigthsUtil.ReadFromCSVDouble("res/multi-odin/validation/weights_h2_2_h2_n.csv", headers: true), scale: beta),
                 name: "hidden2"
             );
             var hidden2Conv = RLIF2LIF(hidden2);
+            hidden2Conv.leakage = alpha;
+            hidden2Conv.threshold = 0.01;
+            hidden2Conv.resetMode = ResetMode.Subtract;
             snn.AddLayer(hidden2Conv);
+
             var output = new LIFLayer(
-                WeigthsUtil.Normalize(WeigthsUtil.ReadFromCSVDouble("res/multi-odin/weights_h2o_n.csv", headers: true), scale: 8.0, bias: 0.0),
+                WeigthsUtil.ReadFromCSVDouble("res/multi-odin/validation/weights_h2o_n.csv", headers: true),
                 name: "output"
             );
             snn.AddLayer(output);
@@ -97,6 +119,11 @@ namespace SpikingDSE
             tensor.RegisterLayer(hidden1Conv);
             tensor.RegisterLayer(hidden2Conv);
             tensor.RegisterLayer(output);
+
+            mem = new MemReporter(snn, "res/multi-odin/mem");
+            mem.RegisterLayer(hidden1Conv);
+            mem.RegisterLayer(hidden2Conv);
+            mem.RegisterLayer(output);
 
             // Hardware
             int width = 3;
@@ -129,13 +156,14 @@ namespace SpikingDSE
             };
             mapper.Run();
 
-            simStop.StopEvents = 1_000_000;
+            simStop.StopEvents = 10_000_000;
         }
 
         public override void Cleanup()
         {
-            trace.Finish();
+            // trace.Finish();
             tensor.Finish();
+            mem.Finish();
             Console.WriteLine($"Nr spikes: {tensor.NrSpikes}");
         }
     }

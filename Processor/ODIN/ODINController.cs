@@ -58,9 +58,7 @@ public sealed class ODINController : Actor, Core
     {
         outBuffer = new(env, 1);
 
-        var sync = env.CreateSignal();
-        env.Process(SpikeSender(env, sync));
-        env.Process(SyncSender(env, sync));
+        env.Process(SpikeSender(env));
 
         env.Process(Sender(env));
         env.Process(Receiver(env));
@@ -68,14 +66,12 @@ public sealed class ODINController : Actor, Core
         yield break;
     }
 
-    private IEnumerable<Event> SpikeSender(Environment env, Signal sync)
+    private IEnumerable<Event> SpikeSender(Environment env)
     {
         yield return env.SleepUntil(startTime);
         int ts = 0;
         while (inputLayer.spikeSource.NextTimestep())
         {
-            TimeAdvanced?.Invoke(this, ts);
-
             // Send spikes for input layer
             var inputSpikes = inputLayer.spikeSource.NeuronSpikes();
             foreach (var neuron in inputSpikes)
@@ -97,23 +93,15 @@ public sealed class ODINController : Actor, Core
                 SpikeSent?.Invoke(this, env.Now, stored.ODINSpike);
             }
 
-            // wait for next timestep before continuing
-            yield return env.Wait(sync);
+            long syncTime = (env.Now / interval + 1) * interval;
+            yield return env.SleepUntil(syncTime);
+            yield return outBuffer.RequestWrite();
+            outBuffer.Write(new ODINTimeEvent(ts));
+            outBuffer.ReleaseWrite();
+            TimeAdvanced?.Invoke(this, ts);
             ts++;
         }
         isDone = true;
-    }
-
-    private IEnumerable<Event> SyncSender(Environment env, Signal sync)
-    {
-        while (!isDone)
-        {
-            yield return env.Delay(interval);
-            yield return outBuffer.RequestWrite();
-            outBuffer.Write(new ODINTimeEvent());
-            outBuffer.ReleaseWrite();
-            env.Notify(sync);
-        }
     }
 
     private IEnumerable<Event> Sender(Environment env)

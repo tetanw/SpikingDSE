@@ -23,7 +23,7 @@ public class TensorReporter
     public void RegisterLayer(Layer layer)
     {
         bool[] layerSpikes = new bool[layer.Size];
-        StreamWriter sw = new StreamWriter(folderPath + "/" + layer.Name + ".csv");
+        StreamWriter sw = new StreamWriter(folderPath + "/spike_" + layer.Name + ".csv");
         sw.WriteLine("," + string.Join(",", Enumerable.Range(0, layer.Size)));
         spikeFiles[layer] = new SpikeFile(layerSpikes, sw);
     }
@@ -41,6 +41,7 @@ public class TensorReporter
         {
             var spikes = Enumerable.Range(0, layer.Size).Select(i => spikeFile.spikes[i] ? "1.0" : "0.0").ToArray();
             spikeFile.sw.WriteLine($"{ts},{string.Join(",", spikes)}");
+            spikeFile.sw.Flush();
 
             // Reset spikes on layer
             Array.Fill(spikeFile.spikes, false);

@@ -6,7 +6,7 @@ namespace SpikingDSE;
 
 public delegate void ReceivedSpike(ODINCore core, long time, ODINSpikeEvent spike);
 public delegate void ProducedSpike(ODINCore core, long time, ODINSpikeEvent spike);
-public delegate void ReceivedTimeref(ODINCore core, long time);
+public delegate void ReceivedTimeref(ODINCore core, long time, int ts, LIFLayer layer);
 
 public struct ODINDelayModel
 {
@@ -17,7 +17,7 @@ public struct ODINDelayModel
 }
 
 public abstract record ODINEvent();
-public sealed record ODINTimeEvent() : ODINEvent;
+public sealed record ODINTimeEvent(int TS) : ODINEvent;
 public sealed record ODINSpikeEvent(Layer layer, int neuron) : ODINEvent;
 
 public sealed class ODINCore : Actor, Core
@@ -35,6 +35,8 @@ public sealed class ODINCore : Actor, Core
     private ODINDelayModel delayModel;
     private int nrNeurons;
     private bool enableRefractory;
+    private int totalOutputSpikes = 0;
+    private int totalInputSpikes = 0;
 
     public ODINCore(object location, int nrNeurons, ODINDelayModel delayModel, string name = "", bool enableRefractory = false)
     {
@@ -131,6 +133,8 @@ public sealed class ODINCore : Actor, Core
             yield return env.SendAt(output, outEvent, syncTime);
         }
         syncTime = start + nrNeurons * delayModel.ComputeTime + nrOutputSpikes * delayModel.OutputTime;
+        totalInputSpikes++;
+        totalOutputSpikes += nrOutputSpikes;
         yield return env.SleepUntil(syncTime);
     }
 
@@ -143,8 +147,11 @@ public sealed class ODINCore : Actor, Core
 
     private IEnumerable<Event> AdvanceTime(Environment env)
     {
-        ReceivedTimeref?.Invoke(this, env.Now);
+        totalOutputSpikes = 0;
+        totalInputSpikes = 0;
+        ReceivedTimeref?.Invoke(this, env.Now, (received as ODINTimeEvent).TS, layer);
         layer.Leak();
+        received = null;
         yield return env.Delay(nrNeurons * delayModel.TimeRefTime);
     }
 }
