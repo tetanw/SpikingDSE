@@ -149,8 +149,8 @@ public sealed class ODINCore : Actor, Core
     {
         totalOutputSpikes = 0;
         totalInputSpikes = 0;
-        ReceivedTimeref?.Invoke(this, env.Now, (received as ODINTimeEvent).TS, layer);
         layer.Leak();
+        ReceivedTimeref?.Invoke(this, env.Now, (received as ODINTimeEvent).TS, layer);
         received = null;
         yield return env.Delay(nrNeurons * delayModel.TimeRefTime);
     }

@@ -33,6 +33,7 @@ namespace SpikingDSE
 
     public class LIFLayer : Layer
     {
+        public double[] potsNew;
         public double[] pots;
         public double[,] weights;
         public double threshold;
@@ -47,6 +48,7 @@ namespace SpikingDSE
             this.Size = weights.GetLength(1);
             this.weights = weights;
             this.pots = new double[Size];
+            this.potsNew = new double[Size];
             this.spiked = new bool[Size];
             this.threshold = threshold;
             this.leakage = leakage;
@@ -63,7 +65,8 @@ namespace SpikingDSE
                 {
                     spiked[dst] = false;
                 }
-                pots[dst] = pots[dst] * leakage;
+                pots[dst] = pots[dst] * leakage + potsNew[dst];
+                potsNew[dst] = 0;
             }
         }
 
@@ -71,7 +74,7 @@ namespace SpikingDSE
         {
             for (int dst = 0; dst < Size; dst++)
             {
-                pots[dst] += weights[neuron, dst] / leakage;
+                potsNew[dst] += weights[neuron, dst];
             }
         }
 
@@ -82,12 +85,12 @@ namespace SpikingDSE
                 if (spiked[dst] && refractory)
                     continue;
 
-                if (pots[dst] >= threshold)
+                if (pots[dst] + potsNew[dst] >= threshold)
                 {
                     if (resetMode == ResetMode.Zero)
-                        pots[dst] = 0;
+                        potsNew[dst] = 0;
                     else if (resetMode == ResetMode.Subtract)
-                        pots[dst] -= threshold;
+                        potsNew[dst] -= threshold;
                     else
                         throw new Exception("Unknown reset behaviour");
                     spiked[dst] = true;
