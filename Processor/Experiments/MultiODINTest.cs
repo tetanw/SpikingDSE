@@ -50,7 +50,7 @@ namespace SpikingDSE
 
         private LIFLayer RLIF2LIF(RLIFLayer rlif)
         {
-            double[,] newWeights = new double[rlif.Size + rlif.InputSize, rlif.Size];
+            float[,] newWeights = new float[rlif.Size + rlif.InputSize, rlif.Size];
             // all feed-forward connections
             for (int src = 0; src < rlif.InputSize; src++)
             {
@@ -81,36 +81,36 @@ namespace SpikingDSE
             // trace = new TraceReporter("res/multi-odin/result.trace");
 
             // SNN
-            double alpha = Math.Exp(-1.0 * 1.0 / 10.0);
-            double beta = 1 - alpha;
+            float alpha = (float)Math.Exp(-1.0 * 1.0 / 10.0);
+            float beta = 1 - alpha;
             snn = new SNN();
             var input = new InputLayer(new TensorFile("res/multi-odin/validation/input_0.csv"), name: "input");
             snn.AddLayer(input);
             var hidden1 = new RLIFLayer(
-                WeigthsUtil.Normalize(WeigthsUtil.ReadFromCSVDouble("res/multi-odin/validation/weights_i_2_h1_n.csv", headers: true), scale: beta),
-                WeigthsUtil.Normalize(WeigthsUtil.ReadFromCSVDouble("res/multi-odin/validation/weights_h1_2_h1_n.csv", headers: true), scale: beta),
+                WeigthsUtil.Normalize(WeigthsUtil.ReadFromCSVFloat("res/multi-odin/validation/weights_i_2_h1_n.csv", headers: true), scale: beta),
+                WeigthsUtil.Normalize(WeigthsUtil.ReadFromCSVFloat("res/multi-odin/validation/weights_h1_2_h1_n.csv", headers: true), scale: beta),
                 name: "hidden1"
             );
             var hidden1Conv = RLIF2LIF(hidden1);
             hidden1Conv.leakage = alpha;
-            hidden1Conv.threshold = 0.01;
+            hidden1Conv.threshold = 0.01f;
             hidden1Conv.resetMode = ResetMode.Subtract;
             // WeigthsUtil.ToCSV("res/multi-odin/test-weights.csv", hidden1Conv.weights);
             snn.AddLayer(hidden1Conv);
 
             var hidden2 = new RLIFLayer(
-                WeigthsUtil.Normalize(WeigthsUtil.ReadFromCSVDouble("res/multi-odin/validation/weights_h1_2_h2_n.csv", headers: true), scale: beta),
-                WeigthsUtil.Normalize(WeigthsUtil.ReadFromCSVDouble("res/multi-odin/validation/weights_h2_2_h2_n.csv", headers: true), scale: beta),
+                WeigthsUtil.Normalize(WeigthsUtil.ReadFromCSVFloat("res/multi-odin/validation/weights_h1_2_h2_n.csv", headers: true), scale: beta),
+                WeigthsUtil.Normalize(WeigthsUtil.ReadFromCSVFloat("res/multi-odin/validation/weights_h2_2_h2_n.csv", headers: true), scale: beta),
                 name: "hidden2"
             );
             var hidden2Conv = RLIF2LIF(hidden2);
             hidden2Conv.leakage = alpha;
-            hidden2Conv.threshold = 0.01;
+            hidden2Conv.threshold = 0.01f;
             hidden2Conv.resetMode = ResetMode.Subtract;
             snn.AddLayer(hidden2Conv);
 
             var output = new LIFLayer(
-                WeigthsUtil.ReadFromCSVDouble("res/multi-odin/validation/weights_h2o_n.csv", headers: true),
+                WeigthsUtil.ReadFromCSVFloat("res/multi-odin/validation/weights_h2o_n.csv", headers: true),
                 name: "output"
             );
             snn.AddLayer(output);

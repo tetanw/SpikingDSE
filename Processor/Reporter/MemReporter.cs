@@ -26,7 +26,7 @@ public class MemReporter
         memFiles[layer] = sw;
     }
 
-    public void AdvanceLayer(Layer layer, int ts, double[] pots)
+    public void AdvanceLayer(Layer layer, int ts, float[] pots)
     {
         var file = memFiles[layer];
         file.WriteLine($"{ts},{string.Join(",", pots)}");

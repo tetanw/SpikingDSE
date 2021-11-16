@@ -33,22 +33,22 @@ namespace SpikingDSE
 
     public class LIFLayer : Layer
     {
-        public double[] potsNew;
-        public double[] pots;
-        public double[,] weights;
-        public double threshold;
-        public double leakage;
+        public float[] potsNew;
+        public float[] pots;
+        public float[,] weights;
+        public float threshold;
+        public float leakage;
         public bool[] spiked;
         private bool refractory;
         public ResetMode resetMode;
 
-        public LIFLayer(double[,] weights, double threshold = 30, double leakage = 0, bool refractory = true, ResetMode resetMode = ResetMode.Zero, string name = "")
+        public LIFLayer(float[,] weights, float threshold = 30, float leakage = 0, bool refractory = true, ResetMode resetMode = ResetMode.Zero, string name = "")
         {
             this.InputSize = weights.GetLength(0);
             this.Size = weights.GetLength(1);
             this.weights = weights;
-            this.pots = new double[Size];
-            this.potsNew = new double[Size];
+            this.pots = new float[Size];
+            this.potsNew = new float[Size];
             this.spiked = new bool[Size];
             this.threshold = threshold;
             this.leakage = leakage;
@@ -102,10 +102,10 @@ namespace SpikingDSE
 
     public class RLIFLayer : Layer
     {
-        public readonly double[,] inWeights;
-        public readonly double[,] recWeights;
+        public readonly float[,] inWeights;
+        public readonly float[,] recWeights;
 
-        public RLIFLayer(double[,] inWeights, double[,] recWeights, string name)
+        public RLIFLayer(float[,] inWeights, float[,] recWeights, string name)
         {
             this.inWeights = inWeights;
             this.recWeights = recWeights;
@@ -122,12 +122,12 @@ namespace SpikingDSE
 
     public class WeigthsUtil
     {
-        public static double[,] Normalize(double[,] pre, double scale = 1.0, double bias = 0.0)
+        public static float[,] Normalize(float[,] pre, float scale = 1.0f, float bias = 0.0f)
         {
             int width = pre.GetLength(0);
             int height = pre.GetLength(1);
 
-            double[,] post = new double[width, height];
+            float[,] post = new float[width, height];
             for (int y = 0; y < height; y++)
             {
                 for (int x = 0; x < width; x++)
@@ -142,6 +142,11 @@ namespace SpikingDSE
         public static double[,] ReadFromCSVDouble(string path, bool headers = false, bool applyCorrection = false)
         {
             return ReadFromCSV(path, double.Parse, headers, applyCorrection);
+        }
+
+        public static float[,] ReadFromCSVFloat(string path, bool headers = false, bool applyCorrection = false)
+        {
+            return ReadFromCSV(path, float.Parse, headers, applyCorrection);
         }
 
         public static int[,] ReadFromCSVInt(string path, bool headers = false, bool applyCorrection = false)
