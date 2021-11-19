@@ -21,7 +21,6 @@ public sealed class ODINController2 : Actor, Core
     private long startTime;
     private long interval;
     private FIFO<object> outBuffer;
-    private bool isDone;
     private Queue<StoredSpike> storedSpikes = new();
     private Dictionary<Layer, MeshCoord> mappings = new();
     private Dictionary<LIFLayer, RLIFLayer> convertedLayers = new();
@@ -98,7 +97,6 @@ public sealed class ODINController2 : Actor, Core
             TimeAdvanced?.Invoke(this, ts);
             ts++;
         }
-        isDone = true;
     }
 
     private IEnumerable<Event> Sender(Environment env)

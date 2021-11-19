@@ -9,7 +9,6 @@ public class MemReporter
     private SNN snn;
     private Dictionary<Layer, StreamWriter> memFiles;
     private string folderPath;
-    private int ts = 0;
 
     public MemReporter(SNN snn, string folderPath)
     {

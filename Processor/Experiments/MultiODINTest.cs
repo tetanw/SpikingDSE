@@ -6,7 +6,7 @@ namespace SpikingDSE
     {
         private SNN snn;
         private MeshRouter[,] routers;
-        private TraceReporter trace;
+        // private TraceReporter trace;
         private TensorReporter tensor;
         private MemReporter mem;
 
