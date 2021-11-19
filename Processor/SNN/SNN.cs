@@ -99,13 +99,21 @@ namespace SpikingDSE
 
     public class RLIFLayer : Layer
     {
-        public readonly float[,] inWeights;
-        public readonly float[,] recWeights;
+        public readonly float[,] InWeights;
+        public readonly float[,] RecWeights;
+        public float[] Pots;
+        public float Leakage;
+        public bool[,] Spiked;
+        public ResetMode ResetMode;
+        public float Thr;
 
         public RLIFLayer(float[,] inWeights, float[,] recWeights, string name)
         {
-            this.inWeights = inWeights;
-            this.recWeights = recWeights;
+            this.InputSize = inWeights.GetLength(0) + recWeights.GetLength(0);
+            this.Size = inWeights.GetLength(1);
+            this.Pots = new float[Size];
+            this.InWeights = inWeights;
+            this.RecWeights = recWeights;
             this.Name = name;
             this.InputSize = inWeights.GetLength(0);
             this.Size = inWeights.GetLength(1);
@@ -113,7 +121,43 @@ namespace SpikingDSE
 
         public void Leak()
         {
+            for (int dst = 0; dst < Size; dst++)
+            {
+                Pots[dst] = Pots[dst] * Leakage;
+            }
+        }
 
+        public void IntegrateForward(int neuron)
+        {
+            for (int dst = 0; dst < Size; dst++)
+            {
+                Pots[dst] += InWeights[neuron, dst];
+            }
+        }
+
+        public void IntegrateFeedback(int neuron)
+        {
+            for (int dst = 0; dst < Size; dst++)
+            {
+                Pots[dst] += RecWeights[neuron, dst];
+            }
+        }
+
+        public IEnumerable<int> Threshold()
+        {
+            for (int dst = 0; dst < Size; dst++)
+            {
+                if (Pots[dst] >= Thr)
+                {
+                    if (ResetMode == ResetMode.Zero)
+                        Pots[dst] = 0;
+                    else if (ResetMode == ResetMode.Subtract)
+                        Pots[dst] -= Thr;
+                    else
+                        throw new Exception("Unknown reset behaviour");
+                    yield return dst;
+                }
+            }
         }
     }
 

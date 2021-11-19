@@ -3,19 +3,14 @@ using System.Collections.Generic;
 
 namespace SpikingDSE;
 
-public delegate void SpikeSent(ODINController controller, long time, ODINSpikeEvent spike);
-public delegate void SpikeReceived(ODINController sink, long time, ODINSpikeEvent spike);
-public delegate void TimeAdvanced(ODINController controller, int ts);
 
-
-public sealed class ODINController : Actor, Core
+public sealed class ODINController2 : Actor, Core
 {
-    record StoredSpike(ODINSpikeEvent ODINSpike, bool fromRecurrence);
+    private record StoredSpike(ODINSpikeEvent ODINSpike);
 
-
-    public SpikeSent SpikeSent;
-    public SpikeReceived SpikeReceived;
-    public TimeAdvanced TimeAdvanced;
+    public Action<Actor, long, ODINSpikeEvent> SpikeSent;
+    public Action<Actor, long, ODINSpikeEvent> SpikeReceived;
+    public Action<Actor, int> TimeAdvanced;
 
     public InPort spikesIn = new InPort();
     public OutPort spikesOut = new OutPort();
@@ -31,7 +26,7 @@ public sealed class ODINController : Actor, Core
     private Dictionary<Layer, MeshCoord> mappings = new();
     private Dictionary<LIFLayer, RLIFLayer> convertedLayers = new();
 
-    public ODINController(object location, SNN snn, long startTime, long interval, string name = null)
+    public ODINController2(object location, SNN snn, long startTime, long interval, string name = null)
     {
         this.location = location;
         this.snn = snn;
@@ -80,7 +75,7 @@ public sealed class ODINController : Actor, Core
             {
                 var spike = new ODINSpikeEvent(inputLayer, neuron);
                 yield return outBuffer.RequestWrite();
-                outBuffer.Write(new StoredSpike(spike, false));
+                outBuffer.Write(new StoredSpike(spike));
                 outBuffer.ReleaseWrite();
                 SpikeSent?.Invoke(this, env.Now, spike);
             }
@@ -136,16 +131,7 @@ public sealed class ODINController : Actor, Core
                 // If from hidden layer then store output next layer then we do not have to do anything
                 if (!snn.IsOutputLayer(spike.layer))
                 {
-                    // If from an RLIF converted layer then we need to make 1 extra spike
-                    // i.e. for the recurrence
-                    if (convertedLayers.ContainsKey((LIFLayer)spike.layer))
-                    {
-                        RLIFLayer rlif = convertedLayers[(LIFLayer)spike.layer];
-                        int newNeuron = rlif.InputSize + spike.neuron;
-                        storedSpikes.Enqueue(new StoredSpike(new ODINSpikeEvent(spike.layer, newNeuron), true));
-                    }
-
-                    storedSpikes.Enqueue(new StoredSpike(spike, false));
+                    storedSpikes.Enqueue(new StoredSpike(spike));
                 }
             }
             else
@@ -159,23 +145,15 @@ public sealed class ODINController : Actor, Core
     {
         if (message is StoredSpike)
         {
-            var (spikeEvent, fromRecurrence) = message as StoredSpike;
+            var storedSpike = message as StoredSpike;
             // Get the right desitination layer for the spike and also the coord to send it to
-            Layer destLayer;
-            if (fromRecurrence)
-            {
-                destLayer = spikeEvent.layer;
-            }
-            else
-            {
-                destLayer = snn.GetDestLayer(spikeEvent.layer);
-            }
+            Layer destLayer = snn.GetDestLayer(storedSpike.ODINSpike.layer);
             MeshCoord dest = mappings[destLayer];
             var flit = new MeshFlit
             {
                 Src = (MeshCoord)location,
                 Dest = dest,
-                Message = spikeEvent
+                Message = storedSpike.ODINSpike
             };
             yield return env.Send(spikesOut, flit);
         }

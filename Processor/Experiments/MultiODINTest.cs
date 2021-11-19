@@ -33,8 +33,9 @@ namespace SpikingDSE
         {
             var coreCoord = new MeshCoord(x, y);
             var core = sim.AddActor(new ODINCore(coreCoord, size, delayModel, enableRefractory: true, name: name));
-            core.ReceivedTimeref += (_, _, ts, layer) =>
+            core.OnTimeReceived += (_, _, ts, layer) =>
             {
+                // TODO: May be broken due to moving of handler in implementation
                 mem.AdvanceLayer(layer, ts, layer.pots);
             };
             // core.ReceivedSpike += (_, time, ev) => trace.OutputSpike(ev.neuron, time);
@@ -56,7 +57,7 @@ namespace SpikingDSE
             {
                 for (int dst = 0; dst < rlif.Size; dst++)
                 {
-                    newWeights[src, dst] = rlif.inWeights[src, dst];
+                    newWeights[src, dst] = rlif.InWeights[src, dst];
                 }
             }
             // then all recurrent connections
@@ -64,7 +65,7 @@ namespace SpikingDSE
             {
                 for (int dst = 0; dst < rlif.Size; dst++)
                 {
-                    newWeights[src, dst] = rlif.recWeights[src - rlif.InputSize, dst];
+                    newWeights[src, dst] = rlif.RecWeights[src - rlif.InputSize, dst];
                 }
             }
             return new LIFLayer(newWeights, name: rlif.Name);

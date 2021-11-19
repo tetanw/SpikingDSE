@@ -4,9 +4,7 @@ using System.IO;
 
 namespace SpikingDSE;
 
-public delegate void ReceivedSpike(ODINCore core, long time, ODINSpikeEvent spike);
-public delegate void ProducedSpike(ODINCore core, long time, ODINSpikeEvent spike);
-public delegate void ReceivedTimeref(ODINCore core, long time, int ts, LIFLayer layer);
+
 
 public struct ODINDelayModel
 {
@@ -22,9 +20,13 @@ public sealed record ODINSpikeEvent(Layer layer, int neuron) : ODINEvent;
 
 public sealed class ODINCore : Actor, Core
 {
-    public ProducedSpike ProducedSpike;
-    public ReceivedSpike ReceivedSpike;
-    public ReceivedTimeref ReceivedTimeref;
+    public delegate void SpikeReceived(ODINCore core, long time, ODINSpikeEvent spike);
+    public delegate void SpikeSent(ODINCore core, long time, ODINSpikeEvent spike);
+    public delegate void TimeReceived(ODINCore core, long time, int ts, LIFLayer layer);
+
+    public SpikeReceived OnSpikeRecived;
+    public SpikeSent OnSpikeSent;
+    public TimeReceived OnTimeReceived;
 
     public InPort input = new InPort();
     public OutPort output = new OutPort();
@@ -117,7 +119,7 @@ public sealed class ODINCore : Actor, Core
     private IEnumerable<Event> Compute(Environment env)
     {
         var inputSpike = (ODINSpikeEvent)received;
-        ReceivedSpike?.Invoke(this, env.Now, inputSpike);
+        OnSpikeRecived?.Invoke(this, env.Now, inputSpike);
 
         LIFLayer lif = (layer as LIFLayer);
         lif.Integrate(inputSpike.neuron);
@@ -129,7 +131,7 @@ public sealed class ODINCore : Actor, Core
             nrOutputSpikes++;
             syncTime = start + (outputSpike + 1) * delayModel.ComputeTime + (nrOutputSpikes - 1) * delayModel.OutputTime;
             var outEvent = new ODINSpikeEvent(layer, outputSpike);
-            ProducedSpike?.Invoke(this, syncTime, outEvent);
+            OnSpikeSent?.Invoke(this, syncTime, outEvent);
             yield return env.SendAt(output, outEvent, syncTime);
         }
         syncTime = start + nrNeurons * delayModel.ComputeTime + nrOutputSpikes * delayModel.OutputTime;
@@ -147,10 +149,10 @@ public sealed class ODINCore : Actor, Core
 
     private IEnumerable<Event> AdvanceTime(Environment env)
     {
+        OnTimeReceived?.Invoke(this, env.Now, (received as ODINTimeEvent).TS, layer);
         totalOutputSpikes = 0;
         totalInputSpikes = 0;
         layer.Leak();
-        ReceivedTimeref?.Invoke(this, env.Now, (received as ODINTimeEvent).TS, layer);
         received = null;
         yield return env.Delay(nrNeurons * delayModel.TimeRefTime);
     }
