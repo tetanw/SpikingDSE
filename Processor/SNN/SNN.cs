@@ -143,20 +143,22 @@ namespace SpikingDSE
             }
         }
 
+        public void ApplyThreshold(int neuron)
+        {
+            if (ResetMode == ResetMode.Zero)
+                Pots[neuron] = 0;
+            else if (ResetMode == ResetMode.Subtract)
+                Pots[neuron] -= Thr;
+            else
+                throw new Exception("Unknown reset behaviour");
+        }
+
         public IEnumerable<int> Threshold()
         {
             for (int dst = 0; dst < Size; dst++)
             {
                 if (Pots[dst] >= Thr)
-                {
-                    if (ResetMode == ResetMode.Zero)
-                        Pots[dst] = 0;
-                    else if (ResetMode == ResetMode.Subtract)
-                        Pots[dst] -= Thr;
-                    else
-                        throw new Exception("Unknown reset behaviour");
                     yield return dst;
-                }
             }
         }
     }

@@ -102,6 +102,7 @@ public sealed class ODINCore2 : Actor, Core
     {
         if (feedback)
         {
+            layer.ApplyThreshold(neuron);
             layer.IntegrateFeedback(neuron);
         }
         else
