@@ -126,10 +126,10 @@ public sealed class ODINCore2 : Actor, Core
         totalOutputSpikes = 0;
         totalInputSpikes = 0;
 
-        // Readout
+        // Readout of timestep TS - 1
         OnTimeReceived?.Invoke(this, env.Now, TS, layer);
 
-        // Threshold
+        // Threshold of timestep TS - 1
         long syncTime = -1;
         long start = env.Now;
         int nrOutputSpikes = 0;
@@ -147,7 +147,7 @@ public sealed class ODINCore2 : Actor, Core
         totalOutputSpikes += nrOutputSpikes;
         yield return env.SleepUntil(syncTime);
 
-        // Leakage
+        // Leakage of timestep TS 
         layer.Leak();
         yield return env.Delay(nrNeurons * delayModel.TimeRefTime);
     }

@@ -56,7 +56,7 @@ public class MultiODIN2Test : Experiment
         // 3. Both excitatory and inhibitory spikes can be used together
         // 4. Leakage is proportional to current voltage instead of a constant????
 
-        string folderPath = "res/multi-odin/validation/test";
+        string folderPath = "res/multi-odin/validation/normal";
         trace = new TraceReporter("res/multi-odin/result.trace");
 
         // SNN
