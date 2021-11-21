@@ -11,12 +11,12 @@ public sealed class ODINNI : Actor
     public OutPort outRouter = new OutPort();
 
     private MeshCoord thisCoord;
-    private MeshCoord controllerCoord;
+    public MeshCoord DestCoord;
 
     public ODINNI(MeshCoord thisCoord, MeshCoord controllerCoord)
     {
         this.thisCoord = thisCoord;
-        this.controllerCoord = controllerCoord;
+        this.DestCoord = controllerCoord;
     }
 
     public override IEnumerable<Event> Run(Environment env)
@@ -47,7 +47,7 @@ public sealed class ODINNI : Actor
             var flit = new MeshFlit
             {
                 Src = thisCoord,
-                Dest = controllerCoord,
+                Dest = DestCoord,
                 Message = receive.Message
             };
             yield return env.Send(outRouter, flit);

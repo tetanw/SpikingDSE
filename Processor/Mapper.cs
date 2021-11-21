@@ -42,6 +42,24 @@ namespace SpikingDSE
         }
     }
 
+    public class Mapping : Map<Layer, Core>
+    {
+        public void Map(Core core, Layer layer)
+        {
+            this.Add(layer, core);
+        }
+
+        public IEnumerable<Core> Cores
+        {
+            get => this.Backwards();
+        }
+
+        public IEnumerable<Layer> Layers
+        {
+            get => this.Forwards();
+        }
+    }
+
     public interface Core
     {
         public bool AcceptsLayer(Layer layer);

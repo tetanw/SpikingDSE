@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace SpikingDSE;
 
@@ -29,7 +30,7 @@ public class MultiODIN2Test : Experiment
         return controller;
     }
 
-    private (ODINCore2, ODINNI) AddCore(ODINController2 controller, ODINDelayModel delayModel, int size, int x, int y, string name)
+    private ODINCore2 AddCore(ODINDelayModel delayModel, int size, int x, int y, string name)
     {
         var coreCoord = new MeshCoord(x, y);
         var core = sim.AddActor(new ODINCore2(coreCoord, size, delayModel, name: name));
@@ -45,12 +46,9 @@ public class MultiODIN2Test : Experiment
             tensor.InformSpike(ev.layer, ev.neuron);
         };
         core.OnTimeReceived += (_, time, _, _) => trace.TimeRef(time);
-        var coreNi = sim.AddActor(new ODINNI(coreCoord, (MeshCoord)controller.GetLocation()));
-        sim.AddChannel(coreNi.outRouter, routers[x, y].inLocal);
-        sim.AddChannel(routers[x, y].outLocal, coreNi.inRouter);
-        sim.AddChannel(coreNi.outLocal, core.input);
-        sim.AddChannel(core.output, coreNi.inLocal);
-        return (core, coreNi);
+        sim.AddChannel(core.output, routers[x, y].inLocal);
+        sim.AddChannel(routers[x, y].outLocal, core.input);
+        return core;
     }
 
     public override void Setup()
@@ -124,20 +122,35 @@ public class MultiODIN2Test : Experiment
         routers = MeshUtils.CreateMesh(sim, width, height, (x, y) => new XYRouter2(x, y, name: $"router({x},{y})"));
 
         var controller = AddController(snn, 0, 0);
-        var (core1, coreNi1) = AddCore(controller, delayModel, 1024, 0, 1, "core1");
-        var (core2, coreNi2) = AddCore(controller, delayModel, 1024, 1, 1, "core2");
-        var (core3, coreNi3) = AddCore(controller, delayModel, 1024, 2, 1, "core3");
+        var core1 = AddCore(delayModel, 1024, 0, 1, "core1");
+        var core2 = AddCore(delayModel, 1024, 1, 1, "core2");
+        var core3 = AddCore(delayModel, 1024, 2, 1, "core3");
 
         // Mapping
         var mapper = new FirstFitMapper(snn, new Core[] { controller, core1, core2, core3 });
-        mapper.OnMappingFound += (core, layer) =>
-        {
-            if (core is ODINCore2)
-            {
-                controller.LayerToCoord(layer, (MeshCoord)core.GetLocation());
-            }
-        };
+        var mapping = new Mapping();
+        mapper.OnMappingFound += mapping.Map;
         mapper.Run();
+
+        foreach (var (layer, core) in mapping._forward)
+        {
+            if (core is not ODINCore2) continue;
+            controller.LayerToCoord(layer, (MeshCoord)core.GetLocation());
+        }
+
+        foreach (var core in mapping.Cores)
+        {
+            if (core is not ODINCore2) continue;
+
+            var destLayer = snn.GetDestLayer(mapping.Reverse[core]);
+            MeshCoord dest;
+            if (destLayer == null)
+                dest = (MeshCoord)controller.GetLocation();
+            else
+                dest = (MeshCoord)mapping.Forward[destLayer].GetLocation();
+
+            ((ODINCore2)core).setDestination(dest);
+        }
 
         simStop.StopEvents = 10_000_000;
     }

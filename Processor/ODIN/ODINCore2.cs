@@ -17,15 +17,15 @@ public sealed class ODINCore2 : Actor, Core
     public InPort input = new InPort();
     public OutPort output = new OutPort();
 
-    private Object location;
-    private HiddenLayer layer;
+    private MeshCoord location, destination;
+    private HiddenLayer Layer;
     private ODINDelayModel delayModel;
     private int nrNeurons;
     private int totalOutputSpikes = 0;
     private int totalInputSpikes = 0;
     private Queue<int> feedback = new Queue<int>();
 
-    public ODINCore2(object location, int nrNeurons, ODINDelayModel delayModel, string name = "")
+    public ODINCore2(MeshCoord location, int nrNeurons, ODINDelayModel delayModel, string name = "")
     {
         this.location = location;
         this.Name = name;
@@ -36,7 +36,7 @@ public sealed class ODINCore2 : Actor, Core
     public bool AcceptsLayer(Layer layer)
     {
         // The ODIN core can only accept 1 layer for now
-        if (this.layer != null)
+        if (this.Layer != null)
         {
             return false;
         }
@@ -65,10 +65,15 @@ public sealed class ODINCore2 : Actor, Core
 
     public void AddLayer(Layer layer)
     {
-        if (this.layer != null)
+        if (this.Layer != null)
             throw new Exception("Only accepts 1 layer");
 
-        this.layer = (HiddenLayer)layer;
+        this.Layer = (HiddenLayer)layer;
+    }
+
+    public void setDestination(MeshCoord coord)
+    {
+        this.destination = coord;
     }
 
     public override IEnumerable<Event> Run(Environment env)
@@ -106,13 +111,13 @@ public sealed class ODINCore2 : Actor, Core
     {
         if (feedback)
         {
-            layer.ApplyThreshold(neuron);
-            ((RLIFLayer)layer).IntegrateFeedback(neuron);
+            Layer.ApplyThreshold(neuron);
+            ((RLIFLayer)Layer).IntegrateFeedback(neuron);
         }
         else
         {
-            OnSpikeReceived?.Invoke(this, env.Now, layer, neuron, feedback);
-            layer.Integrate(neuron);
+            OnSpikeReceived?.Invoke(this, env.Now, Layer, neuron, feedback);
+            Layer.Integrate(neuron);
         }
 
         yield break;
@@ -122,7 +127,8 @@ public sealed class ODINCore2 : Actor, Core
     {
         var rcv = env.Receive(input, waitBefore: delayModel.InputTime);
         yield return rcv;
-        onReceive((ODINEvent)rcv.Message);
+        var flit = (MeshFlit) rcv.Message;
+        onReceive((ODINEvent)flit.Message);
     }
 
     private IEnumerable<Event> AdvanceTime(Environment env, int TS)
@@ -131,21 +137,21 @@ public sealed class ODINCore2 : Actor, Core
         totalInputSpikes = 0;
 
         // Readout of timestep TS - 1
-        OnTimeReceived?.Invoke(this, env.Now, TS, layer);
+        OnTimeReceived?.Invoke(this, env.Now, TS, Layer);
 
         // Threshold of timestep TS - 1
         long syncTime = -1;
         long start = env.Now;
         int nrOutputSpikes = 0;
-        foreach (var spikingNeuron in layer.Threshold())
+        foreach (var spikingNeuron in Layer.Threshold())
         {
             nrOutputSpikes++;
             syncTime = start + (spikingNeuron + 1) * delayModel.ComputeTime + (nrOutputSpikes - 1) * delayModel.OutputTime;
-            var outEvent = new ODINSpikeEvent(layer, spikingNeuron);
+            var outEvent = new ODINSpikeEvent(Layer, spikingNeuron);
             OnSpikeSent?.Invoke(this, syncTime, outEvent);
-            if (layer is RLIFLayer)
+            if (Layer is RLIFLayer)
                 feedback.Enqueue(spikingNeuron);
-            yield return env.SendAt(output, outEvent, syncTime);
+            yield return env.SendAt(output, new MeshFlit { Src = location, Dest = destination, Message = outEvent }, syncTime);
         }
         syncTime = start + nrNeurons * delayModel.ComputeTime + nrOutputSpikes * delayModel.OutputTime;
         totalInputSpikes++;
@@ -153,7 +159,7 @@ public sealed class ODINCore2 : Actor, Core
         yield return env.SleepUntil(syncTime);
 
         // Leakage of timestep TS
-        layer.Leak();
+        Layer.Leak();
         yield return env.Delay(nrNeurons * delayModel.TimeRefTime);
     }
 }

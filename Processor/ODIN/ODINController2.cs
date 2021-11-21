@@ -39,11 +39,6 @@ public sealed class ODINController2 : Actor, Core
         mappings[layer] = coreCoord;
     }
 
-    public void RLIF2LIF(RLIFLayer rlif, LIFLayer lif)
-    {
-        convertedLayers[lif] = rlif;
-    }
-
     public InPort GetIn() => spikesIn;
 
     public OutPort GetOut() => spikesOut;
@@ -173,6 +168,11 @@ public sealed class ODINController2 : Actor, Core
         {
             throw new Exception($"Unknown message: {message}");
         }
+    }
+
+    internal void LayerToCoord(Layer layer, object v)
+    {
+        throw new NotImplementedException();
     }
 
     public bool AcceptsLayer(Layer layer)
