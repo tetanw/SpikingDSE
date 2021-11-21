@@ -36,7 +36,7 @@ namespace SpikingDSE
             core.OnTimeReceived += (_, _, ts, layer) =>
             {
                 // TODO: May be broken due to moving of handler in implementation
-                mem.AdvanceLayer(layer, ts, layer.pots);
+                mem.AdvanceLayer(layer, ts, layer.Pots);
             };
             // core.ReceivedSpike += (_, time, ev) => trace.OutputSpike(ev.neuron, time);
             // core.ProducedSpike += (_, time, ev) => trace.InputSpike(ev.neuron, time);
@@ -94,8 +94,8 @@ namespace SpikingDSE
             );
             var hidden1Conv = RLIF2LIF(hidden1);
             hidden1Conv.leakage = alpha;
-            hidden1Conv.threshold = 0.01f;
-            hidden1Conv.resetMode = ResetMode.Subtract;
+            hidden1Conv.Thr = 0.01f;
+            hidden1Conv.ResetMode = ResetMode.Subtract;
             // WeigthsUtil.ToCSV("res/multi-odin/test-weights.csv", hidden1Conv.weights);
             snn.AddLayer(hidden1Conv);
 
@@ -106,8 +106,8 @@ namespace SpikingDSE
             );
             var hidden2Conv = RLIF2LIF(hidden2);
             hidden2Conv.leakage = alpha;
-            hidden2Conv.threshold = 0.01f;
-            hidden2Conv.resetMode = ResetMode.Subtract;
+            hidden2Conv.Thr = 0.01f;
+            hidden2Conv.ResetMode = ResetMode.Subtract;
             snn.AddLayer(hidden2Conv);
 
             var output = new LIFLayer(

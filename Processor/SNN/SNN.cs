@@ -31,31 +31,42 @@ namespace SpikingDSE
         Subtract
     }
 
-    public class LIFLayer : Layer
+    public abstract class HiddenLayer : Layer
     {
-        public float[] pots;
+        public abstract void Leak();
+
+        public abstract IEnumerable<int> Threshold();
+
+        public abstract void ApplyThreshold(int neuron);
+
+        public abstract void Integrate(int neuron);
+    }
+
+    public class LIFLayer : HiddenLayer
+    {
+        public float[] Pots;
         public float[,] weights;
-        public float threshold;
+        public float Thr;
         public float leakage;
         public bool[] spiked;
         private bool refractory;
-        public ResetMode resetMode;
+        public ResetMode ResetMode;
 
         public LIFLayer(float[,] weights, float threshold = 30, float leakage = 0, bool refractory = true, ResetMode resetMode = ResetMode.Zero, string name = "")
         {
             this.InputSize = weights.GetLength(0);
             this.Size = weights.GetLength(1);
             this.weights = weights;
-            this.pots = new float[Size];
+            this.Pots = new float[Size];
             this.spiked = new bool[Size];
-            this.threshold = threshold;
+            this.Thr = threshold;
             this.leakage = leakage;
             this.refractory = refractory;
-            this.resetMode = resetMode;
+            this.ResetMode = resetMode;
             this.Name = name;
         }
 
-        public void Leak()
+        public override void Leak()
         {
             for (int dst = 0; dst < Size; dst++)
             {
@@ -63,31 +74,31 @@ namespace SpikingDSE
                 {
                     spiked[dst] = false;
                 }
-                pots[dst] = pots[dst] * leakage;
+                Pots[dst] = Pots[dst] * leakage;
             }
         }
 
-        public void Integrate(int neuron)
+        public override void Integrate(int neuron)
         {
             for (int dst = 0; dst < Size; dst++)
             {
-                pots[dst] += weights[neuron, dst];
+                Pots[dst] += weights[neuron, dst];
             }
         }
 
-        public IEnumerable<int> Threshold()
+        public override IEnumerable<int> Threshold()
         {
             for (int dst = 0; dst < Size; dst++)
             {
                 if (spiked[dst] && refractory)
                     continue;
 
-                if (pots[dst] >= threshold)
+                if (Pots[dst] >= Thr)
                 {
-                    if (resetMode == ResetMode.Zero)
-                        pots[dst] = 0;
-                    else if (resetMode == ResetMode.Subtract)
-                        pots[dst] -= threshold;
+                    if (ResetMode == ResetMode.Zero)
+                        Pots[dst] = 0;
+                    else if (ResetMode == ResetMode.Subtract)
+                        Pots[dst] -= Thr;
                     else
                         throw new Exception("Unknown reset behaviour");
                     spiked[dst] = true;
@@ -95,9 +106,19 @@ namespace SpikingDSE
                 }
             }
         }
+
+        public override void ApplyThreshold(int neuron)
+        {
+            if (ResetMode == ResetMode.Zero)
+                Pots[neuron] = 0;
+            else if (ResetMode == ResetMode.Subtract)
+                Pots[neuron] -= Thr;
+            else
+                throw new Exception("Unknown reset behaviour");
+        }
     }
 
-    public class RLIFLayer : Layer
+    public class RLIFLayer : HiddenLayer
     {
         public readonly float[,] InWeights;
         public readonly float[,] RecWeights;
@@ -119,7 +140,7 @@ namespace SpikingDSE
             this.Size = inWeights.GetLength(1);
         }
 
-        public void Leak()
+        public override void Leak()
         {
             for (int dst = 0; dst < Size; dst++)
             {
@@ -127,7 +148,7 @@ namespace SpikingDSE
             }
         }
 
-        public void IntegrateForward(int neuron)
+        public override void Integrate(int neuron)
         {
             for (int dst = 0; dst < Size; dst++)
             {
@@ -143,7 +164,7 @@ namespace SpikingDSE
             }
         }
 
-        public void ApplyThreshold(int neuron)
+        public override void ApplyThreshold(int neuron)
         {
             if (ResetMode == ResetMode.Zero)
                 Pots[neuron] = 0;
@@ -153,7 +174,7 @@ namespace SpikingDSE
                 throw new Exception("Unknown reset behaviour");
         }
 
-        public IEnumerable<int> Threshold()
+        public override IEnumerable<int> Threshold()
         {
             for (int dst = 0; dst < Size; dst++)
             {

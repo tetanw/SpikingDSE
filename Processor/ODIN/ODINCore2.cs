@@ -8,7 +8,7 @@ public sealed class ODINCore2 : Actor, Core
 {
     public delegate void SpikeReceived(ODINCore2 core, long time, Layer layer, int neuron, bool feedback);
     public delegate void SpikeSent(ODINCore2 core, long time, ODINSpikeEvent spike);
-    public delegate void TimeReceived(ODINCore2 core, long time, int ts, RLIFLayer layer);
+    public delegate void TimeReceived(ODINCore2 core, long time, int ts, HiddenLayer layer);
 
     public SpikeReceived OnSpikeReceived;
     public SpikeSent OnSpikeSent;
@@ -18,7 +18,7 @@ public sealed class ODINCore2 : Actor, Core
     public OutPort output = new OutPort();
 
     private Object location;
-    private RLIFLayer layer;
+    private HiddenLayer layer;
     private ODINDelayModel delayModel;
     private int nrNeurons;
     private int totalOutputSpikes = 0;
@@ -47,6 +47,10 @@ public sealed class ODINCore2 : Actor, Core
             // TODO: Add extra checks nr neurons etc...
             return true;
         }
+        else if (layer is LIFLayer)
+        {
+            return true;
+        }
         else
         {
             return false;
@@ -64,7 +68,7 @@ public sealed class ODINCore2 : Actor, Core
         if (this.layer != null)
             throw new Exception("Only accepts 1 layer");
 
-        this.layer = (RLIFLayer)layer;
+        this.layer = (HiddenLayer)layer;
     }
 
     public override IEnumerable<Event> Run(Environment env)
@@ -103,12 +107,12 @@ public sealed class ODINCore2 : Actor, Core
         if (feedback)
         {
             layer.ApplyThreshold(neuron);
-            layer.IntegrateFeedback(neuron);
+            ((RLIFLayer)layer).IntegrateFeedback(neuron);
         }
         else
         {
             OnSpikeReceived?.Invoke(this, env.Now, layer, neuron, feedback);
-            layer.IntegrateForward(neuron);
+            layer.Integrate(neuron);
         }
 
         yield break;
@@ -139,7 +143,8 @@ public sealed class ODINCore2 : Actor, Core
             syncTime = start + (spikingNeuron + 1) * delayModel.ComputeTime + (nrOutputSpikes - 1) * delayModel.OutputTime;
             var outEvent = new ODINSpikeEvent(layer, spikingNeuron);
             OnSpikeSent?.Invoke(this, syncTime, outEvent);
-            feedback.Enqueue(spikingNeuron);
+            if (layer is RLIFLayer)
+                feedback.Enqueue(spikingNeuron);
             yield return env.SendAt(output, outEvent, syncTime);
         }
         syncTime = start + nrNeurons * delayModel.ComputeTime + nrOutputSpikes * delayModel.OutputTime;
@@ -147,7 +152,7 @@ public sealed class ODINCore2 : Actor, Core
         totalOutputSpikes += nrOutputSpikes;
         yield return env.SleepUntil(syncTime);
 
-        // Leakage of timestep TS 
+        // Leakage of timestep TS
         layer.Leak();
         yield return env.Delay(nrNeurons * delayModel.TimeRefTime);
     }
