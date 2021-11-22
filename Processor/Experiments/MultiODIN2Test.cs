@@ -88,25 +88,26 @@ public class MultiODIN2Test : Experiment
         hidden2.ResetMode = ResetMode.Subtract;
         snn.AddLayer(hidden2);
 
-        // alpha = (float)Math.Exp(-1.0 * 1.0 / 15.0);
-        // var output = new LIFLayer(
-        //     WeigthsUtil.ReadFromCSVFloat($"{folderPath}/weights_h2o_n.csv", headers: true),
-        //     name: "output"
-        // );
-        // output.leakage = alpha;
-        // output.Thr = 0.00f;
-        // output.ResetMode = ResetMode.Subtract;
-        // snn.AddLayer(output);
+        alpha = (float)Math.Exp(-1.0 * 1.0 / 15.0);
+        beta = 1 - alpha;
+        var output = new LIFLayer(
+            WeigthsUtil.Normalize(WeigthsUtil.ReadFromCSVFloat($"{folderPath}/weights_h2o_n.csv", headers: true), scale: beta),
+            name: "output"
+        );
+        output.leakage = alpha;
+        output.Thr = 0.00f;
+        output.ResetMode = ResetMode.Subtract;
+        snn.AddLayer(output);
 
         tensor = new TensorReporter(snn, "res/multi-odin/tensor");
         tensor.RegisterLayer(hidden1);
         tensor.RegisterLayer(hidden2);
-        // tensor.RegisterLayer(output);
+        tensor.RegisterLayer(output);
 
         mem = new MemReporter(snn, "res/multi-odin/mem");
         mem.RegisterLayer(hidden1);
         mem.RegisterLayer(hidden2);
-        // mem.RegisterLayer(output);
+        mem.RegisterLayer(output);
 
         // Hardware
         int width = 3;
