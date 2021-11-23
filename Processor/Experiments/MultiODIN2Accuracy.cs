@@ -1,10 +1,58 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
 
 namespace SpikingDSE;
+
+class InputTraceFile : ISpikeSource
+{
+    public int Correct;
+    private List<List<int>> allSpikes;
+    private int currentTS;
+    private int nrNeurons;
+
+    public InputTraceFile(string inputPath, int nrNeurons)
+    {
+        string[] lines = File.ReadAllLines(inputPath);
+        Correct = int.Parse(lines[0]);
+        allSpikes = new();
+        for (int i = 1; i < lines.Length; i++)
+        {
+            string line = lines[i];
+            var parts = line.Split(",", StringSplitOptions.RemoveEmptyEntries);
+            List<int> spikes = parts.Skip(1).Select(v => int.Parse(v)).ToList();
+            allSpikes.Add(spikes);
+        }
+        currentTS = 0;
+        this.nrNeurons = nrNeurons;
+    }
+
+    public List<int> NeuronSpikes()
+    {
+        return allSpikes[currentTS];
+    }
+
+    public bool NextTimestep()
+    {
+        if (currentTS + 1 == allSpikes.Count)
+        {
+            return false;
+        }
+        else
+        {
+            currentTS++;
+            return true;
+        }
+    }
+
+    public int NrNeurons()
+    {
+        return nrNeurons;
+    }
+}
 
 class ExpRun
 {
@@ -17,14 +65,14 @@ class ExpRun
     private SNN snn;
     private LIFLayer outputLayer;
 
-    private string inputPath;
+    private ISpikeSource spikeSource;
 
     public Stopwatch SimTime;
     public int Predicted;
 
-    public ExpRun(string inputPath)
+    public ExpRun(ISpikeSource spikeSource)
     {
-        this.inputPath = inputPath;
+        this.spikeSource = spikeSource;
     }
 
     private ODINController2 AddController(SNN snn, int x, int y)
@@ -52,7 +100,7 @@ class ExpRun
         // SNN
         float alpha1 = (float)Math.Exp(-1.0 * 1.0 / 10.0);
         snn = new SNN();
-        var input = new InputLayer(new TensorFile(inputPath), name: "input");
+        var input = new InputLayer(spikeSource, name: "input");
         snn.AddLayer(input);
         var hidden1 = new RLIFLayer(
             weigths1,
@@ -129,20 +177,36 @@ class ExpRun
         }
     }
 
-    public static float Sigmoid(double value)
+    static float[] Softmax(float[] vector)
     {
-        return 1.0f / (1.0f + (float)Math.Exp(-value));
+        float[] res = new float[vector.Length];
+        float sum = 0.0f;
+        for (int i = 0; i < vector.Length; i++)
+        {
+            res[i] = (float)Math.Exp(vector[i]);
+            sum += res[i];
+        }
+        for (int i = 0; i < vector.Length; i++)
+        {
+            res[i] = res[i] / sum;
+        }
+        return res;
     }
 
     public void Run(float[,] weigths1, float[,] weights2, float[,] weights3, float[,] weights4, float[,] weights5)
     {
-        double[] output = new double[20];
-        this.OnTimestepFinished = (ts, layer) => {
+        float[] output = new float[20];
+        this.OnTimestepFinished = (ts, layer) =>
+        {
             if (layer != outputLayer) return;
 
-            for (int i = 0; i < 20; i++)
+            if (ts > 0)
             {
-                output[i] += Sigmoid(outputLayer.Pots[i]);
+                float[] softmax = Softmax(outputLayer.Pots);
+                for (int i = 0; i < 20; i++)
+                {
+                    output[i] += softmax[i];
+                }
             }
         };
         sim = new Simulator();
@@ -181,20 +245,24 @@ public class MultiOdin2Accuracy
 
         // int batch_size = 128;
         // int[] labels = File.ReadAllText("res/multi-odin/validation/labels").Split(",").Select(p => int.Parse(p.Trim())).ToArray();
-        int[] labels = new int[] { 10, 17, 13, 10, 17, 13, 4, 4, 10, 14, 10, 7, 4, 5, 15, 0, 13, 9 };
-        for (int i = 0; i < 17; i++)
+        int nrCorrect = 0;
+        int nrInputs = 512;
+        for (int i = 0; i < nrInputs; i++)
         {
-            RunInput($"res/multi-odin/validation/input/input_{i}.csv", labels[i]);
+            bool correct = RunInput(new InputTraceFile($"res/multi-odin/inputs/input_{i}.trace", 700), i);
+            if (correct) nrCorrect++;
         }
+        Console.WriteLine($"Accuracy: {(float)nrCorrect / nrInputs * 100}");
     }
 
-    void RunInput(string inputPath, int label)
+    bool RunInput(InputTraceFile traceFile, int inputNr)
     {
-        var run = new ExpRun((string)inputPath);
+        var run = new ExpRun(traceFile);
         run.Run(weights1, weights2, weights3, weights4, weights5);
-        Console.WriteLine($"Running input: {inputPath}");
-        Console.WriteLine($"Time taken: {run.SimTime.ElapsedMilliseconds} ms");
-        string match = run.Predicted == label ? "YES" : "NO";
-        Console.WriteLine($"Predicted: {run.Predicted}, Label: {label}, Match: {match}");
+        // Console.WriteLine($"Running input: {inputNr}");
+        // Console.WriteLine($"Time taken: {run.SimTime.ElapsedMilliseconds} ms");
+        string match = run.Predicted == traceFile.Correct ? "YES" : "NO";
+        Console.WriteLine($"[{inputNr}]: Predicted: {run.Predicted}, Correct: {traceFile.Correct}, Match: {match}");
+        return run.Predicted == traceFile.Correct;
     }
 }
