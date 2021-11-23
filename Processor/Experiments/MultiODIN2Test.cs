@@ -59,14 +59,14 @@ public class MultiODIN2Test : Experiment
         // 3. Both excitatory and inhibitory spikes can be used together
         // 4. Leakage is proportional to current voltage instead of a constant????
 
-        string folderPath = "res/multi-odin/validation/small";
+        string folderPath = "res/multi-odin/validation/normal";
         trace = new TraceReporter("res/multi-odin/result.trace");
 
         // SNN
         float alpha = (float)Math.Exp(-1.0 * 1.0 / 10.0);
         float beta = 1 - alpha;
         snn = new SNN();
-        var input = new InputLayer(new TensorFile($"res/multi-odin/validation/input_0.csv"), name: "input");
+        var input = new InputLayer(new TensorFile($"res/multi-odin/validation/input/input_0.csv"), name: "input");
         snn.AddLayer(input);
         var hidden1 = new RLIFLayer(
             WeigthsUtil.Normalize(WeigthsUtil.ReadFromCSVFloat($"{folderPath}/weights_i_2_h1_n.csv", headers: true), scale: beta),
