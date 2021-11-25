@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace SpikingDSE;
 
@@ -66,19 +67,23 @@ class ExpRun
     private LIFLayer outputLayer;
 
     private ISpikeSource spikeSource;
+    private int interval;
+    private int feedbackSize;
 
     public Stopwatch SimTime;
     public int Predicted;
 
-    public ExpRun(ISpikeSource spikeSource)
+    public ExpRun(ISpikeSource spikeSource, int interval, int feedbackSize)
     {
         this.spikeSource = spikeSource;
+        this.interval = interval;
+        this.feedbackSize = feedbackSize;
     }
 
     private ODINController2 AddController(SNN snn, int x, int y)
     {
         var controllerCoord = new MeshCoord(x, y);
-        var controller = sim.AddActor(new ODINController2(controllerCoord, snn, 0, 1_000_000, name: "controller"));
+        var controller = sim.AddActor(new ODINController2(controllerCoord, 100, snn, 0, interval, name: "controller"));
         sim.AddChannel(controller.spikesOut, routers[x, y].inLocal);
         sim.AddChannel(routers[x, y].outLocal, controller.spikesIn);
         return controller;
@@ -87,7 +92,7 @@ class ExpRun
     private ODINCore2 AddCore(ODINDelayModel delayModel, int size, int x, int y, string name)
     {
         var coreCoord = new MeshCoord(x, y);
-        var core = sim.AddActor(new ODINCore2(coreCoord, size, delayModel, name: name));
+        var core = sim.AddActor(new ODINCore2(coreCoord, size, delayModel, feedbackBufferSize: feedbackSize, name: name));
         core.OnTimeReceived += (_, _, ts, layer) => OnTimestepFinished?.Invoke(ts, layer);
         sim.AddChannel(core.output, routers[x, y].inLocal);
         sim.AddChannel(routers[x, y].outLocal, core.input);
@@ -243,26 +248,62 @@ public class MultiOdin2Accuracy
         weights4 = WeigthsUtil.Normalize(WeigthsUtil.ReadFromCSVFloat($"{folderPath}/weights_h2_2_h2_n.csv", headers: true), scale: beta1);
         weights5 = WeigthsUtil.Normalize(WeigthsUtil.ReadFromCSVFloat($"{folderPath}/weights_h2o_n.csv", headers: true), scale: beta2);
 
-        // int batch_size = 128;
-        // int[] labels = File.ReadAllText("res/multi-odin/validation/labels").Split(",").Select(p => int.Parse(p.Trim())).ToArray();
-        int nrCorrect = 0;
+        int[] confs = new int[] {
+            1000, 2000, 5000, 7500,
+            10_000, 25_000, 50_000, 75_000, 100_000, 150_000, 200_000,
+            250_000, 300_000, 350_000, 400_000, 450_000, 500_000,
+            550_000, 600_000, 650_000, 700_000, 750_000, 800_000,
+            850_000, 900_000, 950_000, 1_000_000
+        };
         int nrInputs = 512;
-        for (int i = 0; i < nrInputs; i++)
+        for (int j = 0; j < confs.Length; j++)
         {
-            bool correct = RunInput(new InputTraceFile($"res/multi-odin/inputs/input_{i}.trace", 700), i);
-            if (correct) nrCorrect++;
+            int nrCorrect = 0;
+            for (int i = 0; i < nrInputs; i++)
+            {
+                bool correct = RunInput(new InputTraceFile($"res/multi-odin/inputs/input_{i}.trace", 700), confs[j], 128, i);
+                if (correct) nrCorrect++;
+            }
+            float accuracy = (float)nrCorrect / nrInputs * 100;
+            Console.WriteLine($"{confs[j]};{accuracy}");
         }
-        Console.WriteLine($"Accuracy: {(float)nrCorrect / nrInputs * 100}");
+
+        // int[] confs = new int[] {
+        //     // 0, 1, 2, 4, 8, 16, 32
+        //     64, 128
+        // };
+        // int nrInputs = 512;
+        // for (int j = 0; j < confs.Length; j++)
+        // {
+        //     int nrCorrect = 0;
+        //     for (int i = 0; i < nrInputs; i++)
+        //     {
+        //         bool correct = RunInput(new InputTraceFile($"res/multi-odin/inputs/input_{i}.trace", 700), 1_000_000, confs[j], i);
+        //         if (correct) nrCorrect++;
+        //     }
+        //     float accuracy = (float)nrCorrect / nrInputs * 100;
+        //     Console.WriteLine($"{confs[j]};{accuracy}");
+        // }
+
+        // int nrInputs = 512;
+        // int nrCorrect = 0;
+        // for (int i = 0; i < nrInputs; i++)
+        // {
+        //     bool correct = RunInput(new InputTraceFile($"res/multi-odin/inputs/input_{i}.trace", 700), 50_000, 64, i);
+        //     if (correct) nrCorrect++;
+        // }
+        // float accuracy = (float)nrCorrect / nrInputs * 100;
+        // Console.WriteLine($"Accuracy: {accuracy}");
     }
 
-    bool RunInput(InputTraceFile traceFile, int inputNr)
+    bool RunInput(InputTraceFile traceFile, int interval, int feedbackSize, int inputNr)
     {
-        var run = new ExpRun(traceFile);
+        var run = new ExpRun(traceFile, interval, feedbackSize);
         run.Run(weights1, weights2, weights3, weights4, weights5);
         // Console.WriteLine($"Running input: {inputNr}");
         // Console.WriteLine($"Time taken: {run.SimTime.ElapsedMilliseconds} ms");
-        string match = run.Predicted == traceFile.Correct ? "YES" : "NO";
-        Console.WriteLine($"[{inputNr}]: Predicted: {run.Predicted}, Correct: {traceFile.Correct}, Match: {match}");
+        // string match = run.Predicted == traceFile.Correct ? "YES" : "NO";
+        // Console.WriteLine($"[{inputNr}]: Predicted: {run.Predicted}, Correct: {traceFile.Correct}, Match: {match}");
         return run.Predicted == traceFile.Correct;
     }
 }

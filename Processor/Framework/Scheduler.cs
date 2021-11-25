@@ -74,6 +74,8 @@ namespace SpikingDSE
 
         public void Notify(Signal signal)
         {
+            if (signal.Waiting == null)
+                return;
             foreach (var thread in signal.Waiting)
             {
                 thread.Time = currentTime;

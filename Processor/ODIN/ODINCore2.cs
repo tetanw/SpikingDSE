@@ -24,12 +24,14 @@ public sealed class ODINCore2 : Actor, Core
     private int totalOutputSpikes = 0;
     private int totalInputSpikes = 0;
     private Queue<int> feedback = new Queue<int>();
+    private int feedbackBufferSize;
 
-    public ODINCore2(MeshCoord location, int nrNeurons, ODINDelayModel delayModel, string name = "")
+    public ODINCore2(MeshCoord location, int nrNeurons, ODINDelayModel delayModel, int feedbackBufferSize = int.MaxValue, string name = "")
     {
         this.location = location;
         this.Name = name;
         this.nrNeurons = nrNeurons;
+        this.feedbackBufferSize = feedbackBufferSize;
         this.delayModel = delayModel;
     }
 
@@ -120,7 +122,10 @@ public sealed class ODINCore2 : Actor, Core
             Layer.Integrate(neuron);
         }
 
-        yield break;
+        // HW v1
+        yield return env.Delay(delayModel.ComputeTime * nrNeurons);
+        // HW v2
+        // yield return env.Delay(delayModel.ComputeTime * this.Layer.Size);
     }
 
     private IEnumerable<Event> Receive(Environment env, Action<ODINEvent> onReceive)
@@ -149,7 +154,7 @@ public sealed class ODINCore2 : Actor, Core
             syncTime = start + (spikingNeuron + 1) * delayModel.ComputeTime + (nrOutputSpikes - 1) * delayModel.OutputTime;
             var outEvent = new ODINSpikeEvent(Layer, spikingNeuron);
             OnSpikeSent?.Invoke(this, syncTime, outEvent);
-            if (Layer is RLIFLayer)
+            if (Layer is RLIFLayer && feedback.Count < feedbackBufferSize)
                 feedback.Enqueue(spikingNeuron);
             yield return env.SendAt(output, new MeshFlit { Src = location, Dest = destination, Message = outEvent }, syncTime);
         }

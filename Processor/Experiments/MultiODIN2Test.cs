@@ -14,7 +14,7 @@ public class MultiODIN2Test : Experiment
     private ODINController2 AddController(SNN snn, int x, int y)
     {
         var controllerCoord = new MeshCoord(x, y);
-        var controller = sim.AddActor(new ODINController2(controllerCoord, snn, 0, 1_000_000, name: "controller"));
+        var controller = sim.AddActor(new ODINController2(controllerCoord, 100, snn, 0, 1_000_000, name: "controller"));
         controller.TimeAdvanced += (_, ts) => trace.AdvanceTimestep(ts);
         controller.TimeAdvanced += (_, ts) =>
         {

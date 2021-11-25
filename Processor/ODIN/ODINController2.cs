@@ -23,9 +23,8 @@ public sealed class ODINController2 : Actor, Core
     private FIFO<object> outBuffer;
     private Queue<StoredSpike> storedSpikes = new();
     private Dictionary<Layer, MeshCoord> mappings = new();
-    private Dictionary<LIFLayer, RLIFLayer> convertedLayers = new();
 
-    public ODINController2(object location, SNN snn, long startTime, long interval, string name = null)
+    public ODINController2(object location, int nrTimesteps, SNN snn, long startTime, long interval, string name = null)
     {
         this.location = location;
         this.snn = snn;
@@ -49,7 +48,10 @@ public sealed class ODINController2 : Actor, Core
     {
         outBuffer = new(env, 1);
 
-        env.Process(SpikeSender(env));
+        var timesteps = env.CreateResource(0);
+
+        env.Process(SpikeSender(env, timesteps));
+        env.Process(SyncSender(env, timesteps));
 
         env.Process(Sender(env));
         env.Process(Receiver(env));
@@ -57,12 +59,13 @@ public sealed class ODINController2 : Actor, Core
         yield break;
     }
 
-    private IEnumerable<Event> SpikeSender(Environment env)
+    private IEnumerable<Event> SpikeSender(Environment env, Resource timesteps)
     {
-        yield return env.SleepUntil(startTime);
-        int ts = 0;
         while (inputLayer.spikeSource.NextTimestep())
         {
+            // Wait until until the sync sender goes to next timestep
+            yield return env.RequestResource(timesteps, 1);
+
             // Send spikes for input layer
             var inputSpikes = inputLayer.spikeSource.NeuronSpikes();
             foreach (var neuron in inputSpikes)
@@ -73,23 +76,25 @@ public sealed class ODINController2 : Actor, Core
                 outBuffer.ReleaseWrite();
                 SpikeSent?.Invoke(this, env.Now, spike);
             }
+        }
+    }
 
-            // Send stored spikes for hidden layers
-            while (storedSpikes.Count > 0)
-            {
-                var stored = storedSpikes.Dequeue();
-                yield return outBuffer.RequestWrite();
-                outBuffer.Write(stored);
-                outBuffer.ReleaseWrite();
-                SpikeSent?.Invoke(this, env.Now, stored.ODINSpike);
-            }
+    private IEnumerable<Event> SyncSender(Environment env, Resource timesteps)
+    {
+        yield return env.SleepUntil(startTime);
 
-            long syncTime = (env.Now / interval + 1) * interval;
-            yield return env.SleepUntil(syncTime);
+        int ts = 0;
+        // TODO: Do not hardcode the amount of spikes
+        while (ts < 100)
+        {
             yield return outBuffer.RequestWrite();
             outBuffer.Write(new ODINTimeEvent(ts));
             outBuffer.ReleaseWrite();
             TimeAdvanced?.Invoke(this, ts);
+
+            yield return env.SleepUntil(startTime + interval * ts);
+            env.IncreaseResource(timesteps, 1);
+
             ts++;
         }
     }
@@ -100,10 +105,7 @@ public sealed class ODINController2 : Actor, Core
         {
             yield return outBuffer.RequestRead();
             var flit = outBuffer.Read();
-            foreach (var ev in SendODINEvent(env, flit))
-            {
-                yield return ev;
-            }
+            yield return env.Process(SendODINEvent(env, flit));
             outBuffer.ReleaseRead();
         }
     }
@@ -120,12 +122,6 @@ public sealed class ODINController2 : Actor, Core
             {
                 var spike = (ev as MeshFlit).Message as ODINSpikeEvent;
                 SpikeReceived?.Invoke(this, env.Now, spike);
-
-                // If from hidden layer then store output next layer then we do not have to do anything
-                if (!snn.IsOutputLayer(spike.layer))
-                {
-                    storedSpikes.Enqueue(new StoredSpike(spike));
-                }
             }
             else
             {

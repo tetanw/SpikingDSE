@@ -40,7 +40,10 @@ namespace SpikingDSE
             Console.WriteLine($"Running time was: {stopwatch.ElapsedMilliseconds} ms");
             Console.WriteLine($"Events handled: {nrEvents:n}");
             Console.WriteLine($"Performance was about: {nrEvents / stopwatch.Elapsed.TotalSeconds:n} event/s");
-            Console.WriteLine($"Time per event: {Measurements.FormatSI(stopwatch.Elapsed.TotalSeconds / nrEvents, "s")}");
+            if (nrEvents > 0)
+            {
+                Console.WriteLine($"Time per event: {Measurements.FormatSI(stopwatch.Elapsed.TotalSeconds / nrEvents, "s")}");
+            }
         }
 
         public abstract void Setup();

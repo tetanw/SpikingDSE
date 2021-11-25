@@ -96,6 +96,11 @@ namespace SpikingDSE
                     {
                         new MultiOdin2Accuracy().Run();
                     }
+                    else if (opts.Name.Equals("XYRouter3Test"))
+                    {
+                        new XYRouter3Test().Run();
+                    }
+
                     else
                     {
                         throw new Exception($"Unknown simulation: {opts.Name}");
