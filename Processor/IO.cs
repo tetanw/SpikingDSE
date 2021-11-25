@@ -12,6 +12,53 @@ namespace SpikingDSE
         public int NrNeurons();
     }
 
+    class InputTraceFile : ISpikeSource
+    {
+        public int Correct;
+        private List<List<int>> allSpikes;
+        private int currentTS;
+        private int nrNeurons;
+
+        public InputTraceFile(string inputPath, int nrNeurons)
+        {
+            string[] lines = File.ReadAllLines(inputPath);
+            Correct = int.Parse(lines[0]);
+            allSpikes = new();
+            for (int i = 1; i < lines.Length; i++)
+            {
+                string line = lines[i];
+                var parts = line.Split(",", StringSplitOptions.RemoveEmptyEntries);
+                List<int> spikes = parts.Skip(1).Select(v => int.Parse(v)).ToList();
+                allSpikes.Add(spikes);
+            }
+            currentTS = 0;
+            this.nrNeurons = nrNeurons;
+        }
+
+        public List<int> NeuronSpikes()
+        {
+            return allSpikes[currentTS];
+        }
+
+        public bool NextTimestep()
+        {
+            if (currentTS + 1 == allSpikes.Count)
+            {
+                return false;
+            }
+            else
+            {
+                currentTS++;
+                return true;
+            }
+        }
+
+        public int NrNeurons()
+        {
+            return nrNeurons;
+        }
+    }
+
     public class TensorFile : ISpikeSource
     {
         private StreamReader input;
@@ -95,7 +142,8 @@ namespace SpikingDSE
 
             for (int i = 0; i < tensorFiles.Length; i++)
             {
-                if (!tensorFiles[i].NextTimestep()) {
+                if (!tensorFiles[i].NextTimestep())
+                {
                     isAnyFileDone = true;
                     return false;
                 }
