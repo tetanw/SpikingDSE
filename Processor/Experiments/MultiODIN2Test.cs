@@ -66,6 +66,7 @@ public class MultiODIN2Test : Experiment
         float alpha = (float)Math.Exp(-1.0 * 1.0 / 10.0);
         float beta = 1 - alpha;
         snn = new SNN();
+        // var input = new InputLayer(new TensorFile($"res/multi-odin/validation/input/input_0.csv"), name: "input");
         var input = new InputLayer(new InputTraceFile($"res/multi-odin/inputs/input_0.trace", 700), name: "input");
         snn.AddLayer(input);
         var hidden1 = new RLIFLayer(

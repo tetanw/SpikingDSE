@@ -37,7 +37,7 @@ namespace SpikingDSE
 
         public List<int> NeuronSpikes()
         {
-            return allSpikes[currentTS];
+            return allSpikes[currentTS - 1];
         }
 
         public bool NextTimestep()

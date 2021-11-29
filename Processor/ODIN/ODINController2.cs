@@ -63,9 +63,6 @@ public sealed class ODINController2 : Actor, Core
     {
         while (inputLayer.spikeSource.NextTimestep())
         {
-            // Wait until until the sync sender goes to next timestep
-            yield return env.RequestResource(timesteps, 1);
-
             // Send spikes for input layer
             var inputSpikes = inputLayer.spikeSource.NeuronSpikes();
             foreach (var neuron in inputSpikes)
@@ -76,6 +73,9 @@ public sealed class ODINController2 : Actor, Core
                 outBuffer.ReleaseWrite();
                 SpikeSent?.Invoke(this, env.Now, spike);
             }
+
+            // Wait until until the sync sender goes to next timestep
+            yield return env.RequestResource(timesteps, 1);
         }
     }
 
@@ -87,14 +87,14 @@ public sealed class ODINController2 : Actor, Core
         // TODO: Do not hardcode the amount of spikes
         while (ts < 100)
         {
+            yield return env.SleepUntil(startTime + interval * (ts + 1));
+
             yield return outBuffer.RequestWrite();
             outBuffer.Write(new ODINTimeEvent(ts));
             outBuffer.ReleaseWrite();
             TimeAdvanced?.Invoke(this, ts);
 
-            yield return env.SleepUntil(startTime + interval * ts);
             env.IncreaseResource(timesteps, 1);
-
             ts++;
         }
     }
