@@ -8,6 +8,9 @@
 		},
 		{
 			"path": "..\\SherifSHD"
+		},
+		{
+			"path": "..\\Enabling_Spikebased_Backpropagation"
 		}
 	],
 	"settings": {}
