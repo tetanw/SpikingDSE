@@ -43,14 +43,10 @@ public sealed class ODINCore2 : Actor, Core
             return false;
         }
 
-        if (layer is RLIFLayer)
+        if (layer is HiddenLayer)
         {
-            var lifLayer = layer as RLIFLayer;
+            var lifLayer = (HiddenLayer)layer;
             // TODO: Add extra checks nr neurons etc...
-            return true;
-        }
-        else if (layer is LIFLayer)
-        {
             return true;
         }
         else
@@ -132,7 +128,7 @@ public sealed class ODINCore2 : Actor, Core
     {
         var rcv = env.Receive(input, waitBefore: delayModel.InputTime);
         yield return rcv;
-        var flit = (MeshFlit) rcv.Message;
+        var flit = (MeshFlit)rcv.Message;
         onReceive((ODINEvent)flit.Message);
     }
 
