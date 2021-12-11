@@ -36,7 +36,7 @@ public class MultiODIN2Test : Experiment
         var core = sim.AddActor(new ODINCore2(coreCoord, size, delayModel, name: name));
         core.OnTimeReceived += (_, _, ts, layer) =>
         {
-            float[] pots = (layer as RLIFLayer)?.Pots ?? (layer as LIFLayer)?.Pots;
+            float[] pots = (layer as RLIFLayer)?.Pots ?? (layer as IFLayer)?.Pots;
             mem.AdvanceLayer(layer, ts, pots);
         };
         core.OnSpikeReceived += (_, time, layer, neuron, feedback) => trace.InputSpike(neuron, time);
@@ -91,7 +91,7 @@ public class MultiODIN2Test : Experiment
 
         alpha = (float)Math.Exp(-1.0 * 1.0 / 15.0);
         beta = 1 - alpha;
-        var output = new LIFLayer(
+        var output = new IFLayer(
             WeigthsUtil.Normalize(WeigthsUtil.ReadFromCSVFloat($"{folderPath}/weights_h2o_n.csv", headers: true), scale: beta),
             name: "output"
         );

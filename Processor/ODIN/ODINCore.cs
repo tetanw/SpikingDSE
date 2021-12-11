@@ -22,7 +22,7 @@ public sealed class ODINCore : Actor, Core
 {
     public delegate void SpikeReceived(ODINCore core, long time, ODINSpikeEvent spike);
     public delegate void SpikeSent(ODINCore core, long time, ODINSpikeEvent spike);
-    public delegate void TimeReceived(ODINCore core, long time, int ts, LIFLayer layer);
+    public delegate void TimeReceived(ODINCore core, long time, int ts, IFLayer layer);
 
     public SpikeReceived OnSpikeRecived;
     public SpikeSent OnSpikeSent;
@@ -33,7 +33,7 @@ public sealed class ODINCore : Actor, Core
 
     private Object location;
     private ODINEvent received = null;
-    private LIFLayer layer;
+    private IFLayer layer;
     private ODINDelayModel delayModel;
     private int nrNeurons;
     private bool enableRefractory;
@@ -57,9 +57,9 @@ public sealed class ODINCore : Actor, Core
             return false;
         }
 
-        if (layer is LIFLayer)
+        if (layer is IFLayer)
         {
-            var lifLayer = layer as LIFLayer;
+            var lifLayer = layer as IFLayer;
             // check if enough fan-out and fan-in
             bool fanIn = lifLayer.InputSize < nrNeurons;
             bool fanOut = lifLayer.Size < nrNeurons;
@@ -82,7 +82,7 @@ public sealed class ODINCore : Actor, Core
         if (this.layer != null)
             throw new Exception("Only accepts 1 layer");
 
-        this.layer = (LIFLayer)layer;
+        this.layer = (IFLayer)layer;
     }
 
     public override IEnumerable<Event> Run(Environment env)
@@ -121,7 +121,7 @@ public sealed class ODINCore : Actor, Core
         var inputSpike = (ODINSpikeEvent)received;
         OnSpikeRecived?.Invoke(this, env.Now, inputSpike);
 
-        LIFLayer lif = (layer as LIFLayer);
+        IFLayer lif = (layer as IFLayer);
         lif.Integrate(inputSpike.neuron);
         long syncTime = -1;
         long start = env.Now;

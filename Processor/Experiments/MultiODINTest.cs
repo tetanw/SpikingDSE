@@ -49,7 +49,7 @@ namespace SpikingDSE
             return (core, coreNi);
         }
 
-        private LIFLayer RLIF2LIF(RLIFLayer rlif)
+        private IFLayer RLIF2LIF(RLIFLayer rlif)
         {
             float[,] newWeights = new float[rlif.Size + rlif.InputSize, rlif.Size];
             // all feed-forward connections
@@ -68,7 +68,7 @@ namespace SpikingDSE
                     newWeights[src, dst] = rlif.RecWeights[src - rlif.InputSize, dst];
                 }
             }
-            return new LIFLayer(newWeights, name: rlif.Name);
+            return new IFLayer(newWeights, name: rlif.Name);
         }
 
         public override void Setup()
@@ -110,7 +110,7 @@ namespace SpikingDSE
             hidden2Conv.ResetMode = ResetMode.Subtract;
             snn.AddLayer(hidden2Conv);
 
-            var output = new LIFLayer(
+            var output = new IFLayer(
                 WeigthsUtil.ReadFromCSVFloat("res/multi-odin/validation/weights_h2o_n.csv", headers: true),
                 name: "output"
             );

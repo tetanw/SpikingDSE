@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace SpikingDSE;
 
-public class LIFLayer : HiddenLayer
+public class IFLayer : HiddenLayer
 {
     public float[] Pots;
     public float[,] weights;
@@ -13,7 +13,7 @@ public class LIFLayer : HiddenLayer
     private bool refractory;
     public ResetMode ResetMode;
 
-    public LIFLayer(float[,] weights, float threshold = 30, float leakage = 0, bool refractory = true, ResetMode resetMode = ResetMode.Zero, string name = "")
+    public IFLayer(float[,] weights, float threshold = 30, float leakage = 0, bool refractory = true, ResetMode resetMode = ResetMode.Zero, string name = "")
     {
         this.InputSize = weights.GetLength(0);
         this.Size = weights.GetLength(1);

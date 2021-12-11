@@ -28,7 +28,7 @@ public sealed class ODINController : Actor, Core
     private FIFO<object> outBuffer;
     private Queue<StoredSpike> storedSpikes = new();
     private Dictionary<Layer, MeshCoord> mappings = new();
-    private Dictionary<LIFLayer, RLIFLayer> convertedLayers = new();
+    private Dictionary<IFLayer, RLIFLayer> convertedLayers = new();
 
     public ODINController(object location, SNN snn, long startTime, long interval, string name = null)
     {
@@ -44,7 +44,7 @@ public sealed class ODINController : Actor, Core
         mappings[layer] = coreCoord;
     }
 
-    public void RLIF2LIF(RLIFLayer rlif, LIFLayer lif)
+    public void RLIF2LIF(RLIFLayer rlif, IFLayer lif)
     {
         convertedLayers[lif] = rlif;
     }
@@ -136,9 +136,9 @@ public sealed class ODINController : Actor, Core
                 {
                     // If from an RLIF converted layer then we need to make 1 extra spike
                     // i.e. for the recurrence
-                    if (convertedLayers.ContainsKey((LIFLayer)spike.layer))
+                    if (convertedLayers.ContainsKey((IFLayer)spike.layer))
                     {
-                        RLIFLayer rlif = convertedLayers[(LIFLayer)spike.layer];
+                        RLIFLayer rlif = convertedLayers[(IFLayer)spike.layer];
                         int newNeuron = rlif.InputSize + spike.neuron;
                         storedSpikes.Enqueue(new StoredSpike(new ODINSpikeEvent(spike.layer, newNeuron), true));
                     }

@@ -17,7 +17,7 @@ class ExpRun
     private Simulator sim;
     private MeshRouter[,] routers;
     private SNN snn;
-    private LIFLayer outputLayer;
+    private IFLayer outputLayer;
 
     private ISpikeSource spikeSource;
     private int interval;
@@ -81,7 +81,7 @@ class ExpRun
         snn.AddLayer(hidden2);
 
         float alpha2 = (float)Math.Exp(-1.0 * 1.0 / 15.0);
-        outputLayer = new LIFLayer(
+        outputLayer = new IFLayer(
             weights5,
             name: "output"
         );
