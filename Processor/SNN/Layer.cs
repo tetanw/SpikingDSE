@@ -38,3 +38,9 @@ public abstract class HiddenLayer : Layer
 
     public abstract void Integrate(int neuron);
 }
+
+public abstract class HiddenLayer2 : Layer
+{
+    public abstract void Forward(int neuron);
+    public abstract IEnumerable<int> Sync();
+}
