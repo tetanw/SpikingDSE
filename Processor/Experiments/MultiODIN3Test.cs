@@ -111,15 +111,16 @@ public class MultiODIN3Test : Experiment
         );
         snn.AddLayer(hidden2);
 
-        float alpha3 = (float)Math.Exp(-1.0 * 1.0 / 15.0);
-        float beta3 = 1 - alpha3;
+        float[] tau_m3 = WeigthsUtil.Read1DFloat($"{folderPath}/tau_m_o_n.csv", headers: true);
+        // float[] tau_adp3 = WeigthsUtil.Read1DFloat($"{folderPath}/tau_adp_o_n.csv", headers: true);
+        float[] alpha3 = tau_m3.Transform(Exp);
+        float[] alphaComp3 = alpha3.Transform((_, a) => 1 - a);
         var output = new IFLayer2(
-            WeigthsUtil.Normalize(WeigthsUtil.Read2DFloat($"{folderPath}/weights_h2o_n.csv", headers: true), scale: beta3),
+            WeigthsUtil.Read2DFloat($"{folderPath}/weights_h2o_n.csv", headers: true).Transform(ScaleWeights(alphaComp3)),
+            alpha3,
+            threshold: 0.01f,
             name: "output"
         );
-        output.leakage = alpha3;
-        output.Thr = 0.00f;
-        output.ResetMode = ResetMode.Subtract;
         snn.AddLayer(output);
 
         tensor = new TensorReporter(snn, "res/multi-odin/tensor");

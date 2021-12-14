@@ -9,11 +9,9 @@ public class IFLayer2 : HiddenLayer2
     public float[] Readout;
     public float[,] weights;
     public float Thr;
-    public float leakage;
-    private bool refractory;
-    public ResetMode ResetMode;
+    public float[] Alpha;
 
-    public IFLayer2(float[,] weights, float threshold = 30, float leakage = 0, bool refractory = true, ResetMode resetMode = ResetMode.Zero, string name = "")
+    public IFLayer2(float[,] weights, float[] alpha, float threshold = 0.01f, string name = "")
     {
         this.InputSize = weights.GetLength(0);
         this.Size = weights.GetLength(1);
@@ -21,9 +19,7 @@ public class IFLayer2 : HiddenLayer2
         this.Pots = new float[Size];
         this.Readout = new float[Size];
         this.Thr = threshold;
-        this.leakage = leakage;
-        this.refractory = refractory;
-        this.ResetMode = resetMode;
+        this.Alpha = alpha;
         this.Name = name;
     }
     public override void Forward(int neuron)
@@ -44,7 +40,7 @@ public class IFLayer2 : HiddenLayer2
             Readout[dst] = pot;
 
             // Leakage for next ts
-            pot *= leakage;
+            pot *= Alpha[dst];
 
             // Writeback
             Pots[dst] = pot;
