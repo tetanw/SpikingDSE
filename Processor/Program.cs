@@ -94,7 +94,7 @@ namespace SpikingDSE
                     }
                     else if (opts.Name.Equals("MultiOdin3"))
                     {
-                        new MultiODIN2Test().Run();
+                        new MultiODIN3Test().Run();
                     }
                     else if (opts.Name.Equals("MultiOdin2Accuracy"))
                     {

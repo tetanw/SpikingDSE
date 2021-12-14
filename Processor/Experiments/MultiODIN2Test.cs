@@ -70,8 +70,8 @@ public class MultiODIN2Test : Experiment
         var input = new InputLayer(new InputTraceFile($"res/multi-odin/inputs/input_0.trace", 700), name: "input");
         snn.AddLayer(input);
         var hidden1 = new RLIFLayer(
-            WeigthsUtil.Normalize(WeigthsUtil.ReadFromCSVFloat($"{folderPath}/weights_i_2_h1_n.csv", headers: true), scale: beta),
-            WeigthsUtil.Normalize(WeigthsUtil.ReadFromCSVFloat($"{folderPath}/weights_h1_2_h1_n.csv", headers: true), scale: beta),
+            WeigthsUtil.Normalize(WeigthsUtil.Read2DFloat($"{folderPath}/weights_i_2_h1_n.csv", headers: true), scale: beta),
+            WeigthsUtil.Normalize(WeigthsUtil.Read2DFloat($"{folderPath}/weights_h1_2_h1_n.csv", headers: true), scale: beta),
             name: "hidden1"
         );
         hidden1.Leakage = alpha;
@@ -80,8 +80,8 @@ public class MultiODIN2Test : Experiment
         snn.AddLayer(hidden1);
 
         var hidden2 = new RLIFLayer(
-            WeigthsUtil.Normalize(WeigthsUtil.ReadFromCSVFloat($"{folderPath}/weights_h1_2_h2_n.csv", headers: true), scale: beta),
-            WeigthsUtil.Normalize(WeigthsUtil.ReadFromCSVFloat($"{folderPath}/weights_h2_2_h2_n.csv", headers: true), scale: beta),
+            WeigthsUtil.Normalize(WeigthsUtil.Read2DFloat($"{folderPath}/weights_h1_2_h2_n.csv", headers: true), scale: beta),
+            WeigthsUtil.Normalize(WeigthsUtil.Read2DFloat($"{folderPath}/weights_h2_2_h2_n.csv", headers: true), scale: beta),
             name: "hidden2"
         );
         hidden2.Leakage = alpha;
@@ -92,7 +92,7 @@ public class MultiODIN2Test : Experiment
         alpha = (float)Math.Exp(-1.0 * 1.0 / 15.0);
         beta = 1 - alpha;
         var output = new IFLayer(
-            WeigthsUtil.Normalize(WeigthsUtil.ReadFromCSVFloat($"{folderPath}/weights_h2o_n.csv", headers: true), scale: beta),
+            WeigthsUtil.Normalize(WeigthsUtil.Read2DFloat($"{folderPath}/weights_h2o_n.csv", headers: true), scale: beta),
             name: "output"
         );
         output.leakage = alpha;

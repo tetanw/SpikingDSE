@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace SpikingDSE;
 
@@ -36,7 +37,7 @@ public class MultiODIN3Test : Experiment
         var core = sim.AddActor(new ODINCore3(coreCoord, size, delayModel, name: name));
         core.OnSyncEnded += (_, _, ts, layer) =>
         {
-            float[] pots = (layer as RLIFLayer2)?.Readout ?? (layer as IFLayer2)?.Readout;
+            float[] pots = (layer as ALIFLayer)?.Readout ?? (layer as IFLayer2)?.Readout;
             mem.AdvanceLayer(layer, ts, pots);
         };
         core.OnSpikeReceived += (_, time, layer, neuron, feedback) => trace.InputSpike(neuron, time);
@@ -51,6 +52,16 @@ public class MultiODIN3Test : Experiment
         return core;
     }
 
+    private float Exp(int index, float value)
+    {
+        return (float)Math.Exp(-1.0f / value);
+    }
+
+    private Func<int, int, float, float> ScaleWeights(float[] beta)
+    {
+        return (x, y, f) => f * beta[y];
+    }
+
     public override void Setup()
     {
         // Extra assumptions to get ODIN working
@@ -59,43 +70,54 @@ public class MultiODIN3Test : Experiment
         // 3. Both excitatory and inhibitory spikes can be used together
         // 4. Leakage is proportional to current voltage instead of a constant????
 
-        string folderPath = "res/multi-odin/validation/normal";
+        string folderPath = "res/multi-odin/validation/adapt";
         trace = new TraceReporter("res/multi-odin/result.trace");
 
         // SNN
-        float alpha = (float)Math.Exp(-1.0 * 1.0 / 10.0);
-        float beta = 1 - alpha;
         snn = new SNN();
-        // var input = new InputLayer(new TensorFile($"res/multi-odin/validation/input/input_0.csv"), name: "input");
+
         var input = new InputLayer(new InputTraceFile($"res/multi-odin/inputs/input_0.trace", 700), name: "input");
         snn.AddLayer(input);
-        var hidden1 = new RLIFLayer2(
-            WeigthsUtil.Normalize(WeigthsUtil.ReadFromCSVFloat($"{folderPath}/weights_i_2_h1_n.csv", headers: true), scale: beta),
-            WeigthsUtil.Normalize(WeigthsUtil.ReadFromCSVFloat($"{folderPath}/weights_h1_2_h1_n.csv", headers: true), scale: beta),
+
+        float[] tau_m1 = WeigthsUtil.Read1DFloat($"{folderPath}/tau_m_h1_n.csv", headers: true);
+        float[] tau_adp1 = WeigthsUtil.Read1DFloat($"{folderPath}/tau_adp_h1_n.csv", headers: true);
+        float[] alpha1 = tau_m1.Transform(Exp);
+        float[] rho1 = tau_adp1.Transform(Exp);
+        float[] alphaComp1 = alpha1.Transform((_, a) => 1 - a);
+        var hidden1 = new ALIFLayer(
+            WeigthsUtil.Read2DFloat($"{folderPath}/weights_i_2_h1_n.csv", headers: true).Transform(ScaleWeights(alphaComp1)),
+            WeigthsUtil.Read2DFloat($"{folderPath}/weights_h1_2_h1_n.csv", headers: true).Transform(ScaleWeights(alphaComp1)),
+            WeigthsUtil.Read1DFloat($"{folderPath}/bias_h1_n.csv", headers: true),
+            alpha1,
+            rho1,
+            0.01f,
             name: "hidden1"
         );
-        hidden1.Leakage = alpha;
-        hidden1.Thr = 0.01f;
-        hidden1.ResetMode = ResetMode.Subtract;
         snn.AddLayer(hidden1);
 
-        var hidden2 = new RLIFLayer2(
-            WeigthsUtil.Normalize(WeigthsUtil.ReadFromCSVFloat($"{folderPath}/weights_h1_2_h2_n.csv", headers: true), scale: beta),
-            WeigthsUtil.Normalize(WeigthsUtil.ReadFromCSVFloat($"{folderPath}/weights_h2_2_h2_n.csv", headers: true), scale: beta),
+        float[] tau_m2 = WeigthsUtil.Read1DFloat($"{folderPath}/tau_m_h2_n.csv", headers: true);
+        float[] tau_adp2 = WeigthsUtil.Read1DFloat($"{folderPath}/tau_adp_h2_n.csv", headers: true);
+        float[] alpha2 = tau_m2.Transform(Exp);
+        float[] rho2 = tau_adp2.Transform(Exp);
+        float[] alphaComp2 = alpha2.Transform((_, a) => 1 - a);
+        var hidden2 = new ALIFLayer(
+            WeigthsUtil.Read2DFloat($"{folderPath}/weights_h1_2_h2_n.csv", headers: true).Transform(ScaleWeights(alphaComp2)),
+            WeigthsUtil.Read2DFloat($"{folderPath}/weights_h2_2_h2_n.csv", headers: true).Transform(ScaleWeights(alphaComp2)),
+            WeigthsUtil.Read1DFloat($"{folderPath}/bias_h2_n.csv", headers: true),
+            alpha2,
+            rho2,
+            0.01f,
             name: "hidden2"
         );
-        hidden2.Leakage = alpha;
-        hidden2.Thr = 0.01f;
-        hidden2.ResetMode = ResetMode.Subtract;
         snn.AddLayer(hidden2);
 
-        alpha = (float)Math.Exp(-1.0 * 1.0 / 15.0);
-        beta = 1 - alpha;
+        float alpha3 = (float)Math.Exp(-1.0 * 1.0 / 15.0);
+        float beta3 = 1 - alpha3;
         var output = new IFLayer2(
-            WeigthsUtil.Normalize(WeigthsUtil.ReadFromCSVFloat($"{folderPath}/weights_h2o_n.csv", headers: true), scale: beta),
+            WeigthsUtil.Normalize(WeigthsUtil.Read2DFloat($"{folderPath}/weights_h2o_n.csv", headers: true), scale: beta3),
             name: "output"
         );
-        output.leakage = alpha;
+        output.leakage = alpha3;
         output.Thr = 0.00f;
         output.ResetMode = ResetMode.Subtract;
         snn.AddLayer(output);

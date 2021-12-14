@@ -88,8 +88,8 @@ namespace SpikingDSE
             var input = new InputLayer(new TensorFile("res/multi-odin/validation/input_0.csv"), name: "input");
             snn.AddLayer(input);
             var hidden1 = new RLIFLayer(
-                WeigthsUtil.Normalize(WeigthsUtil.ReadFromCSVFloat("res/multi-odin/validation/weights_i_2_h1_n.csv", headers: true), scale: beta),
-                WeigthsUtil.Normalize(WeigthsUtil.ReadFromCSVFloat("res/multi-odin/validation/weights_h1_2_h1_n.csv", headers: true), scale: beta),
+                WeigthsUtil.Normalize(WeigthsUtil.Read2DFloat("res/multi-odin/validation/weights_i_2_h1_n.csv", headers: true), scale: beta),
+                WeigthsUtil.Normalize(WeigthsUtil.Read2DFloat("res/multi-odin/validation/weights_h1_2_h1_n.csv", headers: true), scale: beta),
                 name: "hidden1"
             );
             var hidden1Conv = RLIF2LIF(hidden1);
@@ -100,8 +100,8 @@ namespace SpikingDSE
             snn.AddLayer(hidden1Conv);
 
             var hidden2 = new RLIFLayer(
-                WeigthsUtil.Normalize(WeigthsUtil.ReadFromCSVFloat("res/multi-odin/validation/weights_h1_2_h2_n.csv", headers: true), scale: beta),
-                WeigthsUtil.Normalize(WeigthsUtil.ReadFromCSVFloat("res/multi-odin/validation/weights_h2_2_h2_n.csv", headers: true), scale: beta),
+                WeigthsUtil.Normalize(WeigthsUtil.Read2DFloat("res/multi-odin/validation/weights_h1_2_h2_n.csv", headers: true), scale: beta),
+                WeigthsUtil.Normalize(WeigthsUtil.Read2DFloat("res/multi-odin/validation/weights_h2_2_h2_n.csv", headers: true), scale: beta),
                 name: "hidden2"
             );
             var hidden2Conv = RLIF2LIF(hidden2);
@@ -111,7 +111,7 @@ namespace SpikingDSE
             snn.AddLayer(hidden2Conv);
 
             var output = new IFLayer(
-                WeigthsUtil.ReadFromCSVFloat("res/multi-odin/validation/weights_h2o_n.csv", headers: true),
+                WeigthsUtil.Read2DFloat("res/multi-odin/validation/weights_h2o_n.csv", headers: true),
                 name: "output"
             );
             snn.AddLayer(output);

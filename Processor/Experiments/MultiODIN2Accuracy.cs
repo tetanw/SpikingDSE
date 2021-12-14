@@ -195,11 +195,11 @@ public class MultiOdin2Accuracy
         float beta1 = 1 - alpha1;
         float alpha2 = (float)Math.Exp(-1.0 * 1.0 / 15.0);
         float beta2 = 1 - alpha2;
-        weights1 = WeigthsUtil.Normalize(WeigthsUtil.ReadFromCSVFloat($"{folderPath}/weights_i_2_h1_n.csv", headers: true), scale: beta1);
-        weights2 = WeigthsUtil.Normalize(WeigthsUtil.ReadFromCSVFloat($"{folderPath}/weights_h1_2_h1_n.csv", headers: true), scale: beta1);
-        weights3 = WeigthsUtil.Normalize(WeigthsUtil.ReadFromCSVFloat($"{folderPath}/weights_h1_2_h2_n.csv", headers: true), scale: beta1);
-        weights4 = WeigthsUtil.Normalize(WeigthsUtil.ReadFromCSVFloat($"{folderPath}/weights_h2_2_h2_n.csv", headers: true), scale: beta1);
-        weights5 = WeigthsUtil.Normalize(WeigthsUtil.ReadFromCSVFloat($"{folderPath}/weights_h2o_n.csv", headers: true), scale: beta2);
+        weights1 = WeigthsUtil.Normalize(WeigthsUtil.Read2DFloat($"{folderPath}/weights_i_2_h1_n.csv", headers: true), scale: beta1);
+        weights2 = WeigthsUtil.Normalize(WeigthsUtil.Read2DFloat($"{folderPath}/weights_h1_2_h1_n.csv", headers: true), scale: beta1);
+        weights3 = WeigthsUtil.Normalize(WeigthsUtil.Read2DFloat($"{folderPath}/weights_h1_2_h2_n.csv", headers: true), scale: beta1);
+        weights4 = WeigthsUtil.Normalize(WeigthsUtil.Read2DFloat($"{folderPath}/weights_h2_2_h2_n.csv", headers: true), scale: beta1);
+        weights5 = WeigthsUtil.Normalize(WeigthsUtil.Read2DFloat($"{folderPath}/weights_h2o_n.csv", headers: true), scale: beta2);
 
         int[] confs = new int[] {
             1000, 2000, 5000, 7500,
