@@ -3,12 +3,12 @@ using System.Collections.Generic;
 
 namespace SpikingDSE;
 
-public delegate void SpikeSent(ODINController controller, long time, ODINSpikeEvent spike);
-public delegate void SpikeReceived(ODINController sink, long time, ODINSpikeEvent spike);
-public delegate void TimeAdvanced(ODINController controller, int ts);
+public delegate void SpikeSent(Controller1 controller, long time, ODINSpikeEvent spike);
+public delegate void SpikeReceived(Controller1 sink, long time, ODINSpikeEvent spike);
+public delegate void TimeAdvanced(Controller1 controller, int ts);
 
 
-public sealed class ODINController : Actor, Core
+public sealed class Controller1 : Actor, Core
 {
     record StoredSpike(ODINSpikeEvent ODINSpike, bool fromRecurrence);
 
@@ -30,7 +30,7 @@ public sealed class ODINController : Actor, Core
     private Dictionary<Layer, MeshCoord> mappings = new();
     private Dictionary<IFLayer, RLIFLayer> convertedLayers = new();
 
-    public ODINController(object location, SNN snn, long startTime, long interval, string name = null)
+    public Controller1(object location, SNN snn, long startTime, long interval, string name = null)
     {
         this.location = location;
         this.snn = snn;

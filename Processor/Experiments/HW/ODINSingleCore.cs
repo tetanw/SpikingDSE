@@ -72,7 +72,7 @@ public class ODINSingleCore : Experiment
             ComputeTime = 2,
             OutputTime = 8
         };
-        var core1 = sim.AddActor(new ODINCore(null, 256, delayModel, name: "odin1"));
+        var core1 = sim.AddActor(new Core1(null, 256, delayModel, name: "odin1"));
         var weights = WeigthsUtil.Read2DDouble("res/odin/weights_256.csv", applyCorrection: true);
         var layer = new IFLayer(null, threshold: 30, refractory: false, name: "hidden"); // FIXME: Fix null
         core1.AddLayer(layer);

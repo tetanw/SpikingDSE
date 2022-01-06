@@ -12,15 +12,14 @@ public class MultiODIN3Test : Experiment
     private TensorReporter tensor;
     private MemReporter mem;
 
-    private ODINController2 AddController(SNN snn, int x, int y)
+    private Controller2 AddController(SNN snn, int x, int y)
     {
         var controllerCoord = new MeshCoord(x, y);
-        var controller = sim.AddActor(new ODINController2(controllerCoord, 100, snn, 0, 1_000_000, name: "controller"));
+        var controller = sim.AddActor(new Controller2(controllerCoord, 100, snn, 0, 1_000_000, name: "controller"));
         controller.TimeAdvanced += (_, ts) => trace.AdvanceTimestep(ts);
         controller.TimeAdvanced += (_, ts) =>
         {
             tensor.AdvanceTimestep(ts);
-            Console.WriteLine($"Advanced to timestep: {ts}");
         };
         // controller.SpikeReceived += (_, _, spike) =>
         // {
@@ -31,10 +30,10 @@ public class MultiODIN3Test : Experiment
         return controller;
     }
 
-    private ODINCore3 AddCore(ODINDelayModel delayModel, int size, int x, int y, string name)
+    private Core3 AddCore(ODINDelayModel delayModel, int size, int x, int y, string name)
     {
         var coreCoord = new MeshCoord(x, y);
-        var core = sim.AddActor(new ODINCore3(coreCoord, size, delayModel, name: name));
+        var core = sim.AddActor(new Core3(coreCoord, size, delayModel, name: name));
         core.OnSyncEnded += (_, _, ts, layer) =>
         {
             float[] pots = (layer as ALIFLayer)?.Readout ?? (layer as IFLayer2)?.Readout;
@@ -159,13 +158,13 @@ public class MultiODIN3Test : Experiment
 
         foreach (var (layer, core) in mapping._forward)
         {
-            if (core is not ODINCore3) continue;
+            if (core is not Core3) continue;
             controller.LayerToCoord(layer, (MeshCoord)core.GetLocation());
         }
 
         foreach (var core in mapping.Cores)
         {
-            if (core is not ODINCore3) continue;
+            if (core is not Core3) continue;
 
             var destLayer = snn.GetDestLayer(mapping.Reverse[core]);
             MeshCoord dest;
@@ -174,7 +173,7 @@ public class MultiODIN3Test : Experiment
             else
                 dest = (MeshCoord)mapping.Forward[destLayer].GetLocation();
 
-            ((ODINCore3)core).setDestination(dest);
+            ((Core3)core).setDestination(dest);
         }
 
         simStop.StopEvents = 10_000_000;

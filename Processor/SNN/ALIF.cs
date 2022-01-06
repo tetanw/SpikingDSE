@@ -57,7 +57,6 @@ public class ALIFLayer : HiddenLayer2
 
     public override IEnumerable<int> Sync()
     {
-        float[] resetPots = new float[128];
         for (int dst = 0; dst < Size; dst++)
         {
             float pot = Pots[dst];
@@ -71,7 +70,6 @@ public class ALIFLayer : HiddenLayer2
 
             // Reset potential
             float resetPot = Beta * AdaptThr[dst] + VTh;
-            resetPots[dst] = resetPot;
 
             // Reset
             if (Spiked[dst])
