@@ -4,11 +4,11 @@ using System.IO;
 
 namespace SpikingDSE;
 
-public sealed class ODINCore2 : Actor, Core
+public sealed class Core2 : Actor, Core
 {
-    public delegate void SpikeReceived(ODINCore2 core, long time, Layer layer, int neuron, bool feedback);
-    public delegate void SpikeSent(ODINCore2 core, long time, ODINSpikeEvent spike);
-    public delegate void TimeReceived(ODINCore2 core, long time, int ts, HiddenLayer layer);
+    public delegate void SpikeReceived(Core2 core, long time, Layer layer, int neuron, bool feedback);
+    public delegate void SpikeSent(Core2 core, long time, ODINSpikeEvent spike);
+    public delegate void TimeReceived(Core2 core, long time, int ts, HiddenLayer layer);
 
     public SpikeReceived OnSpikeReceived;
     public SpikeSent OnSpikeSent;
@@ -26,7 +26,7 @@ public sealed class ODINCore2 : Actor, Core
     private Queue<int> feedback = new Queue<int>();
     private int feedbackBufferSize;
 
-    public ODINCore2(MeshCoord location, int nrNeurons, ODINDelayModel delayModel, int feedbackBufferSize = int.MaxValue, string name = "")
+    public Core2(MeshCoord location, int nrNeurons, ODINDelayModel delayModel, int feedbackBufferSize = int.MaxValue, string name = "")
     {
         this.location = location;
         this.Name = name;

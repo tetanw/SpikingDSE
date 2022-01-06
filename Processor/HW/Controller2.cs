@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace SpikingDSE;
 
 
-public sealed class ODINController2 : Actor, Core
+public sealed class Controller2 : Actor, Core
 {
     private record StoredSpike(ODINSpikeEvent ODINSpike);
 
@@ -24,7 +24,7 @@ public sealed class ODINController2 : Actor, Core
     private Queue<StoredSpike> storedSpikes = new();
     private Dictionary<Layer, MeshCoord> mappings = new();
 
-    public ODINController2(object location, int nrTimesteps, SNN snn, long startTime, long interval, string name = null)
+    public Controller2(object location, int nrTimesteps, SNN snn, long startTime, long interval, string name = null)
     {
         this.location = location;
         this.snn = snn;

@@ -33,19 +33,19 @@ class ExpRun
         this.feedbackSize = feedbackSize;
     }
 
-    private ODINController2 AddController(SNN snn, int x, int y)
+    private Controller2 AddController(SNN snn, int x, int y)
     {
         var controllerCoord = new MeshCoord(x, y);
-        var controller = sim.AddActor(new ODINController2(controllerCoord, 100, snn, 0, interval, name: "controller"));
+        var controller = sim.AddActor(new Controller2(controllerCoord, 100, snn, 0, interval, name: "controller"));
         sim.AddChannel(controller.spikesOut, routers[x, y].inLocal);
         sim.AddChannel(routers[x, y].outLocal, controller.spikesIn);
         return controller;
     }
 
-    private ODINCore2 AddCore(ODINDelayModel delayModel, int size, int x, int y, string name)
+    private Core2 AddCore(ODINDelayModel delayModel, int size, int x, int y, string name)
     {
         var coreCoord = new MeshCoord(x, y);
-        var core = sim.AddActor(new ODINCore2(coreCoord, size, delayModel, feedbackBufferSize: feedbackSize, name: name));
+        var core = sim.AddActor(new Core2(coreCoord, size, delayModel, feedbackBufferSize: feedbackSize, name: name));
         core.OnTimeReceived += (_, _, ts, layer) => OnTimestepFinished?.Invoke(ts, layer);
         sim.AddChannel(core.output, routers[x, y].inLocal);
         sim.AddChannel(routers[x, y].outLocal, core.input);
@@ -116,13 +116,13 @@ class ExpRun
 
         foreach (var (layer, core) in mapping._forward)
         {
-            if (core is not ODINCore2) continue;
+            if (core is not Core2) continue;
             controller.LayerToCoord(layer, (MeshCoord)core.GetLocation());
         }
 
         foreach (var core in mapping.Cores)
         {
-            if (core is not ODINCore2) continue;
+            if (core is not Core2) continue;
 
             var destLayer = snn.GetDestLayer(mapping.Reverse[core]);
             MeshCoord dest;
@@ -131,7 +131,7 @@ class ExpRun
             else
                 dest = (MeshCoord)mapping.Forward[destLayer].GetLocation();
 
-            ((ODINCore2)core).setDestination(dest);
+            ((Core2)core).setDestination(dest);
         }
     }
 

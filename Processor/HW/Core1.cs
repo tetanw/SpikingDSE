@@ -4,8 +4,6 @@ using System.IO;
 
 namespace SpikingDSE;
 
-
-
 public struct ODINDelayModel
 {
     public int InputTime;
@@ -18,11 +16,11 @@ public abstract record ODINEvent();
 public sealed record ODINTimeEvent(int TS) : ODINEvent;
 public sealed record ODINSpikeEvent(Layer layer, int neuron) : ODINEvent;
 
-public sealed class ODINCore : Actor, Core
+public sealed class Core1 : Actor, Core
 {
-    public delegate void SpikeReceived(ODINCore core, long time, ODINSpikeEvent spike);
-    public delegate void SpikeSent(ODINCore core, long time, ODINSpikeEvent spike);
-    public delegate void TimeReceived(ODINCore core, long time, int ts, IFLayer layer);
+    public delegate void SpikeReceived(Core1 core, long time, ODINSpikeEvent spike);
+    public delegate void SpikeSent(Core1 core, long time, ODINSpikeEvent spike);
+    public delegate void TimeReceived(Core1 core, long time, int ts, IFLayer layer);
 
     public SpikeReceived OnSpikeRecived;
     public SpikeSent OnSpikeSent;
@@ -40,7 +38,7 @@ public sealed class ODINCore : Actor, Core
     private int totalOutputSpikes = 0;
     private int totalInputSpikes = 0;
 
-    public ODINCore(object location, int nrNeurons, ODINDelayModel delayModel, string name = "", bool enableRefractory = false)
+    public Core1(object location, int nrNeurons, ODINDelayModel delayModel, string name = "", bool enableRefractory = false)
     {
         this.location = location;
         this.Name = name;

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace SpikingDSE;
 
-public sealed class ODINNI : Actor
+public sealed class NI1 : Actor
 {
     public InPort inLocal = new InPort();
     public OutPort outLocal = new OutPort();
@@ -13,7 +13,7 @@ public sealed class ODINNI : Actor
     private MeshCoord thisCoord;
     public MeshCoord DestCoord;
 
-    public ODINNI(MeshCoord thisCoord, MeshCoord controllerCoord)
+    public NI1(MeshCoord thisCoord, MeshCoord controllerCoord)
     {
         this.thisCoord = thisCoord;
         this.DestCoord = controllerCoord;
