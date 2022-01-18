@@ -69,7 +69,7 @@ public class MultiODIN3Test : Experiment
         // 3. Both excitatory and inhibitory spikes can be used together
         // 4. Leakage is proportional to current voltage instead of a constant????
 
-        string folderPath = "res/multi-odin/validation/adapt";
+        string folderPath = "res/multi-odin/validation/best";
         trace = new TraceReporter("res/multi-odin/result.trace");
 
         // SNN
@@ -111,7 +111,6 @@ public class MultiODIN3Test : Experiment
         snn.AddLayer(hidden2);
 
         float[] tau_m3 = WeigthsUtil.Read1DFloat($"{folderPath}/tau_m_o_n.csv", headers: true);
-        // float[] tau_adp3 = WeigthsUtil.Read1DFloat($"{folderPath}/tau_adp_o_n.csv", headers: true);
         float[] alpha3 = tau_m3.Transform(Exp);
         float[] alphaComp3 = alpha3.Transform((_, a) => 1 - a);
         var output = new IFLayer2(

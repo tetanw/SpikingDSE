@@ -100,6 +100,10 @@ namespace SpikingDSE
                     {
                         new MultiOdin2Accuracy().Run();
                     }
+                    else if (opts.Name.Equals("MultiOdin3Accuracy"))
+                    {
+                        new MultiOdin3Accuracy().Run();
+                    }
                     else if (opts.Name.Equals("XYRouter3Test"))
                     {
                         new XYRouter3Test().Run();

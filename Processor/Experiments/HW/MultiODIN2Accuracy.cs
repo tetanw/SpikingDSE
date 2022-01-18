@@ -189,7 +189,7 @@ public class MultiOdin2Accuracy
 
     public void Run()
     {
-        string folderPath = "res/multi-odin/validation/normal";
+        string folderPath = "res/multi-odin/validation/adapt";
 
         float alpha1 = (float)Math.Exp(-1.0 * 1.0 / 10.0);
         float beta1 = 1 - alpha1;
@@ -209,34 +209,58 @@ public class MultiOdin2Accuracy
             850_000, 900_000, 950_000, 1_000_000
         };
         int nrInputs = 512;
+        var tasks = new List<Task<(int, float)>>();
         for (int j = 0; j < confs.Length; j++)
         {
-            int nrCorrect = 0;
-            for (int i = 0; i < nrInputs; i++)
+            int conf = confs[j];
+            tasks.Add(Task.Run(() =>
             {
-                bool correct = RunInput(new InputTraceFile($"res/multi-odin/inputs/input_{i}.trace", 700), confs[j], 128, i);
-                if (correct) nrCorrect++;
-            }
-            float accuracy = (float)nrCorrect / nrInputs * 100;
-            Console.WriteLine($"{confs[j]};{accuracy}");
-        }
+                Stopwatch simTime = new Stopwatch();
+                simTime.Start();
+                int nrCorrect = 0;
+                for (int i = 0; i < nrInputs; i++)
+                {
+                    bool correct = RunInput(new InputTraceFile($"res/multi-odin/inputs/input_{i}.trace", 700), conf, 128, i);
+                    if (correct) nrCorrect++;
+                }
+                simTime.Stop();
+                Console.WriteLine($"Sim for conf {conf} elapsed in: {simTime.Elapsed.TotalSeconds}s");
+                float accuracy = (float)nrCorrect / nrInputs * 100;
 
-        // int[] confs = new int[] {
-        //     // 0, 1, 2, 4, 8, 16, 32
-        //     64, 128
-        // };
+                return (conf, accuracy);
+            }));
+        }
+        var results = Task.WhenAll(tasks).Result;
+        foreach (var (conf, accuracy) in results)
+            Console.WriteLine($"{conf};{accuracy}");
+
+
+        // int[] bufferSizes = Enumerable.Range(1, 64).ToArray();
         // int nrInputs = 512;
-        // for (int j = 0; j < confs.Length; j++)
+        // var tasks = new List<Task<(int, float)>>();
+        // for (int j = 0; j < bufferSizes.Length; j++)
         // {
-        //     int nrCorrect = 0;
-        //     for (int i = 0; i < nrInputs; i++)
+        //     int conf = bufferSizes[j];
+        //     tasks.Add(Task.Run(() =>
         //     {
-        //         bool correct = RunInput(new InputTraceFile($"res/multi-odin/inputs/input_{i}.trace", 700), 1_000_000, confs[j], i);
-        //         if (correct) nrCorrect++;
-        //     }
-        //     float accuracy = (float)nrCorrect / nrInputs * 100;
-        //     Console.WriteLine($"{confs[j]};{accuracy}");
+        //         Stopwatch simTime = new Stopwatch();
+        //         simTime.Start();
+        //         int nrCorrect = 0;
+        //         for (int i = 0; i < nrInputs; i++)
+        //         {
+        //             bool correct = RunInput(new InputTraceFile($"res/multi-odin/inputs/input_{i}.trace", 700), 1_000_000, conf, i);
+        //             if (correct) nrCorrect++;
+        //         }
+        //         simTime.Stop();
+        //         Console.WriteLine($"Sim for conf {conf} elapsed in: {simTime.Elapsed.TotalSeconds}s");
+        //         float accuracy = (float)nrCorrect / nrInputs * 100;
+        //         Console.WriteLine($"{conf};{accuracy}");
+        //         return (conf, accuracy);
+        //     }));
         // }
+        // var results = Task.WhenAll(tasks).Result;
+        // foreach (var (conf, accuracy) in results)
+        //     Console.WriteLine($"{conf};{accuracy}");
 
         // int nrInputs = 512;
         // int nrCorrect = 0;
@@ -253,10 +277,6 @@ public class MultiOdin2Accuracy
     {
         var run = new ExpRun(traceFile, interval, feedbackSize);
         run.Run(weights1, weights2, weights3, weights4, weights5);
-        // Console.WriteLine($"Running input: {inputNr}");
-        // Console.WriteLine($"Time taken: {run.SimTime.ElapsedMilliseconds} ms");
-        // string match = run.Predicted == traceFile.Correct ? "YES" : "NO";
-        // Console.WriteLine($"[{inputNr}]: Predicted: {run.Predicted}, Correct: {traceFile.Correct}, Match: {match}");
         return run.Predicted == traceFile.Correct;
     }
 }

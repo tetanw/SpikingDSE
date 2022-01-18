@@ -18,9 +18,11 @@ namespace SpikingDSE
         private List<List<int>> allSpikes;
         private int currentTS;
         private int nrNeurons;
+        private string inputPath;
 
         public InputTraceFile(string inputPath, int nrNeurons)
         {
+            this.inputPath = inputPath;
             string[] lines = File.ReadAllLines(inputPath);
             Correct = int.Parse(lines[0]);
             allSpikes = new();
