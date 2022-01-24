@@ -222,42 +222,42 @@ public class MultiOdin3Accuracy
 
     public void Run()
     {
-        string folderPath = "res/multi-odin/validation/best";
+        string folderPath = "res/multi-odin/validation/test6";
 
         // Layer 1
-        float[] tau_m1 = WeigthsUtil.Read1DFloat($"{folderPath}/tau_m_h1_n.csv", headers: true);
-        float[] tau_adp1 = WeigthsUtil.Read1DFloat($"{folderPath}/tau_adp_h1_n.csv", headers: true);
+        float[] tau_m1 = WeigthsUtil.Read1DFloat($"{folderPath}/tau_m_h1.csv", headers: true);
+        float[] tau_adp1 = WeigthsUtil.Read1DFloat($"{folderPath}/tau_adp_h1.csv", headers: true);
         float[] alpha1 = tau_m1.Transform(Exp);
         float[] rho1 = tau_adp1.Transform(Exp);
         float[] alphaComp1 = alpha1.Transform((_, a) => 1 - a);
 
         // Layer 2
-        float[] tau_m2 = WeigthsUtil.Read1DFloat($"{folderPath}/tau_m_h2_n.csv", headers: true);
-        float[] tau_adp2 = WeigthsUtil.Read1DFloat($"{folderPath}/tau_adp_h2_n.csv", headers: true);
+        float[] tau_m2 = WeigthsUtil.Read1DFloat($"{folderPath}/tau_m_h2.csv", headers: true);
+        float[] tau_adp2 = WeigthsUtil.Read1DFloat($"{folderPath}/tau_adp_h2.csv", headers: true);
         float[] alpha2 = tau_m2.Transform(Exp);
         float[] rho2 = tau_adp2.Transform(Exp);
         float[] alphaComp2 = alpha2.Transform((_, a) => 1 - a);
 
         // Output layer
-        float[] tau_m3 = WeigthsUtil.Read1DFloat($"{folderPath}/tau_m_o_n.csv", headers: true);
+        float[] tau_m3 = WeigthsUtil.Read1DFloat($"{folderPath}/tau_m_o.csv", headers: true);
         float[] alpha3 = tau_m3.Transform(Exp);
         float[] alphaComp3 = alpha3.Transform((_, a) => 1 - a);
 
         Weights = new ModelWeights3()
         {
-            weights_i_2_h1 = WeigthsUtil.Read2DFloat($"{folderPath}/weights_i_2_h1_n.csv", headers: true).Transform(ScaleWeights(alphaComp1)),
-            weights_h1_2_h1 = WeigthsUtil.Read2DFloat($"{folderPath}/weights_h1_2_h1_n.csv", headers: true).Transform(ScaleWeights(alphaComp1)),
+            weights_i_2_h1 = WeigthsUtil.Read2DFloat($"{folderPath}/weights_i_2_h1.csv", headers: true).Transform(ScaleWeights(alphaComp1)),
+            weights_h1_2_h1 = WeigthsUtil.Read2DFloat($"{folderPath}/weights_h1_2_h1.csv", headers: true).Transform(ScaleWeights(alphaComp1)),
             alpha_h1 = alpha1,
             rho_h1 = rho1,
-            bias_h1 = WeigthsUtil.Read1DFloat($"{folderPath}/bias_h1_n.csv", headers: true),
+            bias_h1 = WeigthsUtil.Read1DFloat($"{folderPath}/bias_h1.csv", headers: true),
 
-            weights_h1_2_h2 = WeigthsUtil.Read2DFloat($"{folderPath}/weights_h1_2_h2_n.csv", headers: true).Transform(ScaleWeights(alphaComp2)),
-            weights_h2_2_h2 = WeigthsUtil.Read2DFloat($"{folderPath}/weights_h2_2_h2_n.csv", headers: true).Transform(ScaleWeights(alphaComp2)),
+            weights_h1_2_h2 = WeigthsUtil.Read2DFloat($"{folderPath}/weights_h1_2_h2.csv", headers: true).Transform(ScaleWeights(alphaComp2)),
+            weights_h2_2_h2 = WeigthsUtil.Read2DFloat($"{folderPath}/weights_h2_2_h2.csv", headers: true).Transform(ScaleWeights(alphaComp2)),
             alpha_h2 = alpha2,
             rho_h2 = rho2,
-            bias_h2 = WeigthsUtil.Read1DFloat($"{folderPath}/bias_h2_n.csv", headers: true),
+            bias_h2 = WeigthsUtil.Read1DFloat($"{folderPath}/bias_h2.csv", headers: true),
 
-            weights_h2_o = WeigthsUtil.Read2DFloat($"{folderPath}/weights_h2o_n.csv", headers: true).Transform(ScaleWeights(alphaComp3)),
+            weights_h2_o = WeigthsUtil.Read2DFloat($"{folderPath}/weights_h2_2_o.csv", headers: true).Transform(ScaleWeights(alphaComp3)),
             alpha_o = alpha3
         };
 

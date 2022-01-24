@@ -8,6 +8,9 @@
 		},
 		{
 			"path": "..\\Enabling_Spikebased_Backpropagation"
+		},
+		{
+			"path": "..\\SNNs"
 		}
 	],
 	"settings": {}
