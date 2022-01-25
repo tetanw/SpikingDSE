@@ -54,7 +54,7 @@ public sealed class SpikeSink : Actor
     }
 }
 
-public class ODINSingleCore : Experiment
+public class SingleOdin : Experiment
 {
     private TraceReporter reporter;
 
@@ -72,9 +72,9 @@ public class ODINSingleCore : Experiment
             ComputeTime = 2,
             OutputTime = 8
         };
-        var core1 = sim.AddActor(new Core1(null, 256, delayModel, name: "odin1"));
-        var weights = WeigthsUtil.Read2DDouble("res/odin/weights_256.csv", applyCorrection: true);
-        var layer = new IFLayer(null, threshold: 30, refractory: false, name: "hidden"); // FIXME: Fix null
+        var core1 = sim.AddActor(new OdinCore(null, 256, delayModel, name: "odin1"));
+        var weights = WeigthsUtil.Read2DFloat("res/odin/weights_256.csv", applyCorrection: true);
+        var layer = new OdinIFLayer(weights, threshold: 30, refractory: false, name: "hidden");
         core1.AddLayer(layer);
 
         sim.AddChannel(input.output, core1.input);

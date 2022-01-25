@@ -3,21 +3,24 @@ using System.Collections.Generic;
 
 namespace SpikingDSE;
 
-public class RLIFLayer : HiddenLayer
+public class RLIFLayer2 : HiddenLayer2
 {
     public readonly float[,] InWeights;
     public readonly float[,] RecWeights;
     public float[] Pots;
     public float Leakage;
-    public bool[,] Spiked;
+    public bool[] Spiked;
     public ResetMode ResetMode;
     public float Thr;
+    public float[] Readout;
 
-    public RLIFLayer(float[,] inWeights, float[,] recWeights, string name)
+    public RLIFLayer2(float[,] inWeights, float[,] recWeights, string name)
     {
         this.InputSize = inWeights.GetLength(0) + recWeights.GetLength(0);
         this.Size = inWeights.GetLength(1);
         this.Pots = new float[Size];
+        this.Readout = new float[Size];
+        this.Spiked = new bool[Size];
         this.InWeights = inWeights;
         this.RecWeights = recWeights;
         this.Name = name;
@@ -25,15 +28,7 @@ public class RLIFLayer : HiddenLayer
         this.Size = inWeights.GetLength(1);
     }
 
-    public override void Leak()
-    {
-        for (int dst = 0; dst < Size; dst++)
-        {
-            Pots[dst] = Pots[dst] * Leakage;
-        }
-    }
-
-    public override void Integrate(int neuron)
+    public override void Forward(int neuron)
     {
         for (int dst = 0; dst < Size; dst++)
         {
@@ -41,7 +36,7 @@ public class RLIFLayer : HiddenLayer
         }
     }
 
-    public void IntegrateFeedback(int neuron)
+    public void Feedback(int neuron)
     {
         for (int dst = 0; dst < Size; dst++)
         {
@@ -49,22 +44,35 @@ public class RLIFLayer : HiddenLayer
         }
     }
 
-    public override void ApplyThreshold(int neuron)
-    {
-        if (ResetMode == ResetMode.Zero)
-            Pots[neuron] = 0;
-        else if (ResetMode == ResetMode.Subtract)
-            Pots[neuron] -= Thr;
-        else
-            throw new Exception("Unknown reset behaviour");
-    }
-
-    public override IEnumerable<int> Threshold()
+    public override IEnumerable<int> Sync()
     {
         for (int dst = 0; dst < Size; dst++)
         {
-            if (Pots[dst] >= Thr)
+            float pot = Pots[dst];
+
+            // Readout
+            Readout[dst] = pot;
+
+            // Reset
+            if (Spiked[dst])
+                pot -= Thr;
+
+            // Threshold
+            if (pot >= Thr)
+            {
+                Spiked[dst] = true;
                 yield return dst;
+            }
+            else
+            {
+                Spiked[dst] = false;
+            }
+
+            // Leakage for next ts
+            pot *= Leakage;
+
+            // Writeback
+            Pots[dst] = pot;
         }
     }
 }

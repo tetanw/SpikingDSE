@@ -2,7 +2,7 @@ using System;
 
 namespace SpikingDSE;
 
-public class ProducerConsumer : Experiment
+public class PC : Experiment
 {
     public override void Setup()
     {

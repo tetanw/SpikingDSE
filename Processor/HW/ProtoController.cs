@@ -3,19 +3,14 @@ using System.Collections.Generic;
 
 namespace SpikingDSE;
 
-public delegate void SpikeSent(Controller1 controller, long time, ODINSpikeEvent spike);
-public delegate void SpikeReceived(Controller1 sink, long time, ODINSpikeEvent spike);
-public delegate void TimeAdvanced(Controller1 controller, int ts);
 
-
-public sealed class Controller1 : Actor, Core
+public sealed class ProtoController : Actor, Core
 {
-    record StoredSpike(ODINSpikeEvent ODINSpike, bool fromRecurrence);
+    private record StoredSpike(ODINSpikeEvent ODINSpike);
 
-
-    public SpikeSent SpikeSent;
-    public SpikeReceived SpikeReceived;
-    public TimeAdvanced TimeAdvanced;
+    public Action<Actor, long, ODINSpikeEvent> SpikeSent;
+    public Action<Actor, long, ODINSpikeEvent> SpikeReceived;
+    public Action<Actor, int> TimeAdvanced;
 
     public InPort spikesIn = new InPort();
     public OutPort spikesOut = new OutPort();
@@ -28,9 +23,8 @@ public sealed class Controller1 : Actor, Core
     private FIFO<object> outBuffer;
     private Queue<StoredSpike> storedSpikes = new();
     private Dictionary<Layer, MeshCoord> mappings = new();
-    private Dictionary<IFLayer, RLIFLayer> convertedLayers = new();
 
-    public Controller1(object location, SNN snn, long startTime, long interval, string name = null)
+    public ProtoController(object location, int nrTimesteps, SNN snn, long startTime, long interval, string name = null)
     {
         this.location = location;
         this.snn = snn;
@@ -44,11 +38,6 @@ public sealed class Controller1 : Actor, Core
         mappings[layer] = coreCoord;
     }
 
-    public void RLIF2LIF(RLIFLayer rlif, IFLayer lif)
-    {
-        convertedLayers[lif] = rlif;
-    }
-
     public InPort GetIn() => spikesIn;
 
     public OutPort GetOut() => spikesOut;
@@ -59,7 +48,10 @@ public sealed class Controller1 : Actor, Core
     {
         outBuffer = new(env, 1);
 
-        env.Process(SpikeSender(env));
+        var timesteps = env.CreateResource(0);
+
+        env.Process(SpikeSender(env, timesteps));
+        env.Process(SyncSender(env, timesteps));
 
         env.Process(Sender(env));
         env.Process(Receiver(env));
@@ -67,10 +59,8 @@ public sealed class Controller1 : Actor, Core
         yield break;
     }
 
-    private IEnumerable<Event> SpikeSender(Environment env)
+    private IEnumerable<Event> SpikeSender(Environment env, Resource timesteps)
     {
-        yield return env.SleepUntil(startTime);
-        int ts = 0;
         while (inputLayer.spikeSource.NextTimestep())
         {
             // Send spikes for input layer
@@ -79,27 +69,32 @@ public sealed class Controller1 : Actor, Core
             {
                 var spike = new ODINSpikeEvent(inputLayer, neuron);
                 yield return outBuffer.RequestWrite();
-                outBuffer.Write(new StoredSpike(spike, false));
+                outBuffer.Write(new StoredSpike(spike));
                 outBuffer.ReleaseWrite();
                 SpikeSent?.Invoke(this, env.Now, spike);
             }
 
-            // Send stored spikes for hidden layers
-            while (storedSpikes.Count > 0)
-            {
-                var stored = storedSpikes.Dequeue();
-                yield return outBuffer.RequestWrite();
-                outBuffer.Write(stored);
-                outBuffer.ReleaseWrite();
-                SpikeSent?.Invoke(this, env.Now, stored.ODINSpike);
-            }
+            // Wait until until the sync sender goes to next timestep
+            yield return env.RequestResource(timesteps, 1);
+        }
+    }
 
-            long syncTime = (env.Now / interval + 1) * interval;
-            yield return env.SleepUntil(syncTime);
+    private IEnumerable<Event> SyncSender(Environment env, Resource timesteps)
+    {
+        yield return env.SleepUntil(startTime);
+
+        int ts = 0;
+        // TODO: Do not hardcode the amount of spikes
+        while (ts < 100)
+        {
+            yield return env.SleepUntil(startTime + interval * (ts + 1));
+
             yield return outBuffer.RequestWrite();
             outBuffer.Write(new ODINTimeEvent(ts));
             outBuffer.ReleaseWrite();
             TimeAdvanced?.Invoke(this, ts);
+
+            env.IncreaseResource(timesteps, 1);
             ts++;
         }
     }
@@ -110,10 +105,7 @@ public sealed class Controller1 : Actor, Core
         {
             yield return outBuffer.RequestRead();
             var flit = outBuffer.Read();
-            foreach (var ev in SendODINEvent(env, flit))
-            {
-                yield return ev;
-            }
+            yield return env.Process(SendODINEvent(env, flit));
             outBuffer.ReleaseRead();
         }
     }
@@ -130,21 +122,6 @@ public sealed class Controller1 : Actor, Core
             {
                 var spike = (ev as MeshFlit).Message as ODINSpikeEvent;
                 SpikeReceived?.Invoke(this, env.Now, spike);
-
-                // If from hidden layer then store output next layer then we do not have to do anything
-                if (!snn.IsOutputLayer(spike.layer))
-                {
-                    // If from an RLIF converted layer then we need to make 1 extra spike
-                    // i.e. for the recurrence
-                    if (convertedLayers.ContainsKey((IFLayer)spike.layer))
-                    {
-                        RLIFLayer rlif = convertedLayers[(IFLayer)spike.layer];
-                        int newNeuron = rlif.InputSize + spike.neuron;
-                        storedSpikes.Enqueue(new StoredSpike(new ODINSpikeEvent(spike.layer, newNeuron), true));
-                    }
-
-                    storedSpikes.Enqueue(new StoredSpike(spike, false));
-                }
             }
             else
             {
@@ -157,23 +134,15 @@ public sealed class Controller1 : Actor, Core
     {
         if (message is StoredSpike)
         {
-            var (spikeEvent, fromRecurrence) = message as StoredSpike;
+            var storedSpike = message as StoredSpike;
             // Get the right desitination layer for the spike and also the coord to send it to
-            Layer destLayer;
-            if (fromRecurrence)
-            {
-                destLayer = spikeEvent.layer;
-            }
-            else
-            {
-                destLayer = snn.GetDestLayer(spikeEvent.layer);
-            }
+            Layer destLayer = snn.GetDestLayer(storedSpike.ODINSpike.layer);
             MeshCoord dest = mappings[destLayer];
             var flit = new MeshFlit
             {
                 Src = (MeshCoord)location,
                 Dest = dest,
-                Message = spikeEvent
+                Message = storedSpike.ODINSpike
             };
             yield return env.Send(spikesOut, flit);
         }
@@ -195,6 +164,11 @@ public sealed class Controller1 : Actor, Core
         {
             throw new Exception($"Unknown message: {message}");
         }
+    }
+
+    internal void LayerToCoord(Layer layer, object v)
+    {
+        throw new NotImplementedException();
     }
 
     public bool AcceptsLayer(Layer layer)

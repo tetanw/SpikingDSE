@@ -3,13 +3,13 @@ using System.Collections.Generic;
 
 namespace SpikingDSE;
 
-public sealed class XYRouter3 : MeshRouter
+public sealed class XYRouter : MeshRouter
 {
     private int inputBufferSize;
     private int outputBufferSize;
     private int switchDelay;
 
-    public XYRouter3(int x, int y, string name = "", int inputBufferSize = 1, int outputBufferSize = 1, int switchDelay = 1)
+    public XYRouter(int x, int y, string name = "", int inputBufferSize = 1, int outputBufferSize = 1, int switchDelay = 1)
     {
         this.x = x;
         this.y = y;

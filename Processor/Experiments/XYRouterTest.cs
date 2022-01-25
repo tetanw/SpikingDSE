@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace SpikingDSE;
 
-public class XYRouter3Test : Experiment
+public class XYRouterTest : Experiment
 {
     public override void Setup()
     {
@@ -13,7 +13,7 @@ public class XYRouter3Test : Experiment
         int j = 0;
         var northProd = sim.AddActor(new Producer(15, () => new MeshFlit { Src = new MeshCoord(-1, -1), Dest = new MeshCoord(1, 1), Message = ("North", j++) }, "North"));
 
-        var router = sim.AddActor(new XYRouter3(0, 1, name: "Router"));
+        var router = sim.AddActor(new ProtoXYRouter(0, 1, name: "Router"));
 
         var consumer = sim.AddActor(new Consumer(interval: 50, name: "Consumer"));
         consumer.Consumed += (_, time, flit) =>

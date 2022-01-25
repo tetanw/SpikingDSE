@@ -38,7 +38,7 @@ class ExpRun3
     private Simulator sim;
     private MeshRouter[,] routers;
     private SNN snn;
-    private IFLayer2 outputLayer;
+    private IFLayer outputLayer;
 
     private ISpikeSource spikeSource;
     private int interval;
@@ -57,19 +57,19 @@ class ExpRun3
         this.Weights = weights;
     }
 
-    private Controller2 AddController(SNN snn, int x, int y)
+    private ProtoController AddController(SNN snn, int x, int y)
     {
         var controllerCoord = new MeshCoord(x, y);
-        var controller = sim.AddActor(new Controller2(controllerCoord, 100, snn, 0, interval, name: "controller"));
+        var controller = sim.AddActor(new ProtoController(controllerCoord, 100, snn, 0, interval, name: "controller"));
         sim.AddChannel(controller.spikesOut, routers[x, y].inLocal);
         sim.AddChannel(routers[x, y].outLocal, controller.spikesIn);
         return controller;
     }
 
-    private Core3 AddCore(ODINDelayModel delayModel, int size, int x, int y, string name)
+    private ProtoCore AddCore(ODINDelayModel delayModel, int size, int x, int y, string name)
     {
         var coreCoord = new MeshCoord(x, y);
-        var core = sim.AddActor(new Core3(coreCoord, size, delayModel, feedbackBufferSize: feedbackSize, name: name));
+        var core = sim.AddActor(new ProtoCore(coreCoord, size, delayModel, feedbackBufferSize: feedbackSize, name: name));
         core.OnSyncEnded += (_, _, ts, layer) =>
         {
             OnTimestepFinished?.Invoke(ts, layer);
@@ -110,7 +110,7 @@ class ExpRun3
         snn.AddLayer(hidden2);
 
         float alpha2 = (float)Math.Exp(-1.0 * 1.0 / 15.0);
-        outputLayer = new IFLayer2(
+        outputLayer = new IFLayer(
             Weights.weights_h2_o,
             Weights.alpha_o,
             name: "output"
@@ -128,7 +128,7 @@ class ExpRun3
             TimeRefTime = 2
         };
 
-        routers = MeshUtils.CreateMesh(sim, width, height, (x, y) => new XYRouter2(x, y, name: $"router({x},{y})"));
+        routers = MeshUtils.CreateMesh(sim, width, height, (x, y) => new ProtoXYRouter(x, y, name: $"router({x},{y})"));
 
         var controller = AddController(snn, 0, 0);
         var core1 = AddCore(delayModel, 1024, 0, 1, "core1");
@@ -143,13 +143,13 @@ class ExpRun3
 
         foreach (var (layer, core) in mapping._forward)
         {
-            if (core is not Core3) continue;
+            if (core is not ProtoCore) continue;
             controller.LayerToCoord(layer, (MeshCoord)core.GetLocation());
         }
 
         foreach (var core in mapping.Cores)
         {
-            if (core is not Core3) continue;
+            if (core is not ProtoCore) continue;
 
             var destLayer = snn.GetDestLayer(mapping.Reverse[core]);
             MeshCoord dest;
@@ -158,7 +158,7 @@ class ExpRun3
             else
                 dest = (MeshCoord)mapping.Forward[destLayer].GetLocation();
 
-            ((Core3)core).setDestination(dest);
+            ((ProtoCore)core).setDestination(dest);
         }
     }
 
@@ -206,7 +206,7 @@ class ExpRun3
     }
 }
 
-public class MultiOdin3Accuracy
+public class ProtoMultiCoreAccuracy
 {
     private ModelWeights3 Weights;
 

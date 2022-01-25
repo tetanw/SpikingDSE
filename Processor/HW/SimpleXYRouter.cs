@@ -3,11 +3,11 @@ using System.Collections.Generic;
 
 namespace SpikingDSE;
 
-public sealed class XYRouter : MeshRouter
+public sealed class SimpleXYRouter : MeshRouter
 {
     public long processingDelay;
 
-    public XYRouter(int x, int y, long processingDelay, string name = "")
+    public SimpleXYRouter(int x, int y, long processingDelay, string name = "")
     {
         this.Name = name;
         this.x = x;

@@ -2,7 +2,7 @@ using System;
 
 namespace SpikingDSE;
 
-public class ReportingTest : Experiment
+public class RepTest : Experiment
 {
     public class Reporter
     {

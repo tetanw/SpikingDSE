@@ -26,7 +26,7 @@ public class MeshTest : Experiment
         producer.Produced += reporter.Produced;
         var consumer = sim.AddActor(new Consumer(name: "consumer"));
         consumer.Consumed += reporter.Consumed;
-        var routers = MeshUtils.CreateMesh(sim, 2, 2, (x, y) => new XYRouter(x, y, 1, name: $"router({x},{y})"));
+        var routers = MeshUtils.CreateMesh(sim, 2, 2, (x, y) => new SimpleXYRouter(x, y, 1, name: $"router({x},{y})"));
 
         sim.AddChannel(routers[0, 0].inLocal, producer.output);
         sim.AddChannel(routers[1, 1].outLocal, consumer.In);

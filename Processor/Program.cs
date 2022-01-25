@@ -54,29 +54,25 @@ namespace SpikingDSE
                 {
                     if (opts.Name.Equals("PC"))
                     {
-                        new ProducerConsumer().Run();
+                        new PC().Run();
                     }
-                    else if (opts.Name.Equals("MESHTEST"))
+                    else if (opts.Name.Equals("MeshTest"))
                     {
                         new MeshTest().Run();
                     }
-                    else if (opts.Name.Equals("FORKJOIN"))
+                    else if (opts.Name.Equals("ForkJoin"))
                     {
                         new ForkJoin().Run();
                     }
-                    else if (opts.Name.Equals("REPTEST"))
+                    else if (opts.Name.Equals("RepTest"))
                     {
-                        new ReportingTest().Run();
+                        new RepTest().Run();
                     }
-                    else if (opts.Name.Equals("MULTIODIN"))
-                    {
-                        new MultiODINTest().Run();
-                    }
-                    else if (opts.Name.Equals("RESTEST"))
+                    else if (opts.Name.Equals("ResTest"))
                     {
                         new ResTest().Run();
                     }
-                    else if (opts.Name.Equals("RESPERF"))
+                    else if (opts.Name.Equals("ResPerf"))
                     {
                         new ResPerf().Run();
                     }
@@ -86,29 +82,20 @@ namespace SpikingDSE
                     }
                     else if (opts.Name.Equals("SingleOdin"))
                     {
-                        new ODINSingleCore().Run();
+                        new SingleOdin().Run();
                     }
-                    else if (opts.Name.Equals("MultiOdin2"))
+                    else if (opts.Name.Equals("ProtoMultiCoreTest"))
                     {
-                        new MultiODIN2Test().Run();
+                        new ProtoMultiCoreTest().Run();
                     }
-                    else if (opts.Name.Equals("MultiOdin3"))
+                    else if (opts.Name.Equals("ProtoMultiCoreAccuracy"))
                     {
-                        new MultiODIN3Test().Run();
+                        new ProtoMultiCoreAccuracy().Run();
                     }
-                    else if (opts.Name.Equals("MultiOdin2Accuracy"))
+                    else if (opts.Name.Equals("XYRouterTest"))
                     {
-                        new MultiOdin2Accuracy().Run();
+                        new XYRouterTest().Run();
                     }
-                    else if (opts.Name.Equals("MultiOdin3Accuracy"))
-                    {
-                        new MultiOdin3Accuracy().Run();
-                    }
-                    else if (opts.Name.Equals("XYRouter3Test"))
-                    {
-                        new XYRouter3Test().Run();
-                    }
-
                     else
                     {
                         throw new Exception($"Unknown simulation: {opts.Name}");
