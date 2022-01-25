@@ -25,6 +25,12 @@ public class MemReporter
         memFiles[layer] = sw;
     }
 
+    public void RegisterSNN(SNN snn)
+    {
+        foreach (var layer in snn.GetAllLayers())
+            RegisterLayer(layer);
+    }
+
     public void AdvanceLayer(Layer layer, int ts, float[] pots)
     {
         var file = memFiles[layer];

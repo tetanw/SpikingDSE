@@ -4,6 +4,14 @@ using System.IO;
 
 namespace SpikingDSE;
 
+public struct ProtoDelayModel
+{
+    public int InputTime;
+    public int ComputeTime;
+    public int OutputTime;
+    public int TimeRefTime;
+}
+
 public sealed class ProtoCore : Actor, Core
 {
     public delegate void SpikeReceived(ProtoCore core, long time, Layer layer, int neuron, bool feedback);
@@ -21,14 +29,14 @@ public sealed class ProtoCore : Actor, Core
 
     private MeshCoord location, destination;
     private HiddenLayer Layer;
-    private ODINDelayModel delayModel;
+    private ProtoDelayModel delayModel;
     private int nrNeurons;
     private int totalOutputSpikes = 0;
     private int totalInputSpikes = 0;
     private int feedbackBufferSize;
     private Queue<int> feedback = new Queue<int>();
 
-    public ProtoCore(MeshCoord location, int nrNeurons, ODINDelayModel delayModel, int feedbackBufferSize = int.MaxValue, string name = "")
+    public ProtoCore(MeshCoord location, int nrNeurons, ProtoDelayModel delayModel, int feedbackBufferSize = int.MaxValue, string name = "")
     {
         this.location = location;
         this.Name = name;

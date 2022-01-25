@@ -28,6 +28,12 @@ public class TensorReporter
         spikeFiles[layer] = new SpikeFile(layerSpikes, sw);
     }
 
+    public void RegisterSNN(SNN snn)
+    {
+        foreach (var layer in snn.GetAllLayers())
+            RegisterLayer(layer);
+    }
+
     public void InformSpike(Layer layer, int neuron)
     {
         spikeFiles[layer].spikes[neuron] = true;
