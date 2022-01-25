@@ -31,7 +31,7 @@ class ModelWeights3
 
 class ExpRun3
 {
-    public delegate void TimestepFinished(int ts, HiddenLayer2 layer);
+    public delegate void TimestepFinished(int ts, HiddenLayer layer);
 
     public TimestepFinished OnTimestepFinished;
 

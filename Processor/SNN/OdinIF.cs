@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace SpikingDSE;
 
-public class OdinIFLayer : HiddenLayer
+public class OdinIFLayer : OdinHiddenLayer
 {
     public float[] Pots;
     public float[,] weights;

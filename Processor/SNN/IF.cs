@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace SpikingDSE;
 
-public class IFLayer : HiddenLayer2
+public class IFLayer : HiddenLayer
 {
     public float[] Pots;
     public float[] Readout;

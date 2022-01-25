@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace SpikingDSE;
 
-public class ALIFLayer : HiddenLayer2
+public class ALIFLayer : HiddenLayer
 {
     public readonly float[,] InWeights;
     public readonly float[,] RecWeights;

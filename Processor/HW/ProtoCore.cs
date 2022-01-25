@@ -8,8 +8,8 @@ public sealed class ProtoCore : Actor, Core
 {
     public delegate void SpikeReceived(ProtoCore core, long time, Layer layer, int neuron, bool feedback);
     public delegate void SpikeSent(ProtoCore core, long time, ODINSpikeEvent spike);
-    public delegate void SyncStarted(ProtoCore core, long time, int ts, HiddenLayer2 layer);
-    public delegate void SyncEnded(ProtoCore core, long time, int ts, HiddenLayer2 layer);
+    public delegate void SyncStarted(ProtoCore core, long time, int ts, HiddenLayer layer);
+    public delegate void SyncEnded(ProtoCore core, long time, int ts, HiddenLayer layer);
 
     public SpikeReceived OnSpikeReceived;
     public SpikeSent OnSpikeSent;
@@ -20,7 +20,7 @@ public sealed class ProtoCore : Actor, Core
     public OutPort output = new OutPort();
 
     private MeshCoord location, destination;
-    private HiddenLayer2 Layer;
+    private HiddenLayer Layer;
     private ODINDelayModel delayModel;
     private int nrNeurons;
     private int totalOutputSpikes = 0;
@@ -45,9 +45,9 @@ public sealed class ProtoCore : Actor, Core
             return false;
         }
 
-        if (layer is HiddenLayer2)
+        if (layer is HiddenLayer)
         {
-            var lifLayer = (HiddenLayer2)layer;
+            var lifLayer = (HiddenLayer)layer;
             // TODO: Add extra checks nr neurons etc...
             return true;
         }
@@ -68,7 +68,7 @@ public sealed class ProtoCore : Actor, Core
         if (this.Layer != null)
             throw new Exception("Only accepts 1 layer");
 
-        this.Layer = (HiddenLayer2)layer;
+        this.Layer = (HiddenLayer)layer;
     }
 
     public void setDestination(MeshCoord coord)
