@@ -6,7 +6,10 @@ namespace SpikingDSE;
 
 public class ProtoMultiCoreDSE : DSEExperiment<ProtoMultiCore>
 {
+    private int size = 2264;
     private SRNN srnn = new SRNN("res/snn/best", null);
+    private int nrCorrect = 0;
+    private int curBufferSize = -1;
 
     public override IEnumerable<IEnumerable<ProtoMultiCore>> Configs()
     {
@@ -14,13 +17,14 @@ public class ProtoMultiCoreDSE : DSEExperiment<ProtoMultiCore>
 
         foreach (var size in sizes)
         {
+            curBufferSize = size;
             yield return WithBufferSize(size);
         }
     }
 
     public IEnumerable<ProtoMultiCore> WithBufferSize(int bufferSize)
     {
-        for (int i = 0; i < 2264; i++)
+        for (int i = 0; i < size; i++)
         {
             var inputFile = new InputTraceFile($"res/shd/input_{i}.trace", 700);
             var simulator = new Simulator();
@@ -29,9 +33,18 @@ public class ProtoMultiCoreDSE : DSEExperiment<ProtoMultiCore>
         }
     }
 
-    public override void OnConfigCompleted(ProtoMultiCore[] exps)
+    public override void OnConfigCompleted(TimeSpan runningTime)
     {
-        int nrCorrect = exps.Count((exp) => exp.prediction == exp.correct);
-        Console.WriteLine($"{(float)nrCorrect / exps.Length}");
+        var acc = (float)nrCorrect / size;
+        Console.WriteLine($"{curBufferSize};{acc};{(int)runningTime.TotalMilliseconds}ms");
+        nrCorrect = 0;
+    }
+
+    public override void OnExpCompleted(ProtoMultiCore exp)
+    {
+        if (exp.prediction == exp.correct)
+        {
+            nrCorrect++;
+        }
     }
 }

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using System.Threading;
 using System.Linq;
 
 namespace SpikingDSE;
@@ -63,28 +64,35 @@ public abstract class Experiment
     public abstract void Cleanup();
 }
 
-public abstract class DSEExperiment<T> where T: Experiment
+public abstract class DSEExperiment<T>
+    where T : Experiment
 {
     public void Run()
     {
+        var m = new Mutex(); 
+
         foreach (var config in Configs())
         {
-            // Stopwatch sw = new Stopwatch();
-            // sw.Start();
-            var exps = config.ToArray();
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
 
-            Parallel.ForEach(exps, (exp, _, j) =>
+            Parallel.ForEach(config, (exp, _, j) =>
              {
                  exp.Run();
+
+                 m.WaitOne();
+                 OnExpCompleted(exp);
+                 m.ReleaseMutex();
              });
 
-            // sw.Stop();
-            // Console.WriteLine($"Completed in: {sw.ElapsedMilliseconds:n} ms");
-            OnConfigCompleted(exps);
+            sw.Stop();
+            OnConfigCompleted(sw.Elapsed);
         }
     }
 
     public abstract IEnumerable<IEnumerable<T>> Configs();
 
-    public abstract void OnConfigCompleted(T[] experiments);
+    public abstract void OnExpCompleted(T exp);
+
+    public abstract void OnConfigCompleted(TimeSpan runningTime);
 }
