@@ -1,4 +1,5 @@
-res/
+res/multi-core
+res/odin/result.trace
 .vscode/
 
 ## Ignore Visual Studio temporary files, build results, and
