@@ -18,7 +18,7 @@ public class InputLayer : Layer
         this.spikeSource = spikeSource;
         this.Name = name;
         this.InputSize = -1;
-        this.Size = spikeSource.NrNeurons();
+        this.Size = spikeSource?.NrNeurons() ?? -1;
     }
 }
 

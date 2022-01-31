@@ -5,34 +5,45 @@ namespace SpikingDSE;
 
 public class ProtoMultiCore : Experiment
 {
-    private bool debug = false;
-
     private SRNN srnn;
+    private int bufferSize;
+    private long interval;
+
     private MulitCoreHW hw;
     private TraceReporter trace;
     private TensorReporter tensor;
     private MemReporter mem;
 
-    public ProtoMultiCore(bool debug, SRNN srnn)
+    public int prediction = -1;
+    public int correct = -1;
+
+    public ProtoMultiCore(Simulator simulator, bool debug, int correct, SRNN srnn, long interval, int bufferSize) : base(simulator)
     {
-        this.debug = debug;
+        this.srnn = srnn;
+        this.Debug = debug;
+        this.correct = correct;
+        this.bufferSize = bufferSize;
+        this.interval = interval;
     }
 
     private void AddReporters()
     {
-        trace = new TraceReporter("res/multi-core/result.trace");
-
-        mem = new MemReporter(srnn.snn, "res/multi-core");
-        mem.RegisterSNN(srnn.snn);
-
-        tensor = new TensorReporter(srnn.snn, "res/multi-core");
-        tensor.RegisterSNN(srnn.snn);
-
-        hw.controller.TimeAdvanced += (_, ts) => trace.AdvanceTimestep(ts);
-        hw.controller.TimeAdvanced += (_, ts) =>
+        if (Debug)
         {
-            tensor.AdvanceTimestep(ts);
-        };
+            trace = new TraceReporter("res/multi-core/result.trace");
+
+            mem = new MemReporter(srnn.snn, "res/multi-core");
+            mem.RegisterSNN(srnn.snn);
+
+            tensor = new TensorReporter(srnn.snn, "res/multi-core");
+            tensor.RegisterSNN(srnn.snn);
+
+            hw.controller.TimeAdvanced += (_, ts) => trace.AdvanceTimestep(ts);
+            hw.controller.TimeAdvanced += (_, ts) =>
+            {
+                tensor.AdvanceTimestep(ts);
+            };
+        }
 
         foreach (var core in hw.cores)
         {
@@ -40,7 +51,7 @@ public class ProtoMultiCore : Experiment
 
             protoCore.OnSyncEnded += (_, _, ts, layer) =>
             {
-                float[] pots = (layer as ALIFLayer)?.Readout ?? (layer as IFLayer)?.Readout;
+                float[] pots = (layer as ALIFLayer)?.Readout ?? (layer as OutputIFLayer)?.Readout;
                 mem.AdvanceLayer(layer, ts, pots);
             };
             protoCore.OnSpikeReceived += (_, time, layer, neuron, feedback) => trace.InputSpike(neuron, time);
@@ -55,10 +66,6 @@ public class ProtoMultiCore : Experiment
 
     public override void Setup()
     {
-        // SNN
-        string folderPath = "res/snn/best";
-        srnn = new SRNN(folderPath);
-
         // Hardware
         var delayModel = new ProtoDelayModel
         {
@@ -67,7 +74,7 @@ public class ProtoMultiCore : Experiment
             OutputTime = 8,
             TimeRefTime = 2
         };
-        hw = new MulitCoreHW(sim, 2, 2);
+        hw = new MulitCoreHW(sim, 2, 2, interval, bufferSize);
         hw.CreateRouters((x, y) => new ProtoXYRouter(x, y, name: $"router({x},{y})"));
         hw.AddController(srnn.snn, 0, 0);
         hw.AddCore(delayModel, 1024, 0, 1, "core1");
@@ -75,7 +82,7 @@ public class ProtoMultiCore : Experiment
         hw.AddCore(delayModel, 1024, 1, 0, "core3");
 
         // Reporters
-        if (debug)
+        if (Debug)
         {
             AddReporters();
         }
@@ -111,17 +118,36 @@ public class ProtoMultiCore : Experiment
 
     public override void Cleanup()
     {
+        this.prediction = srnn.Prediction();
         trace?.Finish();
         tensor?.Finish();
         mem?.Finish();
-        Console.WriteLine($"Nr spikes: {tensor.NrSpikes}");
+        if (Debug)
+        {
+            Console.WriteLine($"Nr spikes: {tensor.NrSpikes:n}");
+            Console.WriteLine($"Predicted: {this.prediction}, Truth: {this.correct}");
+        }
     }
 }
 
-public class ProtoMultiCoreTest : ProtoMultiCore
+public class ProtoMultiCoreTest : Experiment
 {
-    public ProtoMultiCoreTest() : base(true, new SRNN("res/snn/best"))
-    {
+    private ProtoMultiCore exp;
 
+    public ProtoMultiCoreTest()
+    {
+        var inputFile = new InputTraceFile($"res/shd/input_0.trace", 700);
+        var srnn = new SRNN("res/snn/best", inputFile);
+        this.exp = new ProtoMultiCore(sim, true, inputFile.Correct, srnn, 100_000_000, int.MaxValue);
+    }
+
+    public override void Setup()
+    {
+        exp.Setup();
+    }
+
+    public override void Cleanup()
+    {
+        exp.Cleanup();
     }
 }

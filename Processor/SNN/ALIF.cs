@@ -5,8 +5,8 @@ namespace SpikingDSE;
 
 public class ALIFLayer : HiddenLayer
 {
-    public readonly float[,] InWeights;
-    public readonly float[,] RecWeights;
+    public float[,] InWeights;
+    public float[,] RecWeights;
     public float[] Pots;
     public bool[] Spiked;
     public float VTh;
@@ -20,7 +20,7 @@ public class ALIFLayer : HiddenLayer
 
     public ALIFLayer(float[,] inWeights, float[,] recWeights, float[] bias, float[] alpha, float[] rho, float VTh, string name)
     {
-        this.InputSize = inWeights.GetLength(0) + recWeights.GetLength(0);
+        this.InputSize = inWeights.GetLength(0);
         this.Size = inWeights.GetLength(1);
         this.Pots = new float[Size];
         this.Readout = new float[Size];
@@ -28,8 +28,6 @@ public class ALIFLayer : HiddenLayer
         this.InWeights = inWeights;
         this.RecWeights = recWeights;
         this.Name = name;
-        this.InputSize = inWeights.GetLength(0);
-        this.Size = inWeights.GetLength(1);
         this.AdaptThr = new float[Size];
         Array.Fill(AdaptThr, VTh);
         this.Bias = bias;
@@ -97,5 +95,10 @@ public class ALIFLayer : HiddenLayer
             Pots[dst] = pot;
         }
         TS++;
+    }
+
+    public ALIFLayer Copy()
+    {
+        return new ALIFLayer(this.InWeights, this.RecWeights, this.Bias, this.Alpha, this.Rho, this.VTh, this.Name);
     }
 }

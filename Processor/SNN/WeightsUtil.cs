@@ -154,6 +154,16 @@ public static class WeigthsUtil
         sw.Flush();
         sw.Close();
     }
+
+    public static float Exp(int index, float value)
+    {
+        return (float)Math.Exp(-1.0f / value);
+    }
+
+    public static Func<int, int, float, float> ScaleWeights(float[] beta)
+    {
+        return (x, y, f) => f * beta[y];
+    }
 }
 
 public struct NeuronRange
