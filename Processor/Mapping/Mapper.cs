@@ -3,69 +3,105 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
-namespace SpikingDSE
+namespace SpikingDSE;
+
+public class FirstFitMapper
 {
-    public class FirstFitMapper
+    private SNN snn;
+    private List<Core> cores;
+
+    public Action<Core, Layer> OnMappingFound;
+
+    public FirstFitMapper(SNN snn, IEnumerable<Core> cores)
     {
-        private SNN snn;
-        private List<Core> cores;
+        this.snn = snn;
+        this.cores = cores.ToList();
+    }
 
-        public Action<Core, Layer> OnMappingFound;
-
-        public FirstFitMapper(SNN snn, IEnumerable<Core> cores)
+    public void Run()
+    {
+        foreach (var layer in snn.GetAllLayers())
         {
-            this.snn = snn;
-            this.cores = cores.ToList();
-        }
-
-        public void Run()
-        {
-            foreach (var layer in snn.GetAllLayers())
+            var core = cores.Find((core) => core.AcceptsLayer(layer));
+            if (core is not null)
             {
-                bool coreFound = false;
-                foreach (var core in cores)
-                {
-                    if (core.AcceptsLayer(layer))
-                    {
-                        core.AddLayer(layer);
-                        OnMappingFound?.Invoke(core, layer);
-                        coreFound = true;
-                        break;
-                    }
-                }
-
-                if (!coreFound)
-                {
-                    throw new Exception("Could not find core for layer!");
-                }
+                core.AddLayer(layer);
+                OnMappingFound?.Invoke(core, layer);
+            }
+            else
+            {
+                throw new Exception("Could not find core for layer!");
             }
         }
     }
+}
 
-    public class Mapping : Map<Layer, Core>
+public class Mapping
+{
+    private Dictionary<Core, List<Layer>> coreToLayer = new();
+    private Dictionary<Layer, Core> layerToCore = new();
+    private SNN snn;
+
+    public Mapping(SNN snn)
     {
-        public void Map(Core core, Layer layer)
-        {
-            this.Add(layer, core);
-        }
-
-        public IEnumerable<Core> Cores
-        {
-            get => this.Backwards();
-        }
-
-        public IEnumerable<Layer> Layers
-        {
-            get => this.Forwards();
-        }
+        this.snn = snn;
     }
 
-    public interface Core
+    public void Map(Core core, Layer layer)
     {
-        public bool AcceptsLayer(Layer layer);
-        public void AddLayer(Layer layer);
-        public InPort GetIn();
-        public OutPort GetOut();
-        public object GetLocation();
+        List<Layer> layers;
+        if (this.coreToLayer.TryGetValue(core, out layers))
+        {
+            layers.Add(layer);
+        }
+        else
+        {
+            this.coreToLayer.Add(core, new List<Layer>() { layer });
+        }
+        this.layerToCore.Add(layer, core);
     }
+
+    public IEnumerable<Layer> this[Core core]
+    {
+        get => this.coreToLayer[core];
+    }
+
+    public Core this[Layer layer]
+    {
+        get => this.layerToCore[layer];
+    }
+
+    public IEnumerable<Core> Cores
+    {
+        get => this.coreToLayer.Keys;
+    }
+
+    public IEnumerable<Layer> Layers
+    {
+        get => this.layerToCore.Keys;
+    }
+
+    public IEnumerable<KeyValuePair<Layer, Core>> Pairs
+    {
+        get => this.layerToCore;
+    }
+
+    public MeshCoord CoordOf(Layer layer)
+    {
+        return (MeshCoord)this.layerToCore[layer].GetLocation();
+    }
+
+    public Layer GetDestLayer(Layer layer)
+    {
+        return snn.GetDestLayer(layer);
+    }
+}
+
+public interface Core
+{
+    public bool AcceptsLayer(Layer layer);
+    public void AddLayer(Layer layer);
+    public InPort GetIn();
+    public OutPort GetOut();
+    public object GetLocation();
 }

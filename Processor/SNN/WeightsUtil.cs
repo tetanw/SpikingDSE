@@ -164,6 +164,32 @@ public static class WeigthsUtil
     {
         return (x, y, f) => f * beta[y];
     }
+
+    public static float[,] Slice(float[,] parent, int sX, int sY, int sWidth, int sHeight)
+    {
+        int width = parent.GetLength(0);
+        int height = parent.GetLength(1);
+        var slice = new float[sWidth, sHeight];
+        for (int yy = 0; yy < sHeight; yy++)
+        {
+            for (int xx = 0; xx < sWidth; xx++)
+            {
+                slice[xx, yy] = parent[xx + sX, yy + sY];
+            }
+        }
+        return slice;
+    }
+
+    public static float[] Slice(float[] parent, int sOffset, int sLength)
+    {
+        int length = parent.GetLength(0);
+        var slice = new float[sLength];
+        for (int i = 0; i < sLength; i++)
+        {
+            slice[i] = parent[i + sOffset];
+        }
+        return slice;
+    }
 }
 
 public struct NeuronRange

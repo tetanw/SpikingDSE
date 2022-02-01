@@ -15,7 +15,7 @@ public struct ProtoDelayModel
 public sealed class ProtoCore : Actor, Core
 {
     public delegate void SpikeReceived(ProtoCore core, long time, Layer layer, int neuron, bool feedback);
-    public delegate void SpikeSent(ProtoCore core, long time, ODINSpikeEvent spike);
+    public delegate void SpikeSent(ProtoCore core, long time, SpikeEvent spike);
     public delegate void SyncStarted(ProtoCore core, long time, int ts, HiddenLayer layer);
     public delegate void SyncEnded(ProtoCore core, long time, int ts, HiddenLayer layer);
 
@@ -94,16 +94,16 @@ public sealed class ProtoCore : Actor, Core
             }
             else
             {
-                ODINEvent received = null;
+                CoreEvent received = null;
                 yield return env.Process(Receive(env, (recv) => received = recv));
-                if (received is ODINSpikeEvent)
+                if (received is SpikeEvent)
                 {
-                    var spikeEvent = (ODINSpikeEvent)received;
+                    var spikeEvent = (SpikeEvent)received;
                     yield return env.Process(Compute(env, spikeEvent.neuron, false));
                 }
-                else if (received is ODINTimeEvent)
+                else if (received is SyncEvent)
                 {
-                    var timeEvent = (ODINTimeEvent)received;
+                    var timeEvent = (SyncEvent)received;
                     yield return env.Process(Sync(env, timeEvent.TS));
                 }
                 else
@@ -133,12 +133,12 @@ public sealed class ProtoCore : Actor, Core
         // yield return env.Delay(delayModel.ComputeTime * this.Layer.Size);
     }
 
-    private IEnumerable<Event> Receive(Environment env, Action<ODINEvent> onReceive)
+    private IEnumerable<Event> Receive(Environment env, Action<CoreEvent> onReceive)
     {
         var rcv = env.Receive(input, waitBefore: delayModel.InputTime);
         yield return rcv;
         var flit = (MeshFlit)rcv.Message;
-        onReceive((ODINEvent)flit.Message);
+        onReceive((CoreEvent)flit.Message);
     }
 
     private IEnumerable<Event> Sync(Environment env, int TS)
@@ -157,7 +157,7 @@ public sealed class ProtoCore : Actor, Core
         {
             nrOutputSpikes++;
             syncTime = start + (spikingNeuron + 1) * delayModel.ComputeTime + (nrOutputSpikes - 1) * delayModel.OutputTime;
-            var outEvent = new ODINSpikeEvent(Layer, spikingNeuron);
+            var outEvent = new SpikeEvent(Layer, spikingNeuron);
             OnSpikeSent?.Invoke(this, syncTime, outEvent);
             if ((Layer is RLIFLayer2 || Layer is ALIFLayer) && feedback.Count <= feedbackBufferSize) feedback.Enqueue(spikingNeuron);
             yield return env.SendAt(output, new MeshFlit { Src = location, Dest = destination, Message = outEvent }, syncTime);

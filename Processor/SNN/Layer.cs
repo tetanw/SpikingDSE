@@ -20,6 +20,11 @@ public class InputLayer : Layer
         this.InputSize = -1;
         this.Size = spikeSource?.NrNeurons() ?? -1;
     }
+
+    public override string ToString()
+    {
+        return $"Input - \"{this.Name}\"";
+    }
 }
 
 public enum ResetMode

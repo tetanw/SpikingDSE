@@ -92,6 +92,14 @@ namespace SpikingDSE
                     {
                         new ProtoMultiCoreDSE().Run();
                     }
+                    else if (opts.Name.Equals("MultiCoreV1Test"))
+                    {
+                        new MultiCoreV1Test().Run();
+                    }
+                    else if (opts.Name.Equals("MultiCoreV1DSE"))
+                    {
+                        new MultiCoreV1Test().Run();
+                    }
                     else if (opts.Name.Equals("XYRouterTest"))
                     {
                         new XYRouterTest().Run();

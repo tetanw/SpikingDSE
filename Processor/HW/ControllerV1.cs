@@ -4,38 +4,34 @@ using System.Collections.Generic;
 namespace SpikingDSE;
 
 
-public sealed class ProtoController : Actor, Core
+public sealed class ControllerV1 : Actor, Core
 {
-    private record StoredSpike(SpikeEvent ODINSpike);
-
     public Action<Actor, long, SpikeEvent> SpikeSent;
     public Action<Actor, long, SpikeEvent> SpikeReceived;
     public Action<Actor, int> TimeAdvanced;
 
-    public InPort spikesIn = new InPort();
-    public OutPort spikesOut = new OutPort();
+    public InPort spikesIn = new();
+    public OutPort spikesOut = new();
 
     private object location;
     private InputLayer inputLayer;
-    private SNN snn;
     private long startTime;
     private long interval;
     private FIFO<object> outBuffer;
-    private Queue<StoredSpike> storedSpikes = new();
-    private Dictionary<Layer, MeshCoord> mappings = new();
+    private Queue<SpikeEvent> storedSpikes = new();
+    private Mapping mapping;
 
-    public ProtoController(object location, int nrTimesteps, SNN snn, long startTime, long interval, string name = null)
+    public ControllerV1(object location, int nrTimesteps, long startTime, long interval, string name = null)
     {
         this.location = location;
-        this.snn = snn;
         this.startTime = startTime;
         this.interval = interval;
         this.Name = name;
     }
 
-    public void LayerToCoord(Layer layer, MeshCoord coreCoord)
+    public void LoadMapping(Mapping mapping)
     {
-        mappings[layer] = coreCoord;
+        this.mapping = mapping;
     }
 
     public InPort GetIn() => spikesIn;
@@ -69,7 +65,7 @@ public sealed class ProtoController : Actor, Core
             {
                 var spike = new SpikeEvent(inputLayer, neuron);
                 yield return outBuffer.RequestWrite();
-                outBuffer.Write(new StoredSpike(spike));
+                outBuffer.Write(spike);
                 outBuffer.ReleaseWrite();
                 SpikeSent?.Invoke(this, env.Now, spike);
             }
@@ -105,7 +101,7 @@ public sealed class ProtoController : Actor, Core
         {
             yield return outBuffer.RequestRead();
             var flit = outBuffer.Read();
-            yield return env.Process(SendODINEvent(env, flit));
+            yield return env.Process(SendEvent(env, flit));
             outBuffer.ReleaseRead();
         }
     }
@@ -130,27 +126,28 @@ public sealed class ProtoController : Actor, Core
         }
     }
 
-    private IEnumerable<Event> SendODINEvent(Environment env, object message)
+    private IEnumerable<Event> SendEvent(Environment env, object message)
     {
-        if (message is StoredSpike)
+        if (message is SpikeEvent)
         {
-            var storedSpike = message as StoredSpike;
+            var spikeEv = message as SpikeEvent;
             // Get the right desitination layer for the spike and also the coord to send it to
-            Layer destLayer = snn.GetDestLayer(storedSpike.ODINSpike.layer);
-            MeshCoord dest = mappings[destLayer];
+            var destLayer = mapping.GetDestLayer(spikeEv.layer);
+            var dest = (MeshCoord)mapping[destLayer].GetLocation();
             var flit = new MeshFlit
             {
                 Src = (MeshCoord)location,
                 Dest = dest,
-                Message = storedSpike.ODINSpike
+                Message = spikeEv
             };
             yield return env.Send(spikesOut, flit);
         }
         else if (message is SyncEvent)
         {
             var timeEvent = message as SyncEvent;
-            foreach (var coord in mappings.Values)
+            foreach (var core in mapping.Cores)
             {
+                var coord = (MeshCoord) core.GetLocation();
                 var flit = new MeshFlit
                 {
                     Src = (MeshCoord)(location),
@@ -164,11 +161,6 @@ public sealed class ProtoController : Actor, Core
         {
             throw new Exception($"Unknown message: {message}");
         }
-    }
-
-    internal void LayerToCoord(Layer layer, object v)
-    {
-        throw new NotImplementedException();
     }
 
     public bool AcceptsLayer(Layer layer)

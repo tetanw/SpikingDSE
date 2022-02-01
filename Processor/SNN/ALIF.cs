@@ -101,4 +101,34 @@ public class ALIFLayer : HiddenLayer
     {
         return new ALIFLayer(this.InWeights, this.RecWeights, this.Bias, this.Alpha, this.Rho, this.VTh, this.Name);
     }
+
+    public ALIFLayer[] Split()
+    {
+        var p1 = new ALIFLayer(
+            WeigthsUtil.Slice(this.InWeights, 0, 0, 64, 64),
+            WeigthsUtil.Slice(this.RecWeights, 0, 0, 64, 64),
+            WeigthsUtil.Slice(this.Bias, 0, 64),
+            WeigthsUtil.Slice(this.Alpha, 0, 64),
+            WeigthsUtil.Slice(this.Rho, 0, 64),
+            0.01f,
+            $"{this.Name}-1"
+        );
+
+        var p2 = new ALIFLayer(
+            WeigthsUtil.Slice(this.InWeights, 64, 64, 64, 64),
+            WeigthsUtil.Slice(this.RecWeights, 64, 64, 64, 64),
+            WeigthsUtil.Slice(this.Bias, 64, 64),
+            WeigthsUtil.Slice(this.Alpha, 64, 64),
+            WeigthsUtil.Slice(this.Rho, 64, 64),
+            0.01f,
+            $"{this.Name}-2"
+        );
+
+        return new ALIFLayer[] { p1, p2 };
+    }
+
+    public override string ToString()
+    {
+        return $"ALIF - \"{this.Name}\"";
+    }
 }

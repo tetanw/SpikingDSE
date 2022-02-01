@@ -24,7 +24,7 @@ public sealed class SpikeSourceTrace : Actor
         yield return env.SleepUntil(startTime);
         foreach (var neuron in spikeTrace)
         {
-            var spike = new ODINSpikeEvent(null, neuron);
+            var spike = new SpikeEvent(null, neuron);
             yield return env.Send(output, spike);
             SpikeSent?.Invoke(this, env.Now, neuron);
         }
@@ -48,7 +48,7 @@ public sealed class SpikeSink : Actor
         {
             var rcv = env.Receive(input);
             yield return rcv;
-            var spike = (ODINSpikeEvent)rcv.Message;
+            var spike = (SpikeEvent)rcv.Message;
             SpikeReceived?.Invoke(this, env.Now, spike.neuron);
         }
     }

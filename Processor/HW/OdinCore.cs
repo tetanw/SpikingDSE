@@ -12,14 +12,14 @@ public struct ODINDelayModel
     public int TimeRefTime;
 }
 
-public abstract record ODINEvent();
-public sealed record ODINTimeEvent(int TS) : ODINEvent;
-public sealed record ODINSpikeEvent(Layer layer, int neuron) : ODINEvent;
+public abstract record CoreEvent();
+public sealed record SyncEvent(int TS) : CoreEvent;
+public sealed record SpikeEvent(Layer layer, int neuron) : CoreEvent;
 
 public sealed class OdinCore : Actor, Core
 {
-    public delegate void SpikeReceived(OdinCore core, long time, ODINSpikeEvent spike);
-    public delegate void SpikeSent(OdinCore core, long time, ODINSpikeEvent spike);
+    public delegate void SpikeReceived(OdinCore core, long time, SpikeEvent spike);
+    public delegate void SpikeSent(OdinCore core, long time, SpikeEvent spike);
     public delegate void TimeReceived(OdinCore core, long time, int ts, OdinIFLayer layer);
 
     public SpikeReceived OnSpikeRecived;
@@ -30,7 +30,7 @@ public sealed class OdinCore : Actor, Core
     public OutPort output = new OutPort();
 
     private Object location;
-    private ODINEvent received = null;
+    private CoreEvent received = null;
     private OdinIFLayer layer;
     private ODINDelayModel delayModel;
     private int nrNeurons;
@@ -92,14 +92,14 @@ public sealed class OdinCore : Actor, Core
                 yield return ev;
             }
 
-            if (received is ODINSpikeEvent)
+            if (received is SpikeEvent)
             {
                 foreach (var ev in Compute(env))
                 {
                     yield return ev;
                 }
             }
-            else if (received is ODINTimeEvent)
+            else if (received is SyncEvent)
             {
                 foreach (var ev in AdvanceTime(env))
                 {
@@ -116,7 +116,7 @@ public sealed class OdinCore : Actor, Core
 
     private IEnumerable<Event> Compute(Environment env)
     {
-        var inputSpike = (ODINSpikeEvent)received;
+        var inputSpike = (SpikeEvent)received;
         OnSpikeRecived?.Invoke(this, env.Now, inputSpike);
 
         OdinIFLayer lif = (layer as OdinIFLayer);
@@ -128,7 +128,7 @@ public sealed class OdinCore : Actor, Core
         {
             nrOutputSpikes++;
             syncTime = start + (outputSpike + 1) * delayModel.ComputeTime + (nrOutputSpikes - 1) * delayModel.OutputTime;
-            var outEvent = new ODINSpikeEvent(layer, outputSpike);
+            var outEvent = new SpikeEvent(layer, outputSpike);
             OnSpikeSent?.Invoke(this, syncTime, outEvent);
             yield return env.SendAt(output, outEvent, syncTime);
         }
@@ -142,12 +142,12 @@ public sealed class OdinCore : Actor, Core
     {
         var rcv = env.Receive(input, waitBefore: delayModel.InputTime);
         yield return rcv;
-        received = (ODINEvent)rcv.Message;
+        received = (CoreEvent)rcv.Message;
     }
 
     private IEnumerable<Event> AdvanceTime(Environment env)
     {
-        OnTimeReceived?.Invoke(this, env.Now, (received as ODINTimeEvent).TS, layer);
+        OnTimeReceived?.Invoke(this, env.Now, (received as SyncEvent).TS, layer);
         totalOutputSpikes = 0;
         totalInputSpikes = 0;
         layer.Leak();

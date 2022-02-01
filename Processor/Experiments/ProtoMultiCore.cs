@@ -1,9 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace SpikingDSE;
 
-public class MulitCoreHW
+public class ProtoMulitCoreHW
 {
     private Simulator sim;
 
@@ -16,7 +17,7 @@ public class MulitCoreHW
 
     public int width, height;
 
-    public MulitCoreHW(Simulator sim, int width, int height, long interval, int bufferSize)
+    public ProtoMulitCoreHW(Simulator sim, int width, int height, long interval, int bufferSize)
     {
         this.sim = sim;
         this.width = width;
@@ -59,9 +60,9 @@ public class MulitCoreHW
 public class SRNN
 {
     public SNN snn;
-    private InputLayer input;
-    private ALIFLayer[] hidden;
-    private OutputIFLayer output;
+    public InputLayer input;
+    public ALIFLayer[] hidden;
+    public OutputIFLayer output;
 
     public SRNN(string folderPath, ISpikeSource spikeSource)
     {
@@ -140,7 +141,7 @@ public class ProtoMultiCore : Experiment
     private int bufferSize;
     private long interval;
 
-    private MulitCoreHW hw;
+    private ProtoMulitCoreHW hw;
     private TraceReporter trace;
     private TensorReporter tensor;
     private MemReporter mem;
@@ -205,7 +206,7 @@ public class ProtoMultiCore : Experiment
             OutputTime = 8,
             TimeRefTime = 2
         };
-        hw = new MulitCoreHW(sim, 2, 2, interval, bufferSize);
+        hw = new ProtoMulitCoreHW(sim, 2, 2, interval, bufferSize);
         hw.CreateRouters((x, y) => new ProtoXYRouter(x, y, name: $"router({x},{y})"));
         hw.AddController(srnn.snn, 0, 0);
         hw.AddCore(delayModel, 1024, 0, 1, "core1");
@@ -220,11 +221,11 @@ public class ProtoMultiCore : Experiment
 
         // Mapping
         var mapper = new FirstFitMapper(srnn.snn, hw.GetPEs());
-        var mapping = new Mapping();
+        var mapping = new Mapping(srnn.snn);
         mapper.OnMappingFound += mapping.Map;
         mapper.Run();
 
-        foreach (var (layer, core) in mapping._forward)
+        foreach (var (layer, core) in mapping.Pairs)
         {
             if (core is not ProtoCore) continue;
             hw.controller.LayerToCoord(layer, (MeshCoord)core.GetLocation());
@@ -234,12 +235,12 @@ public class ProtoMultiCore : Experiment
         {
             if (core is not ProtoCore) continue;
 
-            var destLayer = srnn.snn.GetDestLayer(mapping.Reverse[core]);
+            var destLayer = srnn.snn.GetDestLayer(mapping[core].First());
             MeshCoord dest;
             if (destLayer == null)
                 dest = (MeshCoord)hw.controller.GetLocation();
             else
-                dest = (MeshCoord)mapping.Forward[destLayer].GetLocation();
+                dest = (MeshCoord)mapping[destLayer].GetLocation();
 
             ((ProtoCore)core).setDestination(dest);
         }
