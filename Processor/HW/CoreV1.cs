@@ -13,6 +13,8 @@ public struct V1DelayModel
     public int TimeRefTime;
 }
 
+public record StoredSpike(Layer layer, int neuron, bool feedback);
+
 public sealed class CoreV1 : Actor, Core
 {
     public delegate void SpikeReceived(CoreV1 core, long time, Layer layer, int neuron, bool feedback);
@@ -36,7 +38,7 @@ public sealed class CoreV1 : Actor, Core
     private int totalOutputSpikes = 0;
     private int totalInputSpikes = 0;
     private int feedbackBufferSize;
-    private Queue<SpikeEvent> feedback = new Queue<SpikeEvent>();
+    private Queue<StoredSpike> feedbackBuffer = new();
 
     public CoreV1(MeshCoord location, int maxNrNeurons, V1DelayModel delayModel, int feedbackBufferSize = int.MaxValue, string name = "")
     {
@@ -80,9 +82,18 @@ public sealed class CoreV1 : Actor, Core
     {
         while (true)
         {
-            if (feedback.Count > 0)
+            if (feedbackBuffer.Count > 0)
             {
-                yield return env.Process(Feedback(env, feedback.Dequeue()));
+                var (layer, neuron, feedback) = feedbackBuffer.Dequeue();
+
+                if (feedback)
+                {
+                    yield return env.Process(Feedback(env, layer, neuron));
+                }
+                else
+                {
+                    yield return env.Process(Compute(env, layer, neuron));
+                }
             }
             else
             {
@@ -90,8 +101,8 @@ public sealed class CoreV1 : Actor, Core
                 yield return env.Process(Receive(env, (recv) => received = recv));
                 if (received is SpikeEvent)
                 {
-                    var spikeEvent = (SpikeEvent)received;
-                    yield return env.Process(Compute(env, spikeEvent));
+                    var (layer, neuron) = (SpikeEvent)received;
+                    yield return env.Process(Compute(env, layer, neuron));
                 }
                 else if (received is SyncEvent)
                 {
@@ -106,17 +117,15 @@ public sealed class CoreV1 : Actor, Core
         }
     }
 
-    private IEnumerable<Event> Feedback(Environment env, SpikeEvent spike)
+    private IEnumerable<Event> Feedback(Environment env, Layer layer, int neuron)
     {
-        var (layer, neuron) = spike;
         OnSpikeReceived?.Invoke(this, env.Now, layer, neuron, true);
         (layer as ALIFLayer).Feedback(neuron); // source layer = dest layer so no lookup needed
         yield return env.Delay(delayModel.ComputeTime * layer.Size);
     }
 
-    private IEnumerable<Event> Compute(Environment env, SpikeEvent spike)
+    private IEnumerable<Event> Compute(Environment env, Layer layer, int neuron)
     {
-        var (layer, neuron) = spike;
         OnSpikeReceived?.Invoke(this, env.Now, layer, neuron, false);
         (mapping.GetDestLayer(layer) as HiddenLayer).Forward(neuron);
         yield return env.Delay(delayModel.ComputeTime * layer.Size);
@@ -147,19 +156,28 @@ public sealed class CoreV1 : Actor, Core
             {
                 nrOutputSpikes++;
                 syncTime = start + (spikingNeuron + 1) * delayModel.ComputeTime + (nrOutputSpikes - 1) * delayModel.OutputTime;
-                var outEvent = new SpikeEvent(layer, spikingNeuron);
-                OnSpikeSent?.Invoke(this, syncTime, outEvent);
-                if (layer is ALIFLayer && feedback.Count <= feedbackBufferSize)
+                OnSpikeSent?.Invoke(this, syncTime, new SpikeEvent(layer, spikingNeuron));
+                if (layer is ALIFLayer && feedbackBuffer.Count < feedbackBufferSize)
                 {
-                    feedback.Enqueue(outEvent);
+                    feedbackBuffer.Enqueue(new StoredSpike(layer, spikingNeuron, true));
                 }
-                var flit = new MeshFlit
+
+                var destCoord = mapping.CoordOf(mapping.GetDestLayer(layer));
+                if (destCoord == location)
                 {
-                    Src = location,
-                    Dest = mapping.CoordOf(mapping.GetDestLayer(layer)),
-                    Message = outEvent
-                };
-                yield return env.SendAt(output, flit, syncTime);
+                    if (feedbackBuffer.Count < feedbackBufferSize)
+                        feedbackBuffer.Enqueue(new StoredSpike(layer, spikingNeuron, false));
+                }
+                else
+                {
+                    var flit = new MeshFlit
+                    {
+                        Src = location,
+                        Dest = destCoord,
+                        Message = new SpikeEvent(layer, spikingNeuron)
+                    };
+                    yield return env.SendAt(output, flit, syncTime);
+                }
             }
             syncTime = start + maxNrNeurons * delayModel.ComputeTime + nrOutputSpikes * delayModel.OutputTime;
             totalInputSpikes++;

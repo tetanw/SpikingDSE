@@ -130,9 +130,9 @@ public class MultiCoreV1 : Experiment
         hw = new MulitCoreV1HW(sim, 2, 2, interval, bufferSize);
         hw.CreateRouters((x, y) => new ProtoXYRouter(x, y, name: $"router({x},{y})"));
         hw.AddController(srnn.snn, 0, 0);
-        hw.AddCore(delayModel, 128, 0, 1, "core1");
-        hw.AddCore(delayModel, 128, 1, 1, "core2");
-        hw.AddCore(delayModel, 128, 1, 0, "core3");
+        hw.AddCore(delayModel, 1024, 0, 1, "core1");
+        hw.AddCore(delayModel, 1024, 1, 1, "core2");
+        hw.AddCore(delayModel, 1024, 1, 0, "core3");
 
         // Reporters
         if (Debug)

@@ -3,17 +3,7 @@ using System.Collections.Generic;
 
 namespace SpikingDSE;
 
-public struct MeshCoord
-{
-    public readonly int x;
-    public readonly int y;
-
-    public MeshCoord(int x, int y)
-    {
-        this.x = x;
-        this.y = y;
-    }
-}
+public record struct MeshCoord(int x, int y);
 
 public sealed class MeshFlit
 {
