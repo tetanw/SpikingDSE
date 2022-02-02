@@ -169,12 +169,12 @@ public static class WeigthsUtil
     {
         int width = parent.GetLength(0);
         int height = parent.GetLength(1);
-        var slice = new float[sWidth, sHeight];
+        var slice = new float[sHeight, sWidth];
         for (int yy = 0; yy < sHeight; yy++)
         {
             for (int xx = 0; xx < sWidth; xx++)
             {
-                slice[xx, yy] = parent[xx + sX, yy + sY];
+                slice[yy, xx] = parent[yy + sY, xx + sX];
             }
         }
         return slice;

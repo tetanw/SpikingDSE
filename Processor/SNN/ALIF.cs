@@ -104,8 +104,9 @@ public class ALIFLayer : HiddenLayer
 
     public ALIFLayer[] Split(int chunkSize)
     {
+        // TODO: Actually deal with chunk size
         var p1 = new ALIFLayer(
-            WeigthsUtil.Slice(this.InWeights, 0, 0, 64, 64),
+            WeigthsUtil.Slice(this.InWeights, 0, 0, 64, this.InputSize),
             WeigthsUtil.Slice(this.RecWeights, 0, 0, 64, 64),
             WeigthsUtil.Slice(this.Bias, 0, 64),
             WeigthsUtil.Slice(this.Alpha, 0, 64),
@@ -115,8 +116,8 @@ public class ALIFLayer : HiddenLayer
         );
 
         var p2 = new ALIFLayer(
-            WeigthsUtil.Slice(this.InWeights, 64, 64, 64, 64),
-            WeigthsUtil.Slice(this.RecWeights, 64, 64, 64, 64),
+            WeigthsUtil.Slice(this.InWeights, 64, 0, 64, this.InputSize),
+            WeigthsUtil.Slice(this.RecWeights, 64, 0, 64, 64),
             WeigthsUtil.Slice(this.Bias, 64, 64),
             WeigthsUtil.Slice(this.Alpha, 64, 64),
             WeigthsUtil.Slice(this.Rho, 64, 64),
