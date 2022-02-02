@@ -95,6 +95,11 @@ public class Mapping
     {
         return snn.GetDestLayer(layer);
     }
+
+    public IEnumerable<Layer> GetDestLayers(Layer layer)
+    {
+        return snn.GetDestLayers(layer);
+    }
 }
 
 public interface Core
