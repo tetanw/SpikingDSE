@@ -7,9 +7,14 @@ namespace SpikingDSE;
 public class ProtoMultiCoreDSE : DSEExperiment<ProtoMultiCore>
 {
     private int size = 2264;
-    private SRNN srnn = new SRNN("res/snn/best", null);
+    private SRNN srnn = null;
     private int nrCorrect = 0;
     private int curBufferSize = -1;
+
+    public ProtoMultiCoreDSE()
+    {
+        this.srnn = SRNN.Load("res/snn/best", null);
+    }
 
     public override IEnumerable<IEnumerable<ProtoMultiCore>> Configs()
     {

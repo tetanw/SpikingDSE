@@ -10,8 +10,9 @@ public class MultiCoreV1Test : Experiment
     public MultiCoreV1Test()
     {
         var inputFile = new InputTraceFile($"res/shd/input_0.trace", 700);
-        var srnn = new SRNN("res/snn/best", inputFile);
-        this.exp = new MultiCoreV1(sim, true, inputFile.Correct, srnn, 100_000_000, 2048);
+        var srnn = SRNN.Load("res/snn/best", inputFile);
+        var splittedSRNN = new SplittedSRNN(srnn, inputFile, 32);
+        this.exp = new MultiCoreV1(sim, true, inputFile.Correct, splittedSRNN, 100_000_000, 2048);
     }
 
     public override void Setup()

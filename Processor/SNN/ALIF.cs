@@ -102,7 +102,7 @@ public class ALIFLayer : HiddenLayer
         return new ALIFLayer(this.InWeights, this.RecWeights, this.Bias, this.Alpha, this.Rho, this.VTh, this.Name);
     }
 
-    public ALIFLayer[] Split()
+    public ALIFLayer[] Split(int chunkSize)
     {
         var p1 = new ALIFLayer(
             WeigthsUtil.Slice(this.InWeights, 0, 0, 64, 64),

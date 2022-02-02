@@ -7,9 +7,14 @@ namespace SpikingDSE;
 public class MultiCoreV1DSE : DSEExperiment<MultiCoreV1>
 {
     private int size = 2264;
-    private SRNN srnn = new SRNN("res/snn/best", null);
+    private SRNN srnn = null;
     private int nrCorrect = 0;
     private int curBufferSize = -1;
+
+    public MultiCoreV1DSE()
+    {
+        this.srnn = SRNN.Load("res/snn/best", null);
+    }
 
     public override IEnumerable<IEnumerable<MultiCoreV1>> Configs()
     {
@@ -29,7 +34,8 @@ public class MultiCoreV1DSE : DSEExperiment<MultiCoreV1>
         {
             var inputFile = new InputTraceFile($"res/shd/input_{i}.trace", 700);
             var simulator = new Simulator();
-            var exp = new MultiCoreV1(simulator, false, inputFile.Correct, srnn.Copy(inputFile), 100_000_000, bufferSize);
+            var splittedSrnn = new SplittedSRNN(srnn, inputFile, 32);
+            var exp = new MultiCoreV1(simulator, false, inputFile.Correct, splittedSrnn, 100_000_000, bufferSize);
             yield return exp;
         }
     }

@@ -57,84 +57,6 @@ public class ProtoMulitCoreHW
     }
 }
 
-public class SRNN
-{
-    public SNN snn;
-    public InputLayer input;
-    public ALIFLayer[] hidden;
-    public OutputIFLayer output;
-
-    public SRNN(string folderPath, ISpikeSource spikeSource)
-    {
-        snn = new SNN();
-
-        this.input = new InputLayer(spikeSource, name: "i");
-        snn.AddLayer(input);
-
-        hidden = new ALIFLayer[2];
-        hidden[0] = createALIFLayer(folderPath, "i", "h1");
-        snn.AddLayer(hidden[0]);
-        hidden[1] = createALIFLayer(folderPath, "h1", "h2");
-        snn.AddLayer(hidden[1]);
-
-        this.output = createOutputLayer(folderPath);
-        snn.AddLayer(output);
-    }
-
-    private SRNN() { }
-
-    private ALIFLayer createALIFLayer(string folderPath, string inputName, string name)
-    {
-        float[] tau_m1 = WeigthsUtil.Read1DFloat($"{folderPath}/tau_m_{name}.csv", headers: true);
-        float[] tau_adp1 = WeigthsUtil.Read1DFloat($"{folderPath}/tau_adp_{name}.csv", headers: true);
-        float[] alpha1 = tau_m1.Transform(WeigthsUtil.Exp);
-        float[] rho1 = tau_adp1.Transform(WeigthsUtil.Exp);
-        float[] alphaComp1 = alpha1.Transform((_, a) => 1 - a);
-        var hidden = new ALIFLayer(
-            WeigthsUtil.Read2DFloat($"{folderPath}/weights_{inputName}_2_{name}.csv", headers: true).Transform(WeigthsUtil.ScaleWeights(alphaComp1)),
-            WeigthsUtil.Read2DFloat($"{folderPath}/weights_{name}_2_{name}.csv", headers: true).Transform(WeigthsUtil.ScaleWeights(alphaComp1)),
-            WeigthsUtil.Read1DFloat($"{folderPath}/bias_{name}.csv", headers: true),
-            alpha1,
-            rho1,
-            0.01f,
-            name: $"{name}"
-        );
-        return hidden;
-    }
-
-    private OutputIFLayer createOutputLayer(string folderPath)
-    {
-        float[] tau_m3 = WeigthsUtil.Read1DFloat($"{folderPath}/tau_m_o.csv", headers: true);
-        float[] alpha3 = tau_m3.Transform(WeigthsUtil.Exp);
-        float[] alphaComp3 = alpha3.Transform((_, a) => 1 - a);
-        var output = new OutputIFLayer(
-            WeigthsUtil.Read2DFloat($"{folderPath}/weights_h2_2_o.csv", headers: true).Transform(WeigthsUtil.ScaleWeights(alphaComp3)),
-            alpha3,
-            threshold: 0.01f,
-            name: "output"
-        );
-        return output;
-    }
-
-    public SRNN Copy(ISpikeSource spikeSource)
-    {
-        var other = new SRNN();
-        other.input = new InputLayer(spikeSource, "i");
-        other.hidden = new ALIFLayer[2];
-        other.hidden[0] = this.hidden[0].Copy();
-        other.hidden[1] = this.hidden[1].Copy();
-        other.output = this.output.Copy();
-        other.snn = new SNN();
-        other.snn.AddLayer(other.input);
-        other.snn.AddLayer(other.hidden[0]);
-        other.snn.AddLayer(other.hidden[1]);
-        other.snn.AddLayer(other.output);
-        return other;
-    }
-
-    public int Prediction() => this.output.Prediction();
-}
-
 public class ProtoMultiCore : Experiment
 {
     private SRNN srnn;
@@ -164,11 +86,11 @@ public class ProtoMultiCore : Experiment
         {
             trace = new TraceReporter("res/multi-core/result.trace");
 
-            mem = new MemReporter(srnn.snn, "res/multi-core");
-            mem.RegisterSNN(srnn.snn);
+            mem = new MemReporter(srnn, "res/multi-core");
+            mem.RegisterSNN(srnn);
 
-            tensor = new TensorReporter(srnn.snn, "res/multi-core");
-            tensor.RegisterSNN(srnn.snn);
+            tensor = new TensorReporter(srnn, "res/multi-core");
+            tensor.RegisterSNN(srnn);
 
             hw.controller.TimeAdvanced += (_, ts) => trace.AdvanceTimestep(ts);
             hw.controller.TimeAdvanced += (_, ts) =>
@@ -208,7 +130,7 @@ public class ProtoMultiCore : Experiment
         };
         hw = new ProtoMulitCoreHW(sim, 2, 2, interval, bufferSize);
         hw.CreateRouters((x, y) => new ProtoXYRouter(x, y, name: $"router({x},{y})"));
-        hw.AddController(srnn.snn, 0, 0);
+        hw.AddController(srnn, 0, 0);
         hw.AddCore(delayModel, 1024, 0, 1, "core1");
         hw.AddCore(delayModel, 1024, 1, 1, "core2");
         hw.AddCore(delayModel, 1024, 1, 0, "core3");
@@ -220,8 +142,8 @@ public class ProtoMultiCore : Experiment
         }
 
         // Mapping
-        var mapper = new FirstFitMapper(srnn.snn, hw.GetPEs());
-        var mapping = new Mapping(srnn.snn);
+        var mapper = new FirstFitMapper(srnn, hw.GetPEs());
+        var mapping = new Mapping(srnn);
         mapper.OnMappingFound += mapping.Map;
         mapper.Run();
 
@@ -235,7 +157,7 @@ public class ProtoMultiCore : Experiment
         {
             if (core is not ProtoCore) continue;
 
-            var destLayer = srnn.snn.GetDestLayer(mapping[core].First());
+            var destLayer = srnn.GetDestLayer(mapping[core].First());
             MeshCoord dest;
             if (destLayer == null)
                 dest = (MeshCoord)hw.controller.GetLocation();

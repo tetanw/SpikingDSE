@@ -58,7 +58,7 @@ public class MulitCoreV1HW
 
 public class MultiCoreV1 : Experiment
 {
-    private SRNN srnn;
+    private SplittedSRNN srnn;
     private int bufferSize;
     private long interval;
 
@@ -70,7 +70,7 @@ public class MultiCoreV1 : Experiment
     public int prediction = -1;
     public int correct = -1;
 
-    public MultiCoreV1(Simulator simulator, bool debug, int correct, SRNN srnn, long interval, int bufferSize) : base(simulator)
+    public MultiCoreV1(Simulator simulator, bool debug, int correct, SplittedSRNN srnn, long interval, int bufferSize) : base(simulator)
     {
         this.srnn = srnn;
         this.Debug = debug;
@@ -85,11 +85,11 @@ public class MultiCoreV1 : Experiment
         {
             trace = new TraceReporter("res/multi-core/result.trace");
 
-            mem = new MemReporter(srnn.snn, "res/multi-core");
-            mem.RegisterSNN(srnn.snn);
+            mem = new MemReporter(srnn, "res/multi-core");
+            mem.RegisterSNN(srnn);
 
-            tensor = new TensorReporter(srnn.snn, "res/multi-core");
-            tensor.RegisterSNN(srnn.snn);
+            tensor = new TensorReporter(srnn, "res/multi-core");
+            tensor.RegisterSNN(srnn);
 
             hw.controller.TimeAdvanced += (_, ts) => trace.AdvanceTimestep(ts);
             hw.controller.TimeAdvanced += (_, ts) =>
@@ -129,9 +129,9 @@ public class MultiCoreV1 : Experiment
         };
         hw = new MulitCoreV1HW(sim, 2, 2, interval, bufferSize);
         hw.CreateRouters((x, y) => new ProtoXYRouter(x, y, name: $"router({x},{y})"));
-        hw.AddController(srnn.snn, 0, 0);
-        hw.AddCore(delayModel, 1024, 0, 1, "core1");
-        hw.AddCore(delayModel, 1024, 1, 1, "core2");
+        hw.AddController(srnn, 0, 0);
+        hw.AddCore(delayModel, 64, 0, 1, "core1");
+        hw.AddCore(delayModel, 64, 1, 1, "core2");
         hw.AddCore(delayModel, 1024, 1, 0, "core3");
 
         // Reporters
@@ -141,11 +141,8 @@ public class MultiCoreV1 : Experiment
         }
 
         // Mapping
-        // TODO: Handle splitting
-        // var split = srnn.hidden[0].Split();
-
-        var mapper = new FirstFitMapper(srnn.snn, hw.GetPEs());
-        var mapping = new Mapping(srnn.snn);
+        var mapper = new FirstFitMapper(srnn, hw.GetPEs());
+        var mapping = new Mapping(srnn);
         mapper.OnMappingFound += mapping.Map;
         mapper.Run();
 
