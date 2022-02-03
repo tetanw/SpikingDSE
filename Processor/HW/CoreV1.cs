@@ -185,6 +185,7 @@ public sealed class CoreV1 : Actor, Core
                             Dest = siblingCoord,
                             Message = spikeEv
                         };
+                        yield return env.Send(output, flit);
                     }
 
                 }
