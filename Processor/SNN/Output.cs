@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace SpikingDSE;
 
-public class OutputIFLayer : HiddenLayer
+public class OutputLayer : HiddenLayer
 {
     public int TS = 0;
     public float[] Readout;
@@ -14,7 +14,7 @@ public class OutputIFLayer : HiddenLayer
     public float Thr;
     public float[] Alpha;
 
-    public OutputIFLayer(float[,] weights, float[] alpha, float threshold = 0.01f, string name = "")
+    public OutputLayer(float[,] weights, float[] alpha, float threshold = 0.01f, string name = "")
     {
         this.InputSize = weights.GetLength(0);
         this.Size = weights.GetLength(1);
@@ -90,11 +90,12 @@ public class OutputIFLayer : HiddenLayer
         return Output.ToList().IndexOf(Output.Max());
     }
 
-    public OutputIFLayer Copy()
+    public OutputLayer Copy()
     {
-        return new OutputIFLayer(
+        return new OutputLayer(
             this.Weights,
-            this.Alpha
+            this.Alpha,
+            name: this.Name
         );
     }
 }

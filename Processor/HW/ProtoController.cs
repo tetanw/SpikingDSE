@@ -67,7 +67,7 @@ public sealed class ProtoController : Actor, Core
             var inputSpikes = inputLayer.spikeSource.NeuronSpikes();
             foreach (var neuron in inputSpikes)
             {
-                var spike = new SpikeEvent(inputLayer, neuron);
+                var spike = new SpikeEvent(inputLayer, neuron, false);
                 yield return outBuffer.RequestWrite();
                 outBuffer.Write(new StoredSpike(spike));
                 outBuffer.ReleaseWrite();

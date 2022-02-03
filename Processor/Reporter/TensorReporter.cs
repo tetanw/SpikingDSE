@@ -12,18 +12,20 @@ public class TensorReporter
     private SNN snn;
     private Dictionary<Layer, SpikeFile> spikeFiles;
     private string folderPath;
+    private string prefix;
 
-    public TensorReporter(SNN snn, string folderPath)
+    public TensorReporter(SNN snn, string folderPath, string prefix = "spike")
     {
         this.snn = snn;
         this.folderPath = folderPath;
         this.spikeFiles = new();
+        this.prefix = prefix;
     }
 
     public void RegisterLayer(Layer layer)
     {
         bool[] layerSpikes = new bool[layer.Size];
-        StreamWriter sw = new StreamWriter(folderPath + "/spike_" + layer.Name + ".csv");
+        StreamWriter sw = new StreamWriter($"{folderPath}/{prefix}_{layer.Name}.csv");
         sw.WriteLine("," + string.Join(",", Enumerable.Range(0, layer.Size)));
         spikeFiles[layer] = new SpikeFile(layerSpikes, sw);
     }

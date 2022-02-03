@@ -6,7 +6,7 @@ public class SRNN : SNN
 {
     public InputLayer input;
     public ALIFLayer[] hidden;
-    public OutputIFLayer output;
+    public OutputLayer output;
 
     public static SRNN Load(string folderPath, ISpikeSource spikeSource)
     {
@@ -18,14 +18,14 @@ public class SRNN : SNN
         return new SRNN(input, hidden, output);
     }
 
-    public SRNN(InputLayer input, ALIFLayer[] hidden, OutputIFLayer output)
+    public SRNN(InputLayer input, ALIFLayer[] hidden, OutputLayer output)
     {
         this.input = input;
         this.hidden = hidden;
         this.output = output;
-        AddConnection(input, hidden[0]);
-        AddConnection(hidden[0], hidden[1]);
-        AddConnection(hidden[1], output);
+        AddForward(input, hidden[0]);
+        AddForward(hidden[0], hidden[1]);
+        AddForward(hidden[1], output);
     }
 
     private static ALIFLayer createALIFLayer(string folderPath, string inputName, string name)
@@ -47,12 +47,12 @@ public class SRNN : SNN
         return hidden;
     }
 
-    private static OutputIFLayer createOutputLayer(string folderPath)
+    private static OutputLayer createOutputLayer(string folderPath)
     {
         float[] tau_m3 = WeigthsUtil.Read1DFloat($"{folderPath}/tau_m_o.csv", headers: true);
         float[] alpha3 = tau_m3.Transform(WeigthsUtil.Exp);
         float[] alphaComp3 = alpha3.Transform((_, a) => 1 - a);
-        var output = new OutputIFLayer(
+        var output = new OutputLayer(
             WeigthsUtil.Read2DFloat($"{folderPath}/weights_h2_2_o.csv", headers: true).Transform(WeigthsUtil.ScaleWeights(alphaComp3)),
             alpha3,
             threshold: 0.01f,
@@ -79,7 +79,7 @@ public class SplittedSRNN : SNN
 {
     private InputLayer input;
     private List<List<HiddenLayer>> hiddenLayers;
-    private OutputIFLayer output;
+    private OutputLayer output;
 
     public SplittedSRNN(SRNN srnn, ISpikeSource spikeSource, int chunkSize)
     {
@@ -93,28 +93,38 @@ public class SplittedSRNN : SNN
         }
         this.output = srnn.output.Copy();
 
+        // Register connections to snn
+        RegisterForwards();
+        foreach (var hidden in hiddenLayers)
+        {
+            GroupSiblings(hidden);
+        }
+    }
+
+    private void RegisterForwards()
+    {
         foreach (var hidden in hiddenLayers[0])
         {
-            AddConnection(input, hidden);
+            AddForward(input, hidden);
         }
 
         for (int i = 0; i < hiddenLayers.Count - 1; i++)
         {
             var cur = hiddenLayers[i];
             var next = hiddenLayers[i + 1];
-        
+
             foreach (var src in cur)
             {
                 foreach (var dst in next)
                 {
-                    AddConnection(src, dst);
+                    AddForward(src, dst);
                 }
             }
         }
 
         foreach (var hidden in hiddenLayers[1])
         {
-            AddConnection(hidden, output);
+            AddForward(hidden, output);
         }
     }
 

@@ -17,8 +17,9 @@ public class ALIFLayer : HiddenLayer
     public float[] Alpha;
     public float[] Rho;
     private int TS;
+    public int Offset;
 
-    public ALIFLayer(float[,] inWeights, float[,] recWeights, float[] bias, float[] alpha, float[] rho, float VTh, string name)
+    public ALIFLayer(float[,] inWeights, float[,] recWeights, float[] bias, float[] alpha, float[] rho, float VTh, string name, int offset = 0)
     {
         this.InputSize = inWeights.GetLength(0);
         this.Size = inWeights.GetLength(1);
@@ -35,6 +36,7 @@ public class ALIFLayer : HiddenLayer
         this.Rho = rho;
         this.VTh = VTh;
         this.Beta = 1.8f;
+        this.Offset = offset;
     }
 
     public override void Forward(int neuron)
@@ -106,23 +108,25 @@ public class ALIFLayer : HiddenLayer
     {
         // TODO: Actually deal with chunk size
         var p1 = new ALIFLayer(
-            WeigthsUtil.Slice(this.InWeights, 0, 0, 64, this.InputSize),
-            WeigthsUtil.Slice(this.RecWeights, 0, 0, 64, 64),
-            WeigthsUtil.Slice(this.Bias, 0, 64),
-            WeigthsUtil.Slice(this.Alpha, 0, 64),
-            WeigthsUtil.Slice(this.Rho, 0, 64),
+            WeigthsUtil.Slice(this.InWeights, 0, 0, chunkSize, this.InputSize),
+            WeigthsUtil.Slice(this.RecWeights, 0, 0, chunkSize, Size),
+            WeigthsUtil.Slice(this.Bias, 0, chunkSize),
+            WeigthsUtil.Slice(this.Alpha, 0, chunkSize),
+            WeigthsUtil.Slice(this.Rho, 0, chunkSize),
             0.01f,
-            $"{this.Name}-1"
+            $"{this.Name}-1",
+            offset: 0
         );
 
         var p2 = new ALIFLayer(
-            WeigthsUtil.Slice(this.InWeights, 64, 0, 64, this.InputSize),
-            WeigthsUtil.Slice(this.RecWeights, 64, 0, 64, 64),
-            WeigthsUtil.Slice(this.Bias, 64, 64),
-            WeigthsUtil.Slice(this.Alpha, 64, 64),
-            WeigthsUtil.Slice(this.Rho, 64, 64),
+            WeigthsUtil.Slice(this.InWeights, chunkSize, 0, chunkSize, this.InputSize),
+            WeigthsUtil.Slice(this.RecWeights, chunkSize, 0, chunkSize, Size),
+            WeigthsUtil.Slice(this.Bias, chunkSize, chunkSize),
+            WeigthsUtil.Slice(this.Alpha, chunkSize, chunkSize),
+            WeigthsUtil.Slice(this.Rho, chunkSize, chunkSize),
             0.01f,
-            $"{this.Name}-2"
+            $"{this.Name}-2",
+            offset: chunkSize
         );
 
         return new ALIFLayer[] { p1, p2 };

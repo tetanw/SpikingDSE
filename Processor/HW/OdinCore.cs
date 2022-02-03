@@ -14,7 +14,7 @@ public struct ODINDelayModel
 
 public abstract record CoreEvent();
 public sealed record SyncEvent(int TS) : CoreEvent;
-public sealed record SpikeEvent(Layer layer, int neuron) : CoreEvent;
+public sealed record SpikeEvent(Layer layer, int neuron, bool feedback) : CoreEvent;
 
 public sealed class OdinCore : Actor, Core
 {
@@ -128,7 +128,7 @@ public sealed class OdinCore : Actor, Core
         {
             nrOutputSpikes++;
             syncTime = start + (outputSpike + 1) * delayModel.ComputeTime + (nrOutputSpikes - 1) * delayModel.OutputTime;
-            var outEvent = new SpikeEvent(layer, outputSpike);
+            var outEvent = new SpikeEvent(layer, outputSpike, false);
             OnSpikeSent?.Invoke(this, syncTime, outEvent);
             yield return env.SendAt(output, outEvent, syncTime);
         }

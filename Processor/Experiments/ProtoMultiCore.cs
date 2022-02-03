@@ -84,12 +84,12 @@ public class ProtoMultiCore : Experiment
     {
         if (Debug)
         {
-            trace = new TraceReporter("res/multi-core/result.trace");
+            trace = new TraceReporter("res/multi-core/proto/result.trace");
 
-            mem = new MemReporter(srnn, "res/multi-core");
+            mem = new MemReporter(srnn, "res/multi-core/proto");
             mem.RegisterSNN(srnn);
 
-            tensor = new TensorReporter(srnn, "res/multi-core");
+            tensor = new TensorReporter(srnn, "res/multi-core/proto");
             tensor.RegisterSNN(srnn);
 
             hw.controller.TimeAdvanced += (_, ts) => trace.AdvanceTimestep(ts);
@@ -105,7 +105,7 @@ public class ProtoMultiCore : Experiment
 
             protoCore.OnSyncEnded += (_, _, ts, layer) =>
             {
-                float[] pots = (layer as ALIFLayer)?.Readout ?? (layer as OutputIFLayer)?.Readout;
+                float[] pots = (layer as ALIFLayer)?.Readout ?? (layer as OutputLayer)?.Readout;
                 mem.AdvanceLayer(layer, ts, pots);
             };
             protoCore.OnSpikeReceived += (_, time, layer, neuron, feedback) => trace.InputSpike(neuron, time);

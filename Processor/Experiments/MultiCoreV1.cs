@@ -64,7 +64,7 @@ public class MultiCoreV1 : Experiment
 
     private MulitCoreV1HW hw;
     private TraceReporter trace;
-    private TensorReporter tensor;
+    private TensorReporter spikes;
     private MemReporter mem;
 
     public int prediction = -1;
@@ -83,18 +83,18 @@ public class MultiCoreV1 : Experiment
     {
         if (Debug)
         {
-            trace = new TraceReporter("res/multi-core/result.trace");
+            trace = new TraceReporter("res/multi-core/v1/result.trace");
 
-            mem = new MemReporter(srnn, "res/multi-core");
+            mem = new MemReporter(srnn, "res/multi-core/v1");
             mem.RegisterSNN(srnn);
 
-            tensor = new TensorReporter(srnn, "res/multi-core");
-            tensor.RegisterSNN(srnn);
+            spikes = new TensorReporter(srnn, "res/multi-core/v1");
+            spikes.RegisterSNN(srnn);
 
             hw.controller.TimeAdvanced += (_, ts) => trace.AdvanceTimestep(ts);
             hw.controller.TimeAdvanced += (_, ts) =>
             {
-                tensor.AdvanceTimestep(ts);
+                spikes.AdvanceTimestep(ts);
             };
         }
 
@@ -104,14 +104,14 @@ public class MultiCoreV1 : Experiment
 
             protoCore.OnSyncEnded += (_, _, ts, layer) =>
             {
-                float[] pots = (layer as ALIFLayer)?.Readout ?? (layer as OutputIFLayer)?.Readout;
+                float[] pots = (layer as ALIFLayer)?.Readout ?? (layer as OutputLayer)?.Readout;
                 mem.AdvanceLayer(layer, ts, pots);
             };
             protoCore.OnSpikeReceived += (_, time, layer, neuron, feedback) => trace.InputSpike(neuron, time);
-            protoCore.OnSpikeSent += (_, time, ev) =>
+            protoCore.OnSpikeSent += (_, time, fromLayer, neuron) =>
             {
-                trace.OutputSpike(ev.neuron, time);
-                tensor.InformSpike(ev.layer, ev.neuron);
+                trace.OutputSpike(neuron, time);
+                spikes.InformSpike(fromLayer, neuron);
             };
             protoCore.OnSyncStarted += (_, time, _, _) => trace.TimeRef(time);
         }
@@ -130,8 +130,8 @@ public class MultiCoreV1 : Experiment
         hw = new MulitCoreV1HW(sim, 2, 2, interval, bufferSize);
         hw.CreateRouters((x, y) => new ProtoXYRouter(x, y, name: $"router({x},{y})"));
         hw.AddController(srnn, 0, 0);
-        hw.AddCore(delayModel, 64, 0, 1, "core1");
-        hw.AddCore(delayModel, 64, 1, 1, "core2");
+        hw.AddCore(delayModel, 128, 0, 1, "core1");
+        hw.AddCore(delayModel, 128, 1, 1, "core2");
         hw.AddCore(delayModel, 1024, 1, 0, "core3");
 
         // Reporters
@@ -143,7 +143,11 @@ public class MultiCoreV1 : Experiment
         // Mapping
         var mapper = new FirstFitMapper(srnn, hw.GetPEs());
         var mapping = new Mapping(srnn);
-        mapper.OnMappingFound += mapping.Map;
+        mapper.OnMappingFound += (core, layer) => {
+            if (Debug) Console.WriteLine($"  {layer} -> {core}");
+            mapping.Map(core, layer);
+        };
+        if (Debug) Console.WriteLine("Mapping:");
         mapper.Run();
 
         foreach (var core in mapping.Cores)
@@ -169,11 +173,11 @@ public class MultiCoreV1 : Experiment
     {
         this.prediction = srnn.Prediction();
         trace?.Finish();
-        tensor?.Finish();
+        spikes?.Finish();
         mem?.Finish();
         if (Debug)
         {
-            Console.WriteLine($"Nr spikes: {tensor.NrSpikes:n}");
+            Console.WriteLine($"Nr spikes: {spikes.NrSpikes:n}");
             Console.WriteLine($"Predicted: {this.prediction}, Truth: {this.correct}");
         }
     }

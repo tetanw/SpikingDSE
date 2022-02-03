@@ -157,7 +157,7 @@ public sealed class ProtoCore : Actor, Core
         {
             nrOutputSpikes++;
             syncTime = start + (spikingNeuron + 1) * delayModel.ComputeTime + (nrOutputSpikes - 1) * delayModel.OutputTime;
-            var outEvent = new SpikeEvent(Layer, spikingNeuron);
+            var outEvent = new SpikeEvent(Layer, spikingNeuron, false);
             OnSpikeSent?.Invoke(this, syncTime, outEvent);
             if ((Layer is RLIFLayer2 || Layer is ALIFLayer) && feedback.Count <= feedbackBufferSize) feedback.Enqueue(spikingNeuron);
             yield return env.SendAt(output, new MeshFlit { Src = location, Dest = destination, Message = outEvent }, syncTime);

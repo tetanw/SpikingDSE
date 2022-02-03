@@ -100,6 +100,11 @@ public class Mapping
     {
         return snn.GetDestLayers(layer);
     }
+
+    public IEnumerable<Layer> GetSiblings(Layer layer)
+    {
+        return snn.GetSiblingLayers(layer);
+    }
 }
 
 public interface Core

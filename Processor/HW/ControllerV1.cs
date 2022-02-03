@@ -63,11 +63,14 @@ public sealed class ControllerV1 : Actor, Core
             var inputSpikes = inputLayer.spikeSource.NeuronSpikes();
             foreach (var neuron in inputSpikes)
             {
-                var spike = new SpikeEvent(inputLayer, neuron);
-                yield return outBuffer.RequestWrite();
-                outBuffer.Write(spike);
-                outBuffer.ReleaseWrite();
-                SpikeSent?.Invoke(this, env.Now, spike);
+                foreach (var destLayer in mapping.GetDestLayers(inputLayer))
+                {
+                    var spike = new SpikeEvent(destLayer, neuron, false);
+                    yield return outBuffer.RequestWrite();
+                    outBuffer.Write(spike);
+                    outBuffer.ReleaseWrite();
+                    SpikeSent?.Invoke(this, env.Now, spike);
+                }
             }
 
             // Wait until until the sync sender goes to next timestep
@@ -132,8 +135,7 @@ public sealed class ControllerV1 : Actor, Core
         {
             var spikeEv = message as SpikeEvent;
             // Get the right desitination layer for the spike and also the coord to send it to
-            var destLayer = mapping.GetDestLayer(spikeEv.layer);
-            var dest = (MeshCoord)mapping[destLayer].GetLocation();
+            var dest = mapping.CoordOf(spikeEv.layer);
             var flit = new MeshFlit
             {
                 Src = (MeshCoord)location,
@@ -147,7 +149,7 @@ public sealed class ControllerV1 : Actor, Core
             var timeEvent = message as SyncEvent;
             foreach (var core in mapping.Cores)
             {
-                var coord = (MeshCoord) core.GetLocation();
+                var coord = (MeshCoord)core.GetLocation();
                 var flit = new MeshFlit
                 {
                     Src = (MeshCoord)(location),
