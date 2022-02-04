@@ -9,7 +9,7 @@ public class ProtoMultiCoreTest : Experiment
 
     public ProtoMultiCoreTest()
     {
-        var inputFile = new InputTraceFile($"res/shd/input_0.trace", 700);
+        var inputFile = new InputTraceFile($"res/shd/input_521.trace", 700);
         var srnn = SRNN.Load("res/snn/best", inputFile);
         this.exp = new ProtoMultiCore(sim, true, inputFile.Correct, srnn, 100_000_000, int.MaxValue);
     }

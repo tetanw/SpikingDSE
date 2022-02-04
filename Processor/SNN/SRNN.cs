@@ -77,9 +77,9 @@ public class SRNN : SNN
 
 public class SplittedSRNN : SNN
 {
-    private InputLayer input;
-    private List<List<HiddenLayer>> hiddenLayers;
-    private OutputLayer output;
+    public InputLayer input;
+    public List<List<HiddenLayer>> hiddenLayers;
+    public OutputLayer output;
 
     public SplittedSRNN(SRNN srnn, ISpikeSource spikeSource, int chunkSize)
     {

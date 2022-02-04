@@ -127,12 +127,14 @@ public class MultiCoreV1 : Experiment
             OutputTime = 8,
             TimeRefTime = 2
         };
-        hw = new MulitCoreV1HW(sim, 2, 2, interval, bufferSize);
+        hw = new MulitCoreV1HW(sim, 3, 2, interval, bufferSize);
         hw.CreateRouters((x, y) => new ProtoXYRouter(x, y, name: $"router({x},{y})"));
         hw.AddController(srnn, 0, 0);
-        hw.AddCore(delayModel, 128, 0, 1, "core1");
-        hw.AddCore(delayModel, 128, 1, 1, "core2");
-        hw.AddCore(delayModel, 1024, 1, 0, "core3");
+        hw.AddCore(delayModel, 64, 1, 0, "core1");
+        hw.AddCore(delayModel, 64, 1, 1, "core2");
+        hw.AddCore(delayModel, 64, 2, 0, "core3");
+        hw.AddCore(delayModel, 64, 2, 1, "core4");
+        hw.AddCore(delayModel, 20, 0, 1, "core0");
 
         // Reporters
         if (Debug)
@@ -143,7 +145,8 @@ public class MultiCoreV1 : Experiment
         // Mapping
         var mapper = new FirstFitMapper(srnn, hw.GetPEs());
         var mapping = new Mapping(srnn);
-        mapper.OnMappingFound += (core, layer) => {
+        mapper.OnMappingFound += (core, layer) =>
+        {
             if (Debug) Console.WriteLine($"  {layer} -> {core}");
             mapping.Map(core, layer);
         };
@@ -161,9 +164,9 @@ public class MultiCoreV1 : Experiment
                     contV1.LoadMapping(mapping);
                     break;
                 default:
-                    throw new Exception("Unknown core type: "+ core);
+                    throw new Exception("Unknown core type: " + core);
             }
-            
+
         }
 
         simStop.StopEvents = 10_000_000;

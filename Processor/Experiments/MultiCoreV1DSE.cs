@@ -19,7 +19,8 @@ public class MultiCoreV1DSE : DSEExperiment<MultiCoreV1>
     public override IEnumerable<IEnumerable<MultiCoreV1>> Configs()
     {
         // var sizes = Enumerable.Range(1, 64).Where(i => i % 2 == 1);
-        var sizes = new int[] { 1, 2, 4, 8, 16, 128, 256, 512 };
+        // var sizes = new int[] { 1, 2, 4, 8, 16, 128, 256, 512 };
+        var sizes = new int[] { 16384 };
 
         foreach (var size in sizes)
         {
@@ -34,7 +35,7 @@ public class MultiCoreV1DSE : DSEExperiment<MultiCoreV1>
         {
             var inputFile = new InputTraceFile($"res/shd/input_{i}.trace", 700);
             var simulator = new Simulator();
-            var splittedSrnn = new SplittedSRNN(srnn, inputFile, 32);
+            var splittedSrnn = new SplittedSRNN(srnn, inputFile, 64);
             var exp = new MultiCoreV1(simulator, false, inputFile.Correct, splittedSrnn, 100_000_000, bufferSize);
             yield return exp;
         }

@@ -9,7 +9,7 @@ public class MultiCoreV1Test : Experiment
 
     public MultiCoreV1Test()
     {
-        var inputFile = new InputTraceFile($"res/shd/input_0.trace", 700);
+        var inputFile = new InputTraceFile($"res/shd/input_521.trace", 700);
         var srnn = SRNN.Load("res/snn/best", inputFile);
         var splittedSRNN = new SplittedSRNN(srnn, inputFile, 64);
         this.exp = new MultiCoreV1(sim, true, inputFile.Correct, splittedSRNN, 100_000_000, 2048);

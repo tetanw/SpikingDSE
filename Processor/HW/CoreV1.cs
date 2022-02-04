@@ -38,15 +38,15 @@ public sealed class CoreV1 : Actor, Core
     private int totalOutputSpikes = 0;
     private int totalInputSpikes = 0;
     private int TS = 0;
-    private int feedbackBufferSize;
-    private Queue<SpikeEvent> feedbackBuffer = new();
+    private int bufferSize;
+    private FIFO<CoreEvent> buffer;
 
     public CoreV1(MeshCoord location, int maxNrNeurons, V1DelayModel delayModel, int feedbackBufferSize = int.MaxValue, string name = "")
     {
         this.thisLoc = location;
         this.Name = name;
         this.maxNrNeurons = maxNrNeurons;
-        this.feedbackBufferSize = feedbackBufferSize;
+        this.bufferSize = feedbackBufferSize;
         this.delayModel = delayModel;
     }
 
@@ -79,30 +79,42 @@ public sealed class CoreV1 : Actor, Core
         this.mapping = mapping;
     }
 
-    public override IEnumerable<Event> Run(Environment env)
+    private IEnumerable<Event> Receiver(Environment env)
     {
         while (true)
         {
-            if (feedbackBuffer.Count > 0)
-            {
-                var (layer, neuron, feedback) = feedbackBuffer.Dequeue();
+            var rcv = env.Receive(input);
+            yield return rcv;
+            var flit = (MeshFlit)rcv.Message;
+            var @event = flit.Message as CoreEvent;
 
-                if (feedback)
-                {
-                    yield return env.Process(Feedback(env, layer, neuron));
-                }
-                else
-                {
-                    yield return env.Process(Compute(env, layer, neuron));
-                }
-            }
-            else
+            if (!buffer.IsFull)
             {
-                CoreEvent received = null;
-                yield return env.Process(Receive(env, (recv) => received = recv));
-                if (received is SpikeEvent)
-                {
-                    var (layer, neuron, feedback) = (SpikeEvent)received;
+                yield return buffer.RequestWrite();
+                buffer.Write(@event);
+                buffer.ReleaseWrite();
+            }
+        }
+    }
+
+    public override IEnumerable<Event> Run(Environment env)
+    {
+        buffer = new(env, bufferSize);
+        env.Process(Receiver(env));
+
+        while (true)
+        {
+            yield return buffer.RequestRead();
+            var core = buffer.Read();
+            buffer.ReleaseRead();
+
+            switch (core)
+            {
+                case SyncEvent sync:
+                    yield return env.Process(Sync(env, sync.TS));
+                    break;
+                case SpikeEvent spike:
+                    var (layer, neuron, feedback) = spike;
 
                     if (feedback)
                     {
@@ -112,16 +124,9 @@ public sealed class CoreV1 : Actor, Core
                     {
                         yield return env.Process(Compute(env, layer, neuron));
                     }
-                }
-                else if (received is SyncEvent)
-                {
-                    var timeEvent = (SyncEvent)received;
-                    yield return env.Process(Sync(env, timeEvent.TS));
-                }
-                else
-                {
-                    throw new Exception($"Unknown event: {received}");
-                }
+                    break;
+                default:
+                    throw new Exception("Unknown event!");
             }
         }
     }
@@ -140,16 +145,11 @@ public sealed class CoreV1 : Actor, Core
         yield return env.Delay(delayModel.ComputeTime * layer.Size);
     }
 
-    private IEnumerable<Event> Receive(Environment env, Action<CoreEvent> onReceive)
-    {
-        var rcv = env.Receive(input, waitBefore: delayModel.InputTime);
-        yield return rcv;
-        var flit = (MeshFlit)rcv.Message;
-        onReceive((CoreEvent)flit.Message);
-    }
-
     private IEnumerable<Event> Sync(Environment env, int TS)
     {
+        yield return env.Delay(1_000_000);
+        // TODO: Repair delay model
+
         totalOutputSpikes = 0;
         totalInputSpikes = 0;
         foreach (var layer in layers)
@@ -171,9 +171,9 @@ public sealed class CoreV1 : Actor, Core
                     var siblingCoord = mapping.CoordOf(sibling);
                     if (siblingCoord == thisLoc)
                     {
-                        if (layer is ALIFLayer && feedbackBuffer.Count < feedbackBufferSize)
+                        if (layer is ALIFLayer && !buffer.IsFull)
                         {
-                            feedbackBuffer.Enqueue(spikeEv);
+                            buffer.Push(spikeEv);
                         }
                     }
                     else
@@ -197,8 +197,8 @@ public sealed class CoreV1 : Actor, Core
                     var destCoord = mapping.CoordOf(destLayer);
                     if (destCoord == thisLoc)
                     {
-                        if (feedbackBuffer.Count < feedbackBufferSize)
-                            feedbackBuffer.Enqueue(spikeEv);
+                        if (!buffer.IsFull)
+                            buffer.Push(spikeEv);
                     }
                     else
                     {

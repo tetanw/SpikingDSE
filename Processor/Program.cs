@@ -104,6 +104,10 @@ namespace SpikingDSE
                     {
                         new XYRouterTest().Run();
                     }
+                    else if (opts.Name.Equals("Validator"))
+                    {
+                        new Validator().Run();
+                    }
                     else
                     {
                         throw new Exception($"Unknown simulation: {opts.Name}");
