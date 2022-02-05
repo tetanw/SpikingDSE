@@ -12,10 +12,6 @@ public struct ODINDelayModel
     public int TimeRefTime;
 }
 
-public abstract record CoreEvent();
-public sealed record SyncEvent(int TS) : CoreEvent;
-public sealed record SpikeEvent(Layer layer, int neuron, bool feedback) : CoreEvent;
-
 public sealed class OdinCore : Actor, Core
 {
     public delegate void SpikeReceived(OdinCore core, long time, SpikeEvent spike);

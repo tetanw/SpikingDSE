@@ -13,8 +13,6 @@ public struct V1DelayModel
     public int TimeRefTime;
 }
 
-public record StoredSpike(Layer layer, int neuron, bool feedback);
-
 public sealed class CoreV1 : Actor, Core
 {
     public delegate void SpikeReceived(CoreV1 core, long time, Layer layer, int neuron, bool feedback);
