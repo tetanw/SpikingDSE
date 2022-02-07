@@ -111,7 +111,5 @@ public interface Core
 {
     public bool AcceptsLayer(Layer layer);
     public void AddLayer(Layer layer);
-    public InPort GetIn();
-    public OutPort GetOut();
     public object GetLocation();
 }

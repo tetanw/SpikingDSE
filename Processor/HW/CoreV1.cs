@@ -60,10 +60,6 @@ public sealed class CoreV1 : Actor, Core
         }
     }
 
-    public InPort GetIn() => input;
-
-    public OutPort GetOut() => output;
-
     public object GetLocation() => thisLoc;
 
     public void AddLayer(Layer layer)

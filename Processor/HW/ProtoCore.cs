@@ -64,10 +64,6 @@ public sealed class ProtoCore : Actor, Core
         }
     }
 
-    public InPort GetIn() => input;
-
-    public OutPort GetOut() => output;
-
     public object GetLocation() => location;
 
     public void AddLayer(Layer layer)
