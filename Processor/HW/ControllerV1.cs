@@ -85,7 +85,6 @@ public sealed class ControllerV1 : Actor, Core
         yield return env.SleepUntil(startTime);
 
         int TS = 0;
-        // TODO: Do not hardcode the amount of spikes
         while (TS < inputLayer.spikeSource.NrTimesteps())
         {
             yield return env.SleepUntil(startTime + interval * (TS + 1));

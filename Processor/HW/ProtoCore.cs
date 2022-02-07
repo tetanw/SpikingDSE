@@ -56,7 +56,6 @@ public sealed class ProtoCore : Actor, Core
         if (layer is HiddenLayer)
         {
             var lifLayer = (HiddenLayer)layer;
-            // TODO: Add extra checks nr neurons etc...
             return true;
         }
         else
