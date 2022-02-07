@@ -11,7 +11,7 @@ namespace SpikingDSE
 
         public ToTensor(string inputTensorPath, string inputEventPath, string outputTensorPath)
         {
-            this.tensor = new TensorFile(inputTensorPath);
+            this.tensor = new TensorFile(inputTensorPath, -1);
             this.events = new EventTraceReader(inputEventPath);
             this.sw = new StreamWriter(File.OpenWrite(outputTensorPath));
 

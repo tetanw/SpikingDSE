@@ -83,19 +83,18 @@ public sealed class ProtoController : Actor, Core
     {
         yield return env.SleepUntil(startTime);
 
-        int ts = 0;
-        // TODO: Do not hardcode the amount of spikes
-        while (ts < 100)
+        int TS = 0;
+        while (TS < inputLayer.spikeSource.NrTimesteps())
         {
-            yield return env.SleepUntil(startTime + interval * (ts + 1));
+            yield return env.SleepUntil(startTime + interval * (TS + 1));
 
             yield return outBuffer.RequestWrite();
-            outBuffer.Write(new SyncEvent(ts));
+            outBuffer.Write(new SyncEvent(TS));
             outBuffer.ReleaseWrite();
-            TimeAdvanced?.Invoke(this, ts);
+            TimeAdvanced?.Invoke(this, TS);
 
             env.IncreaseResource(timesteps, 1);
-            ts++;
+            TS++;
         }
     }
 

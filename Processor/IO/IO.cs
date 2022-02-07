@@ -10,6 +10,7 @@ namespace SpikingDSE
         public bool NextTimestep();
         public List<int> NeuronSpikes();
         public int NrNeurons();
+        public int NrTimesteps();
     }
 
     class InputTraceFile : ISpikeSource
@@ -19,8 +20,9 @@ namespace SpikingDSE
         private int currentTS;
         private int nrNeurons;
         private string inputPath;
+        private int nrTimesteps;
 
-        public InputTraceFile(string inputPath, int nrNeurons)
+        public InputTraceFile(string inputPath, int nrNeurons, int nrTimesteps)
         {
             this.inputPath = inputPath;
             string[] lines = File.ReadAllLines(inputPath);
@@ -35,6 +37,7 @@ namespace SpikingDSE
             }
             currentTS = 0;
             this.nrNeurons = nrNeurons;
+            this.nrTimesteps = nrTimesteps;
         }
 
         public List<int> NeuronSpikes()
@@ -55,10 +58,9 @@ namespace SpikingDSE
             }
         }
 
-        public int NrNeurons()
-        {
-            return nrNeurons;
-        }
+        public int NrNeurons() => nrNeurons;
+        
+        public int NrTimesteps() => nrTimesteps;
     }
 
     public class TensorFile : ISpikeSource
@@ -67,10 +69,12 @@ namespace SpikingDSE
         private int baseID;
         private List<int> inputSpikes = new List<int>();
         private int nrNeurons;
+        private int nrTimesteps;
 
-        public TensorFile(string inputPath, int baseID = 0)
+        public TensorFile(string inputPath, int nrTimesteps, int baseID = 0)
         {
             this.baseID = baseID;
+            this.nrTimesteps = nrTimesteps;
             this.input = new StreamReader(File.OpenRead(inputPath));
 
             // skip the header on both files
@@ -109,6 +113,7 @@ namespace SpikingDSE
         }
 
         public int NrNeurons() => nrNeurons;
+        public int NrTimesteps() => nrTimesteps;
     }
 
     public class TensorFileGroup : ISpikeSource
@@ -165,6 +170,8 @@ namespace SpikingDSE
         }
 
         public int NrNeurons() => tensorFiles.Sum((tf) => tf.NrNeurons());
+
+        public int NrTimesteps() => tensorFiles[0].NrNeurons();
     }
 
     public enum EventType

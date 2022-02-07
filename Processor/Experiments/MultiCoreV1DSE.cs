@@ -33,7 +33,7 @@ public class MultiCoreV1DSE : DSEExperiment<MultiCoreV1>
     {
         for (int i = 0; i < size; i++)
         {
-            var inputFile = new InputTraceFile($"res/shd/input_{i}.trace", 700);
+            var inputFile = new InputTraceFile($"res/shd/input_{i}.trace", 700, 100);
             var simulator = new Simulator();
             var splittedSrnn = new SplittedSRNN(srnn, inputFile, 64);
             var exp = new MultiCoreV1(simulator, false, inputFile.Correct, splittedSrnn, 100_000_000, bufferSize);

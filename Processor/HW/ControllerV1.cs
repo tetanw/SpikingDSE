@@ -86,7 +86,7 @@ public sealed class ControllerV1 : Actor, Core
 
         int TS = 0;
         // TODO: Do not hardcode the amount of spikes
-        while (TS < 100)
+        while (TS < inputLayer.spikeSource.NrTimesteps())
         {
             yield return env.SleepUntil(startTime + interval * (TS + 1));
 

@@ -31,7 +31,7 @@ public class ProtoMultiCoreDSE : DSEExperiment<ProtoMultiCore>
     {
         for (int i = 0; i < size; i++)
         {
-            var inputFile = new InputTraceFile($"res/shd/input_{i}.trace", 700);
+            var inputFile = new InputTraceFile($"res/shd/input_{i}.trace", 700, 100);
             var simulator = new Simulator();
             var exp = new ProtoMultiCore(simulator, false, inputFile.Correct, srnn.Copy(inputFile), 100_000_000, bufferSize);
             yield return exp;
