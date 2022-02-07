@@ -108,6 +108,10 @@ namespace SpikingDSE
                     {
                         new Validator().Run();
                     }
+                    else if (opts.Name.Equals("MapperTest"))
+                    {
+                        new MapperTest().Run();
+                    }
                     else
                     {
                         throw new Exception($"Unknown simulation: {opts.Name}");
