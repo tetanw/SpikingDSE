@@ -80,5 +80,10 @@ namespace SpikingDSE
         {
             get => itemsEmpty.Amount == 0;
         }
+
+        public bool IsEmpty
+        {
+            get => itemsEmpty.Amount == size;
+        }
     }
 }

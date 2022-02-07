@@ -19,7 +19,7 @@ public class MultiCoreV1DSE : DSEExperiment<MultiCoreV1>
     public override IEnumerable<IEnumerable<MultiCoreV1>> Configs()
     {
         // var sizes = Enumerable.Range(1, 64).Where(i => i % 2 == 1);
-        // var sizes = new int[] { 1, 2, 4, 8, 16, 128, 256, 512 };
+        // var sizes = new int[] { 1, 2, 4, 8, 16, 128, 256, 512, 2048 };
         var sizes = new int[] { 16384 };
 
         foreach (var size in sizes)

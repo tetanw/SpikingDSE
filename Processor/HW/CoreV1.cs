@@ -35,9 +35,9 @@ public sealed class CoreV1 : Actor, Core
     private int maxNrNeurons;
     private int totalOutputSpikes = 0;
     private int totalInputSpikes = 0;
-    private int TS = 0;
     private int bufferSize;
-    private FIFO<CoreEvent> buffer;
+    private FIFO<CoreEvent> coreBuffer;
+    private FIFO<CoreEvent> inputBuffer;
 
     public CoreV1(MeshCoord location, int maxNrNeurons, V1DelayModel delayModel, int feedbackBufferSize = int.MaxValue, string name = "")
     {
@@ -79,6 +79,8 @@ public sealed class CoreV1 : Actor, Core
 
     private IEnumerable<Event> Receiver(Environment env)
     {
+        int TS = 0;
+
         while (true)
         {
             var rcv = env.Receive(input);
@@ -86,25 +88,61 @@ public sealed class CoreV1 : Actor, Core
             var flit = (MeshFlit)rcv.Message;
             var @event = flit.Message as CoreEvent;
 
-            if (!buffer.IsFull)
+            switch (@event)
             {
-                yield return buffer.RequestWrite();
-                buffer.Write(@event);
-                buffer.ReleaseWrite();
+                case SyncEvent sync:
+                    if (!coreBuffer.IsFull)
+                    {
+                        yield return coreBuffer.RequestWrite();
+                        coreBuffer.Write(sync);
+                        coreBuffer.ReleaseWrite();
+                    }
+
+                    // write all spikes that were waiting for sync event to happen
+                    while (!inputBuffer.IsEmpty)
+                    {
+                        var spike = inputBuffer.Pop();
+                        if (!coreBuffer.IsFull) 
+                            coreBuffer.Push(spike);
+                    }
+
+                    TS = sync.TS + 1;
+                    break;
+                case SpikeEvent spike:
+                    if (spike.TS > TS)
+                    {
+                        if (!inputBuffer.IsFull)
+                            inputBuffer.Push(spike);
+                    }
+                    else if (spike.TS == TS)
+                    {
+                        if (!coreBuffer.IsFull)
+                            coreBuffer.Push(spike);
+                    }
+                    else
+                    {
+                        // Else drop spike
+                    }
+                    break;
+                default:
+                    throw new Exception("Unknown event when handling input: "+ @event);
             }
+
+
         }
     }
 
     public override IEnumerable<Event> Run(Environment env)
     {
-        buffer = new(env, bufferSize);
+        inputBuffer = new(env, bufferSize);
+        coreBuffer = new(env, bufferSize);
         env.Process(Receiver(env));
 
         while (true)
         {
-            yield return buffer.RequestRead();
-            var core = buffer.Read();
-            buffer.ReleaseRead();
+            yield return coreBuffer.RequestRead();
+            var core = coreBuffer.Read();
+            coreBuffer.ReleaseRead();
 
             switch (core)
             {
@@ -112,7 +150,7 @@ public sealed class CoreV1 : Actor, Core
                     yield return env.Process(Sync(env, sync.TS));
                     break;
                 case SpikeEvent spike:
-                    var (layer, neuron, feedback) = spike;
+                    var (layer, neuron, feedback, _) = spike;
 
                     if (feedback)
                     {
@@ -145,7 +183,6 @@ public sealed class CoreV1 : Actor, Core
 
     private IEnumerable<Event> Sync(Environment env, int TS)
     {
-        yield return env.Delay(1_000_000);
         // TODO: Repair delay model
 
         totalOutputSpikes = 0;
@@ -165,13 +202,13 @@ public sealed class CoreV1 : Actor, Core
                 // Feedback spikes
                 foreach (var sibling in mapping.GetSiblings(layer))
                 {
-                    var spikeEv = new SpikeEvent(sibling, spikingNeuron + offset, true);
+                    var spikeEv = new SpikeEvent(sibling, spikingNeuron + offset, true, TS + 1);
                     var siblingCoord = mapping.CoordOf(sibling);
                     if (siblingCoord == thisLoc)
                     {
-                        if (layer is ALIFLayer && !buffer.IsFull)
+                        if (layer is ALIFLayer && !coreBuffer.IsFull)
                         {
-                            buffer.Push(spikeEv);
+                            coreBuffer.Push(spikeEv);
                         }
                     }
                     else
@@ -191,12 +228,12 @@ public sealed class CoreV1 : Actor, Core
                 // Forward spikes
                 foreach (var destLayer in mapping.GetDestLayers(layer))
                 {
-                    var spikeEv = new SpikeEvent(destLayer, spikingNeuron + offset, false);
+                    var spikeEv = new SpikeEvent(destLayer, spikingNeuron + offset, false, TS + 1);
                     var destCoord = mapping.CoordOf(destLayer);
                     if (destCoord == thisLoc)
                     {
-                        if (!buffer.IsFull)
-                            buffer.Push(spikeEv);
+                        if (!coreBuffer.IsFull)
+                            coreBuffer.Push(spikeEv);
                     }
                     else
                     {
@@ -216,8 +253,6 @@ public sealed class CoreV1 : Actor, Core
 
             OnSyncEnded?.Invoke(this, env.Now, TS, layer);
         }
-
-        this.TS = TS + 1;
     }
 
     public override string ToString()

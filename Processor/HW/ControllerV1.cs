@@ -57,6 +57,7 @@ public sealed class ControllerV1 : Actor, Core
 
     private IEnumerable<Event> SpikeSender(Environment env, Resource timesteps)
     {
+        int TS = 0;
         while (inputLayer.spikeSource.NextTimestep())
         {
             // Send spikes for input layer
@@ -65,7 +66,7 @@ public sealed class ControllerV1 : Actor, Core
             {
                 foreach (var destLayer in mapping.GetDestLayers(inputLayer))
                 {
-                    var spike = new SpikeEvent(destLayer, neuron, false);
+                    var spike = new SpikeEvent(destLayer, neuron, false, TS);
                     yield return outBuffer.RequestWrite();
                     outBuffer.Write(spike);
                     outBuffer.ReleaseWrite();
@@ -75,6 +76,7 @@ public sealed class ControllerV1 : Actor, Core
 
             // Wait until until the sync sender goes to next timestep
             yield return env.RequestResource(timesteps, 1);
+            TS++;
         }
     }
 
@@ -82,19 +84,19 @@ public sealed class ControllerV1 : Actor, Core
     {
         yield return env.SleepUntil(startTime);
 
-        int ts = 0;
+        int TS = 0;
         // TODO: Do not hardcode the amount of spikes
-        while (ts < 100)
+        while (TS < 100)
         {
-            yield return env.SleepUntil(startTime + interval * (ts + 1));
+            yield return env.SleepUntil(startTime + interval * (TS + 1));
 
             yield return outBuffer.RequestWrite();
-            outBuffer.Write(new SyncEvent(ts));
+            outBuffer.Write(new SyncEvent(TS));
             outBuffer.ReleaseWrite();
-            TimeAdvanced?.Invoke(this, ts);
+            TimeAdvanced?.Invoke(this, TS);
 
             env.IncreaseResource(timesteps, 1);
-            ts++;
+            TS++;
         }
     }
 

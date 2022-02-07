@@ -124,7 +124,7 @@ public sealed class OdinCore : Actor, Core
         {
             nrOutputSpikes++;
             syncTime = start + (outputSpike + 1) * delayModel.ComputeTime + (nrOutputSpikes - 1) * delayModel.OutputTime;
-            var outEvent = new SpikeEvent(layer, outputSpike, false);
+            var outEvent = new SpikeEvent(layer, outputSpike, false, -1);
             OnSpikeSent?.Invoke(this, syncTime, outEvent);
             yield return env.SendAt(output, outEvent, syncTime);
         }

@@ -98,22 +98,22 @@ public class MultiCoreV1 : Experiment
             };
         }
 
-        foreach (var core in hw.cores)
+        foreach (var c in hw.cores)
         {
-            var protoCore = core as CoreV1;
+            var core = c as CoreV1;
 
-            protoCore.OnSyncEnded += (_, _, ts, layer) =>
+            core.OnSyncEnded += (_, _, ts, layer) =>
             {
                 float[] pots = (layer as ALIFLayer)?.Readout ?? (layer as OutputLayer)?.Readout;
                 mem.AdvanceLayer(layer, ts, pots);
             };
-            protoCore.OnSpikeReceived += (_, time, layer, neuron, feedback) => trace.InputSpike(neuron, time);
-            protoCore.OnSpikeSent += (_, time, fromLayer, neuron) =>
+            core.OnSpikeReceived += (_, time, layer, neuron, feedback) => trace.InputSpike(neuron, time);
+            core.OnSpikeSent += (_, time, fromLayer, neuron) =>
             {
                 trace.OutputSpike(neuron, time);
                 spikes.InformSpike(fromLayer, neuron);
             };
-            protoCore.OnSyncStarted += (_, time, _, _) => trace.TimeRef(time);
+            core.OnSyncStarted += (_, time, _, _) => trace.TimeRef(time);
         }
     }
 

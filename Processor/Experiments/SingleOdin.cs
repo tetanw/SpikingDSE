@@ -24,7 +24,7 @@ public sealed class SpikeSourceTrace : Actor
         yield return env.SleepUntil(startTime);
         foreach (var neuron in spikeTrace)
         {
-            var spike = new SpikeEvent(null, neuron, false);
+            var spike = new SpikeEvent(null, neuron, false, -1);
             yield return env.Send(output, spike);
             SpikeSent?.Invoke(this, env.Now, neuron);
         }
