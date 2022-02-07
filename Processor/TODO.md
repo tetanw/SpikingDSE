@@ -1,0 +1,11 @@
+# Todo list
+- Fix delay model in both router and core
+    - I also need to validate that both of these do what I expect them to do
+- Create new mapping implementation that does not use actor, so totally decoupled
+- Make splitted SRNN copyable
+- Report utilization of routers and cores
+- Some reporting to see congestion on the NoC
+- Write multiple mapper implementations
+- Maybe add sender process to core?
+- Implement more benchamrks
+- Implement proxy metrics
