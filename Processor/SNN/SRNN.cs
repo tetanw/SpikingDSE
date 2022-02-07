@@ -88,7 +88,9 @@ public class SplittedSRNN : SNN
         foreach (var hidden in srnn.hidden)
         {
             List<HiddenLayer> parts = new List<HiddenLayer>();
-            parts.AddRange(hidden.Split(chunkSize));
+            // TODO: Just a test
+            parts.Add(hidden.Slice(0, chunkSize));
+            parts.Add(hidden.Slice(chunkSize, 2*chunkSize));
             hiddenLayers.Add(parts);
         }
         this.output = srnn.output.Copy();
