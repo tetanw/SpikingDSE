@@ -179,8 +179,6 @@ public sealed class CoreV1 : Actor, Core
 
     private IEnumerable<Event> Sync(Environment env, int TS)
     {
-        // TODO: Repair delay model
-
         totalOutputSpikes = 0;
         totalInputSpikes = 0;
         foreach (var layer in layers)
