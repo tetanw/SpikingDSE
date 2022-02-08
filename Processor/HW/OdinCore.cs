@@ -116,7 +116,7 @@ public sealed class OdinCore : Actor, Core
         OnSpikeRecived?.Invoke(this, env.Now, inputSpike);
 
         OdinIFLayer lif = (layer as OdinIFLayer);
-        lif.Integrate(inputSpike.neuron);
+        lif.Integrate(inputSpike.Neuron);
         long syncTime = -1;
         long start = env.Now;
         int nrOutputSpikes = 0;
@@ -124,7 +124,7 @@ public sealed class OdinCore : Actor, Core
         {
             nrOutputSpikes++;
             syncTime = start + (outputSpike + 1) * delayModel.ComputeTime + (nrOutputSpikes - 1) * delayModel.OutputTime;
-            var outEvent = new SpikeEvent(layer, outputSpike, false, -1);
+            var outEvent = new SpikeEvent() { Layer = layer, Neuron = outputSpike, Feedback = false };
             OnSpikeSent?.Invoke(this, syncTime, outEvent);
             yield return env.SendAt(output, outEvent, syncTime);
         }

@@ -67,7 +67,7 @@ public sealed class ProtoController : Actor, Core
             var inputSpikes = inputLayer.spikeSource.NeuronSpikes();
             foreach (var neuron in inputSpikes)
             {
-                var spike = new SpikeEvent(inputLayer, neuron, false, -1);
+                var spike = new SpikeEvent() { Layer = inputLayer, Neuron = neuron, Feedback = false };
                 yield return outBuffer.RequestWrite();
                 outBuffer.Write(new StoredSpike(spike));
                 outBuffer.ReleaseWrite();
@@ -89,7 +89,7 @@ public sealed class ProtoController : Actor, Core
             yield return env.SleepUntil(startTime + interval * (TS + 1));
 
             yield return outBuffer.RequestWrite();
-            outBuffer.Write(new SyncEvent(TS));
+            outBuffer.Write(new SyncEvent() { TS = TS });
             outBuffer.ReleaseWrite();
             TimeAdvanced?.Invoke(this, TS);
 
@@ -135,7 +135,7 @@ public sealed class ProtoController : Actor, Core
         {
             var storedSpike = message as StoredSpike;
             // Get the right desitination layer for the spike and also the coord to send it to
-            Layer destLayer = snn.GetDestLayer(storedSpike.ODINSpike.layer);
+            Layer destLayer = snn.GetDestLayer(storedSpike.ODINSpike.Layer);
             MeshCoord dest = mappings[destLayer];
             var flit = new MeshFlit
             {

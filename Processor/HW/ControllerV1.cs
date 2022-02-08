@@ -66,7 +66,14 @@ public sealed class ControllerV1 : Actor, Core
             {
                 foreach (var destLayer in mapping.GetDestLayers(inputLayer))
                 {
-                    var spike = new SpikeEvent(destLayer, neuron, false, TS);
+                    // TODO: CreatedAt
+                    var spike = new SpikeEvent()
+                    {
+                        Layer = destLayer,
+                        Neuron = neuron,
+                        Feedback = false,
+                        TS = TS
+                    };
                     yield return outBuffer.RequestWrite();
                     outBuffer.Write(spike);
                     outBuffer.ReleaseWrite();
@@ -90,7 +97,8 @@ public sealed class ControllerV1 : Actor, Core
             yield return env.SleepUntil(startTime + interval * (TS + 1));
 
             yield return outBuffer.RequestWrite();
-            outBuffer.Write(new SyncEvent(TS));
+            // TODO: CreatedAt
+            outBuffer.Write(new SyncEvent() { TS = TS });
             outBuffer.ReleaseWrite();
             TimeAdvanced?.Invoke(this, TS);
 
@@ -136,7 +144,7 @@ public sealed class ControllerV1 : Actor, Core
         {
             var spikeEv = message as SpikeEvent;
             // Get the right desitination layer for the spike and also the coord to send it to
-            var dest = mapping.CoordOf(spikeEv.layer);
+            var dest = mapping.CoordOf(spikeEv.Layer);
             var flit = new MeshFlit
             {
                 Src = (MeshCoord)location,

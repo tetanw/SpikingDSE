@@ -98,7 +98,7 @@ public sealed class CoreV1 : Actor, Core
                     while (!inputBuffer.IsEmpty)
                     {
                         var spike = inputBuffer.Pop();
-                        if (!coreBuffer.IsFull) 
+                        if (!coreBuffer.IsFull)
                             coreBuffer.Push(spike);
                     }
 
@@ -121,7 +121,7 @@ public sealed class CoreV1 : Actor, Core
                     }
                     break;
                 default:
-                    throw new Exception("Unknown event when handling input: "+ @event);
+                    throw new Exception("Unknown event when handling input: " + @event);
             }
 
 
@@ -146,15 +146,13 @@ public sealed class CoreV1 : Actor, Core
                     yield return env.Process(Sync(env, sync.TS));
                     break;
                 case SpikeEvent spike:
-                    var (layer, neuron, feedback, _) = spike;
-
-                    if (feedback)
+                    if (spike.Feedback)
                     {
-                        yield return env.Process(Feedback(env, layer, neuron));
+                        yield return env.Process(Feedback(env, spike.Layer, spike.Neuron));
                     }
                     else
                     {
-                        yield return env.Process(Compute(env, layer, neuron));
+                        yield return env.Process(Compute(env, spike.Layer, spike.Neuron));
                     }
                     break;
                 default:
@@ -201,7 +199,14 @@ public sealed class CoreV1 : Actor, Core
                 // Feedback spikes
                 foreach (var sibling in mapping.GetSiblings(layer))
                 {
-                    var spikeEv = new SpikeEvent(sibling, spikingNeuron + offset, true, TS + 1);
+                    // TODO: CreatedAt
+                    var spikeEv = new SpikeEvent()
+                    {
+                        Layer = sibling,
+                        Neuron = spikingNeuron + offset,
+                        Feedback = true,
+                        TS = TS + 1
+                    };
                     var siblingCoord = mapping.CoordOf(sibling);
                     if (siblingCoord == thisLoc)
                     {
@@ -228,7 +233,14 @@ public sealed class CoreV1 : Actor, Core
                 // Forward spikes
                 foreach (var destLayer in mapping.GetDestLayers(layer))
                 {
-                    var spikeEv = new SpikeEvent(destLayer, spikingNeuron + offset, false, TS + 1);
+                    // TODO: CreatedAt
+                    var spikeEv = new SpikeEvent()
+                    {
+                        Layer = destLayer,
+                        Neuron = spikingNeuron + offset,
+                        Feedback = false,
+                        TS = TS + 1
+                    };
                     var destCoord = mapping.CoordOf(destLayer);
                     if (destCoord == thisLoc)
                     {

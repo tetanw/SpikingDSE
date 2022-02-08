@@ -111,8 +111,8 @@ public class ProtoMultiCore : Experiment
             protoCore.OnSpikeReceived += (_, time, layer, neuron, feedback) => trace.InputSpike(neuron, time);
             protoCore.OnSpikeSent += (_, time, ev) =>
             {
-                trace.OutputSpike(ev.neuron, time);
-                tensor.InformSpike(ev.layer, ev.neuron);
+                trace.OutputSpike(ev.Neuron, time);
+                tensor.InformSpike(ev.Layer, ev.Neuron);
             };
             protoCore.OnSyncStarted += (_, time, _, _) => trace.TimeRef(time);
         }
