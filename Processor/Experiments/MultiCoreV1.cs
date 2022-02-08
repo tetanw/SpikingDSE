@@ -81,22 +81,22 @@ public class MultiCoreV1 : Experiment
 
     private void AddReporters()
     {
-        if (Debug)
+        if (!Debug)
+            return;
+
+        trace = new TraceReporter("res/multi-core/v1/result.trace");
+
+        mem = new MemReporter(srnn, "res/multi-core/v1");
+        mem.RegisterSNN(srnn);
+
+        spikes = new TensorReporter(srnn, "res/multi-core/v1");
+        spikes.RegisterSNN(srnn);
+
+        hw.controller.TimeAdvanced += (_, ts) => trace.AdvanceTimestep(ts);
+        hw.controller.TimeAdvanced += (_, ts) =>
         {
-            trace = new TraceReporter("res/multi-core/v1/result.trace");
-
-            mem = new MemReporter(srnn, "res/multi-core/v1");
-            mem.RegisterSNN(srnn);
-
-            spikes = new TensorReporter(srnn, "res/multi-core/v1");
-            spikes.RegisterSNN(srnn);
-
-            hw.controller.TimeAdvanced += (_, ts) => trace.AdvanceTimestep(ts);
-            hw.controller.TimeAdvanced += (_, ts) =>
-            {
-                spikes.AdvanceTimestep(ts);
-            };
-        }
+            spikes.AdvanceTimestep(ts);
+        };
 
         foreach (var c in hw.cores)
         {
@@ -137,10 +137,7 @@ public class MultiCoreV1 : Experiment
         hw.AddCore(delayModel, 20, 0, 1, "core0");
 
         // Reporters
-        if (Debug)
-        {
-            AddReporters();
-        }
+        AddReporters();
 
         // Mapping
         var mapper = new FirstFitMapper(srnn, hw.GetPEs());
