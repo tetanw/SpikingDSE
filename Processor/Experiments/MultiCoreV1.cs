@@ -175,7 +175,7 @@ public class MultiCoreV1 : Experiment
         trace?.Finish();
         spikes?.Finish();
         mem?.Finish();
-        PrintLn($"Nr spikes: {spikes.NrSpikes:n}");
+        if(spikes != null) PrintLn($"Nr spikes: {spikes.NrSpikes:n}");
         PrintLn($"Predicted: {this.prediction}, Truth: {this.correct}");
     }
 }

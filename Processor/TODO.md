@@ -1,6 +1,11 @@
 # Todo list
 - Fix delay model in both router and core
-    - I also need to validate that both of these do what I expect them to do
+    - Implement
+        - [] Router
+        - [x] Core
+    - Validate
+        - [] Router
+        - [] Core
 - Make splitted SRNN copyable
 - Report utilization of routers and cores
 - Some reporting to see congestion on the NoC
