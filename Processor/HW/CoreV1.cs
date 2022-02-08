@@ -190,8 +190,13 @@ public sealed class CoreV1 : Actor, Core
 
             // Threshold of timestep TS - 1
             int nrOutputSpikes = 0;
+            int lastSpikingNeuron = 0;
             foreach (var spikingNeuron in layer.Sync())
             {
+                var neuronsComputed = lastSpikingNeuron - spikingNeuron;
+                yield return env.Delay(delayModel.ComputeTime * neuronsComputed);
+                lastSpikingNeuron = spikingNeuron;
+
                 nrOutputSpikes++;
                 int offset = (layer as ALIFLayer).Offset;
 
@@ -216,6 +221,7 @@ public sealed class CoreV1 : Actor, Core
                             Dest = siblingCoord,
                             Message = spikeEv
                         };
+                        yield return env.Delay(delayModel.OutputTime);
                         yield return env.Send(output, flit);
                     }
 
@@ -239,11 +245,13 @@ public sealed class CoreV1 : Actor, Core
                             Dest = destCoord,
                             Message = spikeEv
                         };
+                        yield return env.Delay(delayModel.OutputTime);
                         yield return env.Send(output, flit);
                     }
                     OnSpikeSent?.Invoke(this, env.Now, layer, spikingNeuron);
                 }
             }
+            yield return env.Delay((layer.Size - lastSpikingNeuron) * delayModel.ComputeTime);
             totalInputSpikes++;
             totalOutputSpikes += nrOutputSpikes;
 

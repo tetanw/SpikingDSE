@@ -37,7 +37,6 @@ public class MemReporter
         file.WriteLine($"{ts},{string.Join(",", pots)}");
         file.Flush();
         ts++;
-
     }
 
     public void Finish()

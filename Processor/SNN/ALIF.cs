@@ -104,7 +104,7 @@ public class ALIFLayer : HiddenLayer
         return new ALIFLayer(this.InWeights, this.RecWeights, this.Bias, this.Alpha, this.Rho, this.VTh, this.Name);
     }
 
-    public ALIFLayer Slice(int start, int end)
+    public ALIFLayer Slice(int start, int end, int index)
     {
         var sliceSize = end - start;
         var slice = new ALIFLayer(
@@ -114,7 +114,7 @@ public class ALIFLayer : HiddenLayer
             WeigthsUtil.Slice(this.Alpha, start, sliceSize),
             WeigthsUtil.Slice(this.Rho, start, sliceSize),
             0.01f,
-            $"{this.Name}-1",
+            $"{this.Name}-{index}",
             offset: start
         );
 
