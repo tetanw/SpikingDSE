@@ -32,12 +32,17 @@ public abstract class Experiment
 
     public bool Debug { get; set; } = true;
 
+    public void PrintLn(string text)
+    {
+        if (Debug) Console.WriteLine(text);
+    }
+
     public void Run()
     {
         Setup();
 
         sim.Compile();
-        if (Debug) Console.WriteLine("Simulation starting");
+        PrintLn("Simulation starting");
         Stopwatch stopwatch = new Stopwatch();
         stopwatch.Start();
         var (time, nrEvents) = sim.RunUntil(simStop.StopTime, simStop.StopEvents);
@@ -45,19 +50,17 @@ public abstract class Experiment
 
         Cleanup();
 
-        if (Debug)
+        PrintLn("Simulation done");
+        if (Debug) sim.PrintDeadlockReport();
+        PrintLn($"Simulation was stopped at time: {time:n}");
+        PrintLn($"Running time was: {stopwatch.ElapsedMilliseconds} ms");
+        PrintLn($"Events handled: {nrEvents:n}");
+        PrintLn($"Performance was about: {nrEvents / stopwatch.Elapsed.TotalSeconds:n} event/s");
+        if (nrEvents > 0)
         {
-            Console.WriteLine("Simulation done");
-            sim.PrintDeadlockReport();
-            Console.WriteLine($"Simulation was stopped at time: {time:n}");
-            Console.WriteLine($"Running time was: {stopwatch.ElapsedMilliseconds} ms");
-            Console.WriteLine($"Events handled: {nrEvents:n}");
-            Console.WriteLine($"Performance was about: {nrEvents / stopwatch.Elapsed.TotalSeconds:n} event/s");
-            if (nrEvents > 0)
-            {
-                Console.WriteLine($"Time per event: {Measurements.FormatSI(stopwatch.Elapsed.TotalSeconds / nrEvents, "s")}");
-            }
+            PrintLn($"Time per event: {Measurements.FormatSI(stopwatch.Elapsed.TotalSeconds / nrEvents, "s")}");
         }
+
     }
 
     public abstract void Setup();
@@ -69,7 +72,7 @@ public abstract class DSEExperiment<T>
 {
     public void Run()
     {
-        var m = new Mutex(); 
+        var m = new Mutex();
 
         foreach (var config in Configs())
         {

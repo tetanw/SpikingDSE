@@ -147,10 +147,10 @@ public class MultiCoreV1 : Experiment
         var mapping = new Mapping(srnn);
         mapper.OnMappingFound += (core, layer) =>
         {
-            if (Debug) Console.WriteLine($"  {layer} -> {core}");
+            PrintLn($"  {layer} -> {core}");
             mapping.Map(core, layer);
         };
-        if (Debug) Console.WriteLine("Mapping:");
+        PrintLn("Mapping:");
         mapper.Run();
 
         foreach (var core in mapping.Cores)
@@ -178,10 +178,7 @@ public class MultiCoreV1 : Experiment
         trace?.Finish();
         spikes?.Finish();
         mem?.Finish();
-        if (Debug)
-        {
-            Console.WriteLine($"Nr spikes: {spikes.NrSpikes:n}");
-            Console.WriteLine($"Predicted: {this.prediction}, Truth: {this.correct}");
-        }
+        PrintLn($"Nr spikes: {spikes.NrSpikes:n}");
+        PrintLn($"Predicted: {this.prediction}, Truth: {this.correct}");
     }
 }
