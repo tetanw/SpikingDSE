@@ -6,6 +6,8 @@
 - Report utilization of routers and cores
 - Some reporting to see congestion on the NoC
 - Write multiple mapper implementations
+    - [x] Simple splittable mapper implementation 
+    - [] Other strategies that are more optimal
 - Maybe add sender process to core?
 - Implement more benchamrks
 - Implement proxy metrics
