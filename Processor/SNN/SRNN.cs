@@ -65,7 +65,6 @@ public class SRNN : SNN
     {
         var input = this.Input.Copy(spikeSource);
         var hidden = new ALIFLayer[this.Hidden.Length];
-        // TODO: Test whether this code works
         for (int i = 0; i < hidden.Length; i++)
         {
             hidden[i] = this.Hidden[i].Copy();
