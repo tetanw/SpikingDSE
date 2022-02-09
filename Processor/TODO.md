@@ -14,7 +14,7 @@
     - [] Research other mapping strategies
 - HW
     - [] Maybe add sender process to core?
-    - [] Move controller of mesh
+    - [x] Move controller of mesh
     - [] Move output layer to controller
 - SNN
     - [x] Make splitted SRNN copyable
