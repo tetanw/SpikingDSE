@@ -6,13 +6,24 @@
     - Validate
         - [] Router
         - [] Core
-- Make splitted SRNN copyable
-- Report utilization of routers and cores
-- Some reporting to see congestion on the NoC
-- Write multiple mapper implementations
+- More mapping
     - [x] Simple splittable mapper implementation 
     - [x] Create new mapping implementation that does not use actor, so totally decoupled
-    - [] Other strategies that are more optimal
-- Maybe add sender process to core?
-- Implement more benchamrks
-- Implement proxy metrics
+    - [x] Integrate new mapper implementation with existing multi-core
+    - [] Less finicky HW and SNN setup 
+    - [] Research other mapping strategies
+- HW
+    - Maybe add sender process to core?
+- SNN
+    - [x] Make splitted SRNN copyable
+- More benchmarks
+    - [] PS-MNIST
+    - [] S-MNIST
+    - [] ECG-QTDB
+- Extra reporting
+    - [] Implement proxy metrics
+    - [] Some reporting to see congestion on the NoC
+    - [] Report utilization of routers and cores
+- Reporting
+    - [] Write introduction & related work
+    - [] Document current simulator
