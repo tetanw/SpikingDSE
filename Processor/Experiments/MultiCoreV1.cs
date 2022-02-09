@@ -69,9 +69,11 @@ public class MulitCoreV1HW
     {
         var controllerCoord = new MeshCoord(x, y);
         var controller = sim.AddActor(new ControllerV1(input, controllerCoord, 100, 0, interval, name: "controller"));
-        sim.AddChannel(controller.spikesOut, routers[x, y].inLocal);
-        sim.AddChannel(routers[x, y].outLocal, controller.spikesIn);
         this.controller = controller;
+        var mergeSplit = MeshUtils.ConnectMergeSplit(sim, routers);
+        sim.AddChannel(mergeSplit.ToController, controller.Input);
+        sim.AddChannel(controller.Output, mergeSplit.FromController);
+        sim.AddChannel(mergeSplit.ToMesh, routers[0, 0].inWest);
     }
 
     public void AddCore(V1DelayModel delayModel, int x, int y, string name)
@@ -200,7 +202,7 @@ public class MultiCoreV1 : Experiment
         };
         hw = new MulitCoreV1HW(sim, 3, 2, interval, bufferSize);
         hw.CreateRouters((x, y) => new ProtoXYRouter(x, y, name: $"router({x},{y})"));
-        hw.AddController(srnn.Input, 0, 0);
+        hw.AddController(srnn.Input, -1, 0);
         hw.AddCore(delayModel, 0, 1, "core1");
         hw.AddCore(delayModel, 1, 0, "core2");
         hw.AddCore(delayModel, 1, 1, "core3");

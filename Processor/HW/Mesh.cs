@@ -46,6 +46,32 @@ public sealed class MeshUtils
         return routers;
     }
 
+    public static MergeSplit ConnectMergeSplit(Simulator sim, MeshRouter[,] routers)
+    {
+        int width = routers.GetLength(0);
+        int height = routers.GetLength(1);
+        MergeSplit mergeSplit = new MergeSplit(width * 2 + height * 2);
+        sim.AddActor(mergeSplit);
+        int i = 0;
+        // FIXME: In some situations to many inputs are created
+        for (int y = 0; y < height; y++)
+        {
+            sim.AddChannel(mergeSplit.FromMesh[i++], routers[0, y].outWest);
+
+            if (width - 1 > 0)
+                sim.AddChannel(mergeSplit.FromMesh[i++], routers[width - 1, y].outEast);
+        }
+
+        for (int x = 0; x < width; x++)
+        {
+            sim.AddChannel(mergeSplit.FromMesh[i++], routers[x, 0].outSouth);
+
+            if (height - 1 > 0)
+                sim.AddChannel(mergeSplit.FromMesh[i++], routers[x, height - 1].outNorth);
+        }
+        return mergeSplit;
+    }
+
     public static void ConnectRouters(Simulator sim, MeshRouter[,] routers)
     {
         int width = routers.GetLength(0);

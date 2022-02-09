@@ -10,8 +10,8 @@ public sealed class ControllerV1 : Actor, Core
     public Action<Actor, long, SpikeEvent> SpikeReceived;
     public Action<Actor, int> TimeAdvanced;
 
-    public InPort spikesIn = new();
-    public OutPort spikesOut = new();
+    public InPort Input = new();
+    public OutPort Output = new();
 
     private object location;
     private InputLayer inputLayer;
@@ -35,9 +35,9 @@ public sealed class ControllerV1 : Actor, Core
         this.mapping = mapping;
     }
 
-    public InPort GetIn() => spikesIn;
+    public InPort GetIn() => Input;
 
-    public OutPort GetOut() => spikesOut;
+    public OutPort GetOut() => Output;
 
     public object GetLocation() => location;
 
@@ -123,7 +123,7 @@ public sealed class ControllerV1 : Actor, Core
     {
         while (true)
         {
-            var rcv = env.Receive(spikesIn);
+            var rcv = env.Receive(Input);
             yield return rcv;
             var ev = rcv.Message;
 
@@ -152,13 +152,16 @@ public sealed class ControllerV1 : Actor, Core
                 Dest = dest,
                 Message = spikeEv
             };
-            yield return env.Send(spikesOut, flit);
+            yield return env.Send(Output, flit);
         }
         else if (message is SyncEvent)
         {
             var timeEvent = message as SyncEvent;
             foreach (var core in mapping.Cores)
             {
+                if (core is ControllerV1)
+                    continue;
+
                 var coord = (MeshCoord)core.GetLocation();
                 var flit = new MeshFlit
                 {
@@ -166,7 +169,7 @@ public sealed class ControllerV1 : Actor, Core
                     Dest = coord,
                     Message = timeEvent
                 };
-                yield return env.Send(spikesOut, flit);
+                yield return env.Send(Output, flit);
             }
         }
         else
