@@ -18,7 +18,6 @@ public sealed class ControllerV1 : Actor, Core
     private long startTime;
     private long interval;
     private FIFO<object> outBuffer;
-    private Queue<SpikeEvent> storedSpikes = new();
     private MappingTable mapping;
 
     public ControllerV1(InputLayer inputLayer, object location, int nrTimesteps, long startTime, long interval, string name = null)
@@ -30,14 +29,7 @@ public sealed class ControllerV1 : Actor, Core
         this.Name = name;
     }
 
-    public void LoadMapping(MappingTable mapping)
-    {
-        this.mapping = mapping;
-    }
-
-    public InPort GetIn() => Input;
-
-    public OutPort GetOut() => Output;
+    public void LoadMapping(MappingTable mapping) => this.mapping = mapping;
 
     public object GetLocation() => location;
 
