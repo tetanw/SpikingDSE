@@ -74,10 +74,10 @@ public class MulitCoreV1HW
         this.controller = controller;
     }
 
-    public void AddCore(V1DelayModel delayModel, int size, int x, int y, string name)
+    public void AddCore(V1DelayModel delayModel, int x, int y, string name)
     {
         var coreCoord = new MeshCoord(x, y);
-        var core = sim.AddActor(new CoreV1(coreCoord, size, delayModel, name: name, feedbackBufferSize: bufferSize));
+        var core = sim.AddActor(new CoreV1(coreCoord, delayModel, name: name, feedbackBufferSize: bufferSize));
         sim.AddChannel(core.output, routers[x, y].inLocal);
         sim.AddChannel(routers[x, y].outLocal, core.input);
         this.cores.Add(core);
@@ -201,11 +201,11 @@ public class MultiCoreV1 : Experiment
         hw = new MulitCoreV1HW(sim, 3, 2, interval, bufferSize);
         hw.CreateRouters((x, y) => new ProtoXYRouter(x, y, name: $"router({x},{y})"));
         hw.AddController(srnn.Input, 0, 0);
-        hw.AddCore(delayModel, 64, 1, 0, "core2");
-        hw.AddCore(delayModel, 64, 1, 1, "core3");
-        hw.AddCore(delayModel, 64, 2, 0, "core4");
-        hw.AddCore(delayModel, 64, 2, 1, "core5");
-        hw.AddCore(delayModel, 20, 0, 1, "core1");
+        hw.AddCore(delayModel, 0, 1, "core1");
+        hw.AddCore(delayModel, 1, 0, "core2");
+        hw.AddCore(delayModel, 1, 1, "core3");
+        hw.AddCore(delayModel, 2, 0, "core4");
+        hw.AddCore(delayModel, 2, 1, "core5");
 
         // Reporters
         AddReporters();

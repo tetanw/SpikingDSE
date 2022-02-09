@@ -38,11 +38,10 @@ public sealed class CoreV1 : Actor, Core
     private FIFO<CoreEvent> coreBuffer;
     private FIFO<CoreEvent> inputBuffer;
 
-    public CoreV1(MeshCoord location, int maxNrNeurons, V1DelayModel delayModel, int feedbackBufferSize = int.MaxValue, string name = "")
+    public CoreV1(MeshCoord location, V1DelayModel delayModel, int feedbackBufferSize = int.MaxValue, string name = "")
     {
         this.thisLoc = location;
         this.Name = name;
-        this.maxNrNeurons = maxNrNeurons;
         this.bufferSize = feedbackBufferSize;
         this.delayModel = delayModel;
     }
