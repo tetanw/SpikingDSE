@@ -104,13 +104,6 @@ namespace SpikingDSE
             return resource;
         }
 
-        public void EndReceive(ReceiveEvent ev, long newTime)
-        {
-            var channel = channels[ev.Port.ChannelHandle];
-            channel.SendProcess.Time = newTime;
-            ready.Enqueue(channel.SendProcess);
-        }
-
         public Process AddProcess(IEnumerable<Event> runnable)
         {
             var process = new Process
