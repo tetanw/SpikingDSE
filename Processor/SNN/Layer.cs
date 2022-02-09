@@ -21,6 +21,11 @@ public class InputLayer : Layer
         this.Size = spikeSource?.NrNeurons() ?? -1;
     }
 
+    public InputLayer Copy(ISpikeSource spikeSource)
+    {
+        return new InputLayer(spikeSource, name: this.Name);
+    }
+
     public override string ToString()
     {
         return $"Input - \"{this.Name}\"";

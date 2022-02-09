@@ -4,9 +4,9 @@ namespace SpikingDSE;
 
 public class SRNN : SNN
 {
-    public InputLayer input;
-    public ALIFLayer[] hidden;
-    public OutputLayer output;
+    public InputLayer Input;
+    public ALIFLayer[] Hidden;
+    public OutputLayer Output;
 
     public static SRNN Load(string folderPath, ISpikeSource spikeSource)
     {
@@ -20,9 +20,9 @@ public class SRNN : SNN
 
     public SRNN(InputLayer input, ALIFLayer[] hidden, OutputLayer output)
     {
-        this.input = input;
-        this.hidden = hidden;
-        this.output = output;
+        this.Input = input;
+        this.Hidden = hidden;
+        this.Output = output;
         AddForward(input, hidden[0]);
         AddForward(hidden[0], hidden[1]);
         AddForward(hidden[1], output);
@@ -63,37 +63,56 @@ public class SRNN : SNN
 
     public SRNN Copy(ISpikeSource spikeSource)
     {
-        var input = new InputLayer(spikeSource, "i");
-        var hidden = new ALIFLayer[2];
-        hidden[0] = this.hidden[0].Copy();
-        hidden[1] = this.hidden[1].Copy();
-        var output = this.output.Copy();
+        var input = this.Input.Copy(spikeSource);
+        var hidden = new ALIFLayer[this.Hidden.Length];
+        // TODO: Test whether this code works
+        for (int i = 0; i < hidden.Length; i++)
+        {
+            hidden[i] = this.Hidden[i].Copy();
+        }
+        var output = this.Output.Copy();
         var other = new SRNN(input, hidden, output);
         return other;
     }
 
-    public int Prediction() => this.output.Prediction();
+    public int Prediction() => this.Output.Prediction();
 }
 
 public class SplittedSRNN : SNN
 {
-    public InputLayer input;
-    public List<List<HiddenLayer>> hiddenLayers;
-    public OutputLayer output;
+    public InputLayer Input;
+    public List<List<ALIFLayer>> HiddenLayers;
+    public OutputLayer Output;
 
-    public SplittedSRNN(SRNN srnn, ISpikeSource spikeSource, int chunkSize)
+    public static SplittedSRNN SplitSRNN(SRNN srnn, Mapping mapping, ISpikeSource spikeSource)
     {
-        this.input = srnn.input = new InputLayer(spikeSource, "i");
-        hiddenLayers = new();
-        foreach (var hidden in srnn.hidden)
+        var input = srnn.Input = new InputLayer(spikeSource, "i");
+        var output = srnn.Output.Copy();
+
+        List<List<ALIFLayer>> hiddenLayers = new();
+        foreach (var hidden in srnn.Hidden)
         {
-            List<HiddenLayer> parts = new List<HiddenLayer>();
-            // TODO: Just a test
-            parts.Add(hidden.Slice(0, chunkSize, 1));
-            parts.Add(hidden.Slice(chunkSize, 2*chunkSize, 2));
+            List<ALIFLayer> parts = new();
+            int i = 1;
+            foreach (var split in mapping.GetAllSplits(hidden.Name))
+            {
+                parts.Add(hidden.Slice(
+                    split.Start,
+                    split.End,
+                    i++
+                ));
+            }
             hiddenLayers.Add(parts);
         }
-        this.output = srnn.output.Copy();
+
+        return new SplittedSRNN(input, hiddenLayers, output);
+    }
+
+    public SplittedSRNN(InputLayer input, List<List<ALIFLayer>> hiddenLayers, OutputLayer output)
+    {
+        this.Input = input;
+        this.HiddenLayers = hiddenLayers;
+        this.Output = output;
 
         // Register connections to snn
         RegisterForwards();
@@ -103,17 +122,35 @@ public class SplittedSRNN : SNN
         }
     }
 
-    private void RegisterForwards()
+    public SplittedSRNN Copy(ISpikeSource spikeSource)
     {
-        foreach (var hidden in hiddenLayers[0])
+        var input = this.Input.Copy(spikeSource);
+        var output = this.Output.Copy();
+        List<List<ALIFLayer>> hiddenLayers = new();
+        foreach (var layer in hiddenLayers)
         {
-            AddForward(input, hidden);
+            List<ALIFLayer> parts = new();
+            foreach (var part in layer)
+            {
+                parts.Add(part.Copy());
+            }
+            hiddenLayers.Add(parts);
         }
 
-        for (int i = 0; i < hiddenLayers.Count - 1; i++)
+        return new SplittedSRNN(input, hiddenLayers, output);
+    }
+
+    private void RegisterForwards()
+    {
+        foreach (var hidden in HiddenLayers[0])
         {
-            var cur = hiddenLayers[i];
-            var next = hiddenLayers[i + 1];
+            AddForward(Input, hidden);
+        }
+
+        for (int i = 0; i < HiddenLayers.Count - 1; i++)
+        {
+            var cur = HiddenLayers[i];
+            var next = HiddenLayers[i + 1];
 
             foreach (var src in cur)
             {
@@ -124,11 +161,11 @@ public class SplittedSRNN : SNN
             }
         }
 
-        foreach (var hidden in hiddenLayers[1])
+        foreach (var hidden in HiddenLayers[1])
         {
-            AddForward(hidden, output);
+            AddForward(hidden, Output);
         }
     }
 
-    public int Prediction() => this.output.Prediction();
+    public int Prediction() => this.Output.Prediction();
 }

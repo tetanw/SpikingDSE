@@ -186,4 +186,6 @@ public sealed class ProtoController : Actor, Core
             throw new Exception($"Does not accept layer {layer}");
         }
     }
+
+    string Core.Name() => this.Name;
 }

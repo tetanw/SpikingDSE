@@ -19,17 +19,18 @@ public sealed class ControllerV1 : Actor, Core
     private long interval;
     private FIFO<object> outBuffer;
     private Queue<SpikeEvent> storedSpikes = new();
-    private Mapping mapping;
+    private MappingTable mapping;
 
-    public ControllerV1(object location, int nrTimesteps, long startTime, long interval, string name = null)
+    public ControllerV1(InputLayer inputLayer, object location, int nrTimesteps, long startTime, long interval, string name = null)
     {
+        this.inputLayer = inputLayer;
         this.location = location;
         this.startTime = startTime;
         this.interval = interval;
         this.Name = name;
     }
 
-    public void LoadMapping(Mapping mapping)
+    public void LoadMapping(MappingTable mapping)
     {
         this.mapping = mapping;
     }
@@ -174,20 +175,9 @@ public sealed class ControllerV1 : Actor, Core
         }
     }
 
-    public bool AcceptsLayer(Layer layer)
-    {
-        return layer is InputLayer;
-    }
+    public bool AcceptsLayer(Layer layer) => false;
 
-    public void AddLayer(Layer layer)
-    {
-        if (layer is InputLayer)
-        {
-            this.inputLayer = (InputLayer)layer;
-        }
-        else
-        {
-            throw new Exception($"Does not accept layer {layer}");
-        }
-    }
+    public void AddLayer(Layer layer) {}
+
+    string Core.Name() => this.Name;
 }

@@ -150,6 +150,8 @@ public sealed class OdinCore : Actor, Core
         received = null;
         yield return env.Delay(nrNeurons * delayModel.TimeRefTime);
     }
+
+    string Core.Name() => this.Name;
 }
 
 

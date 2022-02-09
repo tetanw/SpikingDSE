@@ -3,6 +3,41 @@ using System.Collections.Generic;
 
 namespace SpikingDSE;
 
+public class MultiCoreV1Mapping
+{
+    public static Mapping CreateMapping(Mapper mapper, SRNN srnn)
+    {
+        for (int i = 1; i <= 6; i++)
+        {
+            mapper.AddCore(new MapCore
+            {
+                Name = $"core{i}",
+                AcceptedTypes = new() { typeof(ALIFLayer) },
+                MaxNrNeurons = 64
+            });
+        }
+        mapper.AddCore(new MapCore
+        {
+            Name = "controller",
+            AcceptedTypes = new() { typeof(InputLayer), typeof(OutputLayer) },
+            MaxNrNeurons = int.MaxValue
+        });
+
+        foreach (var layer in srnn.GetAllLayers())
+        {
+            mapper.AddLayer(new MapLayer
+            {
+                Name = layer.Name,
+                NrNeurons = layer.Size,
+                Splittable = layer is ALIFLayer,
+                Type = layer.GetType()
+            });
+        }
+
+        return mapper.Run();
+    }
+}
+
 public class MulitCoreV1HW
 {
     private Simulator sim;
@@ -30,10 +65,10 @@ public class MulitCoreV1HW
         routers = MeshUtils.CreateMesh(sim, width, height, createRouters);
     }
 
-    public void AddController(SNN snn, int x, int y)
+    public void AddController(InputLayer input,int x, int y)
     {
         var controllerCoord = new MeshCoord(x, y);
-        var controller = sim.AddActor(new ControllerV1(controllerCoord, 100, 0, interval, name: "controller"));
+        var controller = sim.AddActor(new ControllerV1(input, controllerCoord, 100, 0, interval, name: "controller"));
         sim.AddChannel(controller.spikesOut, routers[x, y].inLocal);
         sim.AddChannel(routers[x, y].outLocal, controller.spikesIn);
         this.controller = controller;
@@ -48,11 +83,16 @@ public class MulitCoreV1HW
         this.cores.Add(core);
     }
 
-    public List<Core> GetPEs()
+    public Core FindCore(string name)
     {
-        var newCores = new List<Core>(cores);
-        newCores.Add(controller);
-        return newCores;
+        var core = cores.Find(c => c.Name() == name);
+        if (core != null)
+            return core;
+
+        if (name == controller.Name)
+            return controller;
+
+        return null;
     }
 }
 
@@ -66,17 +106,19 @@ public class MultiCoreV1 : Experiment
     private TraceReporter trace;
     private TensorReporter spikes;
     private MemReporter mem;
+    private Mapping mapping;
 
-    public int prediction = -1;
-    public int correct = -1;
+    public int Prediction = -1;
+    public int Correct = -1;
 
-    public MultiCoreV1(Simulator simulator, bool debug, int correct, SplittedSRNN srnn, long interval, int bufferSize) : base(simulator)
+    public MultiCoreV1(Simulator simulator, bool debug, int correct, SplittedSRNN srnn, Mapping mapping, long interval, int bufferSize) : base(simulator)
     {
         this.srnn = srnn;
         this.Debug = debug;
-        this.correct = correct;
+        this.Correct = correct;
         this.bufferSize = bufferSize;
         this.interval = interval;
+        this.mapping = mapping;
     }
 
     private void AddReporters()
@@ -117,6 +159,35 @@ public class MultiCoreV1 : Experiment
         }
     }
 
+    private void ApplyMapping()
+    {
+        var mappingTable = new MappingTable(srnn);
+        foreach (var entry in mapping.Mapped)
+        {
+            var core = hw.FindCore(entry.Core.Name);
+            string name = entry.Partial ? $"{entry.Layer.Name}-{entry.Index}" : entry.Layer.Name;
+            var layer = srnn.FindLayer(name);
+            mappingTable.Map(core, layer);
+        }
+
+        // Load stuff
+        foreach (var core in mappingTable.Cores)
+        {
+            switch (core)
+            {
+                case CoreV1 coreV1:
+                    coreV1.LoadMapping(mappingTable);
+                    break;
+                case ControllerV1 contV1:
+                    contV1.LoadMapping(mappingTable);
+                    break;
+                default:
+                    throw new Exception("Unknown core type: " + core);
+            }
+
+        }
+    }
+
     public override void Setup()
     {
         // Hardware
@@ -129,7 +200,7 @@ public class MultiCoreV1 : Experiment
         };
         hw = new MulitCoreV1HW(sim, 3, 2, interval, bufferSize);
         hw.CreateRouters((x, y) => new ProtoXYRouter(x, y, name: $"router({x},{y})"));
-        hw.AddController(srnn, 0, 0);
+        hw.AddController(srnn.Input, 0, 0);
         hw.AddCore(delayModel, 64, 1, 0, "core1");
         hw.AddCore(delayModel, 64, 1, 1, "core2");
         hw.AddCore(delayModel, 64, 2, 0, "core3");
@@ -140,42 +211,18 @@ public class MultiCoreV1 : Experiment
         AddReporters();
 
         // Mapping
-        var mapper = new FirstFitMapper(srnn, hw.GetPEs());
-        var mapping = new Mapping(srnn);
-        mapper.OnMappingFound += (core, layer) =>
-        {
-            PrintLn($"  {layer} -> {core}");
-            mapping.Map(core, layer);
-        };
-        PrintLn("Mapping:");
-        mapper.Run();
-
-        foreach (var core in mapping.Cores)
-        {
-            switch (core)
-            {
-                case CoreV1 coreV1:
-                    coreV1.LoadMapping(mapping);
-                    break;
-                case ControllerV1 contV1:
-                    contV1.LoadMapping(mapping);
-                    break;
-                default:
-                    throw new Exception("Unknown core type: " + core);
-            }
-
-        }
+        ApplyMapping();
 
         simStop.StopEvents = 10_000_000;
     }
 
     public override void Cleanup()
     {
-        this.prediction = srnn.Prediction();
+        this.Prediction = srnn.Prediction();
         trace?.Finish();
         spikes?.Finish();
         mem?.Finish();
-        if(spikes != null) PrintLn($"Nr spikes: {spikes.NrSpikes:n}");
-        PrintLn($"Predicted: {this.prediction}, Truth: {this.correct}");
+        if (spikes != null) PrintLn($"Nr spikes: {spikes.NrSpikes:n}");
+        PrintLn($"Predicted: {this.Prediction}, Truth: {this.Correct}");
     }
 }

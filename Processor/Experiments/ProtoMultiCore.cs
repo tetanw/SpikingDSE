@@ -142,8 +142,8 @@ public class ProtoMultiCore : Experiment
         }
 
         // Mapping
-        var mapper = new FirstFitMapper(srnn, hw.GetPEs());
-        var mapping = new Mapping(srnn);
+        var mapper = new ProtoMapper(srnn, hw.GetPEs());
+        var mapping = new MappingTable(srnn);
         mapper.OnMappingFound += mapping.Map;
         mapper.Run();
 

@@ -7,7 +7,7 @@ public class MapperTest
 {
     public void Run()
     {
-        var mapper = new Mapper2();
+        var mapper = new FirstFitMapper();
 
         const int HIDDEN = 0;
         const int INPUT = 1;
@@ -98,25 +98,6 @@ public class MapperTest
         };
         mapper.AddLayer(output);
 
-
-        Console.WriteLine("Mappings:");
-        mapper.MappingFound += (layer, core, partial, start, end) =>
-        {
-
-            if (partial)
-            {
-                Console.WriteLine($"  {layer.Name} from {start} to {end} -> {core.Name}");
-            }
-            else
-            {
-                Console.WriteLine($"  {layer.Name} -> {core.Name}");
-            }
-        };
-        var unmapped = mapper.Run();
-        Console.WriteLine("Unmapped:");
-        foreach (var layer in unmapped)
-        {
-            Console.WriteLine($"  {layer.Name}");
-        }
+        var mapping = mapper.Run();
     }
 }

@@ -164,6 +164,8 @@ public sealed class ProtoCore : Actor, Core
 
         OnSyncEnded?.Invoke(this, env.Now, TS, Layer);
     }
+
+    string Core.Name() => this.Name;
 }
 
 

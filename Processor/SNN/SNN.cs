@@ -11,6 +11,11 @@ public class SNN
     public Dictionary<Layer, List<Layer>> siblings = new();
     public HashSet<Layer> layers = new();
 
+    public Layer FindLayer(string name)
+    {
+        return layers.FirstOrDefault(l => l.Name == name);
+    }
+
     public void AddForward(Layer from, Layer to)
     {
         HashSet<Layer> l;

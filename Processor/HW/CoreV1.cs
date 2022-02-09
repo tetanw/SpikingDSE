@@ -29,8 +29,7 @@ public sealed class CoreV1 : Actor, Core
     public OutPort output = new OutPort();
 
     private MeshCoord thisLoc;
-    private Mapping mapping;
-    private List<HiddenLayer> layers = new();
+    private MappingTable mapping;
     private V1DelayModel delayModel;
     private int maxNrNeurons;
     private int totalOutputSpikes = 0;
@@ -48,27 +47,13 @@ public sealed class CoreV1 : Actor, Core
         this.delayModel = delayModel;
     }
 
-    public bool AcceptsLayer(Layer layer)
-    {
-        switch (layer)
-        {
-            case HiddenLayer hl:
-                int nrNeurons = layers.Sum(l => l.Size);
-                return nrNeurons + hl.Size <= maxNrNeurons;
-            default:
-                return false;
-        }
-    }
+    public bool AcceptsLayer(Layer layer) => false;
 
     public object GetLocation() => thisLoc;
 
-    public void AddLayer(Layer layer)
-    {
-        var hl = (HiddenLayer)layer;
-        layers.Add(hl);
-    }
+    public void AddLayer(Layer layer) {}
 
-    public void LoadMapping(Mapping mapping)
+    public void LoadMapping(MappingTable mapping)
     {
         this.mapping = mapping;
     }
@@ -179,8 +164,10 @@ public sealed class CoreV1 : Actor, Core
     {
         totalOutputSpikes = 0;
         totalInputSpikes = 0;
-        foreach (var layer in layers)
+        foreach (var l in mapping[this])
         {
+            var layer = (HiddenLayer) l;
+
             // Readout of timestep TS - 1
             OnSyncStarted?.Invoke(this, env.Now, TS, layer);
 
@@ -273,6 +260,8 @@ public sealed class CoreV1 : Actor, Core
     {
         return $"{this.Name}";
     }
+
+    string Core.Name() => this.Name;
 }
 
 

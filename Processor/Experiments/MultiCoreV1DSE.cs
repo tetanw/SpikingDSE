@@ -7,13 +7,16 @@ namespace SpikingDSE;
 public class MultiCoreV1DSE : DSEExperiment<MultiCoreV1>
 {
     private int size = 2264;
-    private SRNN srnn = null;
+    private Mapping mapping;
+    private SplittedSRNN splittedSRNN = null;
     private int nrCorrect = 0;
     private int curBufferSize = -1;
 
     public MultiCoreV1DSE()
     {
-        this.srnn = SRNN.Load("res/snn/best", null);
+        var srnn = SRNN.Load("res/snn/best", null);
+        var mapping = MultiCoreV1Mapping.CreateMapping(new FirstFitMapper(), srnn);
+        this.splittedSRNN = SplittedSRNN.SplitSRNN(srnn, mapping, null);
     }
 
     public override IEnumerable<IEnumerable<MultiCoreV1>> Configs()
@@ -35,8 +38,7 @@ public class MultiCoreV1DSE : DSEExperiment<MultiCoreV1>
         {
             var inputFile = new InputTraceFile($"res/shd/input_{i}.trace", 700, 100);
             var simulator = new Simulator();
-            var splittedSrnn = new SplittedSRNN(srnn, inputFile, 64);
-            var exp = new MultiCoreV1(simulator, false, inputFile.Correct, splittedSrnn, 100_000_000, bufferSize);
+            var exp = new MultiCoreV1(simulator, false, inputFile.Correct, splittedSRNN.Copy(inputFile), mapping, 100_000_000, bufferSize);
             yield return exp;
         }
     }
@@ -50,7 +52,7 @@ public class MultiCoreV1DSE : DSEExperiment<MultiCoreV1>
 
     public override void OnExpCompleted(MultiCoreV1 exp)
     {
-        if (exp.prediction == exp.correct)
+        if (exp.Prediction == exp.Correct)
         {
             nrCorrect++;
         }
