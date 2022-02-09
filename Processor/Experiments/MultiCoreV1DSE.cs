@@ -15,8 +15,8 @@ public class MultiCoreV1DSE : DSEExperiment<MultiCoreV1>
     public MultiCoreV1DSE()
     {
         var srnn = SRNN.Load("res/snn/best", null);
-        var mapping = MultiCoreV1Mapping.CreateMapping(new FirstFitMapper(), srnn);
-        this.splittedSRNN = SplittedSRNN.SplitSRNN(srnn, mapping, null);
+        this.mapping = MultiCoreV1Mapping.CreateMapping(new FirstFitMapper(), srnn);
+        this.splittedSRNN = SplittedSRNN.SplitSRNN(srnn, this.mapping, null);
     }
 
     public override IEnumerable<IEnumerable<MultiCoreV1>> Configs()
@@ -38,7 +38,7 @@ public class MultiCoreV1DSE : DSEExperiment<MultiCoreV1>
         {
             var inputFile = new InputTraceFile($"res/shd/input_{i}.trace", 700, 100);
             var simulator = new Simulator();
-            var exp = new MultiCoreV1(simulator, false, inputFile.Correct, splittedSRNN.Copy(inputFile), mapping, 100_000_000, bufferSize);
+            var exp = new MultiCoreV1(simulator, false, inputFile.Correct, splittedSRNN.Copy(inputFile), this.mapping, 100_000_000, bufferSize);
             yield return exp;
         }
     }

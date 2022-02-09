@@ -127,7 +127,7 @@ public class SplittedSRNN : SNN
         var input = this.Input.Copy(spikeSource);
         var output = this.Output.Copy();
         List<List<ALIFLayer>> hiddenLayers = new();
-        foreach (var layer in hiddenLayers)
+        foreach (var layer in this.HiddenLayers)
         {
             List<ALIFLayer> parts = new();
             foreach (var part in layer)
@@ -142,11 +142,13 @@ public class SplittedSRNN : SNN
 
     private void RegisterForwards()
     {
+        // input to first hidden layer
         foreach (var hidden in HiddenLayers[0])
         {
             AddForward(Input, hidden);
         }
 
+        // Hidden layers to each other
         for (int i = 0; i < HiddenLayers.Count - 1; i++)
         {
             var cur = HiddenLayers[i];
@@ -161,7 +163,8 @@ public class SplittedSRNN : SNN
             }
         }
 
-        foreach (var hidden in HiddenLayers[1])
+        // last hidden layer to output
+        foreach (var hidden in HiddenLayers[HiddenLayers.Count - 1])
         {
             AddForward(hidden, Output);
         }
