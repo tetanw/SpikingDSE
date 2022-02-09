@@ -354,7 +354,7 @@ namespace SpikingDSE
                 var rcv = channel.ReceiveEvent as ReceiveEvent;
                 rcv.Message = channel.SendEvent.Message;
                 long newTime = Math.Max(channel.SendEvent.Time, rcv.Time);
-                QueueThreads(channel, newTime, rcv.BlockSender);
+                QueueThreads(channel, newTime);
                 CleanChannel(channel);
             }
             else if (channel.ReceiveEvent is SelectEvent)
@@ -363,7 +363,7 @@ namespace SpikingDSE
                 select.Message = channel.SendEvent.Message;
                 select.Port = channel.InPort;
                 long newTime = Math.Max(channel.SendEvent.Time, select.Time);
-                QueueThreads(channel, newTime, false);
+                QueueThreads(channel, newTime);
 
                 for (int i = 0; i < select.Ports.Length; i++)
                 {
@@ -388,15 +388,12 @@ namespace SpikingDSE
             channel.ReceiveProcess = null;
         }
 
-        private void QueueThreads(Channel channel, long newTime, bool blockSender)
+        private void QueueThreads(Channel channel, long newTime)
         {
             channel.ReceiveProcess.Time = newTime;
             ready.Enqueue(channel.ReceiveProcess);
-            if (!blockSender)
-            {
-                channel.SendProcess.Time = newTime;
-                ready.Enqueue(channel.SendProcess);
-            }
+            channel.SendProcess.Time = newTime;
+            ready.Enqueue(channel.SendProcess);
         }
 
         public void PrintDeadlockReport()
