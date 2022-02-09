@@ -13,7 +13,9 @@
     - [] Less finicky HW and SNN setup 
     - [] Research other mapping strategies
 - HW
-    - Maybe add sender process to core?
+    - [] Maybe add sender process to core?
+    - [] Move controller of mesh
+    - [] Move output layer to controller
 - SNN
     - [x] Make splitted SRNN copyable
 - More benchmarks
