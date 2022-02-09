@@ -31,7 +31,6 @@ public sealed class CoreV1 : Actor, Core
     private MeshCoord thisLoc;
     private MappingTable mapping;
     private V1DelayModel delayModel;
-    private int maxNrNeurons;
     private int totalOutputSpikes = 0;
     private int totalInputSpikes = 0;
     private int bufferSize;
