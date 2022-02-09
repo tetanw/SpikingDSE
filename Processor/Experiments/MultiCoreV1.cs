@@ -12,14 +12,14 @@ public class MultiCoreV1Mapping
             mapper.AddCore(new MapCore
             {
                 Name = $"core{i}",
-                AcceptedTypes = new() { typeof(ALIFLayer) },
+                AcceptedTypes = new() { typeof(ALIFLayer), typeof(OutputLayer) },
                 MaxNrNeurons = 64
             });
         }
         mapper.AddCore(new MapCore
         {
             Name = "controller",
-            AcceptedTypes = new() { typeof(InputLayer), typeof(OutputLayer) },
+            AcceptedTypes = new() { typeof(InputLayer) },
             MaxNrNeurons = int.MaxValue
         });
 
@@ -201,11 +201,11 @@ public class MultiCoreV1 : Experiment
         hw = new MulitCoreV1HW(sim, 3, 2, interval, bufferSize);
         hw.CreateRouters((x, y) => new ProtoXYRouter(x, y, name: $"router({x},{y})"));
         hw.AddController(srnn.Input, 0, 0);
-        hw.AddCore(delayModel, 64, 1, 0, "core1");
-        hw.AddCore(delayModel, 64, 1, 1, "core2");
-        hw.AddCore(delayModel, 64, 2, 0, "core3");
-        hw.AddCore(delayModel, 64, 2, 1, "core4");
-        hw.AddCore(delayModel, 20, 0, 1, "core0");
+        hw.AddCore(delayModel, 64, 1, 0, "core2");
+        hw.AddCore(delayModel, 64, 1, 1, "core3");
+        hw.AddCore(delayModel, 64, 2, 0, "core4");
+        hw.AddCore(delayModel, 64, 2, 1, "core5");
+        hw.AddCore(delayModel, 20, 0, 1, "core1");
 
         // Reporters
         AddReporters();
