@@ -24,10 +24,12 @@
     - [] ECG-QTDB
 - Extra reporting
     - [] Implement proxy metrics
+        - [] Spike disorder count
+        - [] ISI
     - [x] Some reporting to see congestion on the NoC
         - [x] Spike travel times
         - [x] Debug why there are so few spikes in spike travel times
-        - [] Debug why so many spikes have such a short travel delay
+        - [] Debug why so many spikes have such a short travel
     - [] Report utilization of routers and cores
     - [x] Core compute delays
 - Reporting
