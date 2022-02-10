@@ -15,15 +15,18 @@ public struct V1DelayModel
 
 public sealed class CoreV1 : Actor, Core
 {
+    // TODO: Consider removing core as it is kind of redundant
     public delegate void SpikeReceived(CoreV1 core, long time, Layer layer, int neuron, bool feedback, SpikeEvent spike);
     public delegate void SpikeSent(CoreV1 core, long time, Layer from, int neuron, SpikeEvent spike);
     public delegate void SyncStarted(CoreV1 core, long time, int ts, HiddenLayer layer);
     public delegate void SyncEnded(CoreV1 core, long time, int ts, HiddenLayer layer);
+    public delegate void SpikeComputed(CoreV1 core, long time, SpikeEvent spike);
 
     public SpikeReceived OnSpikeReceived;
     public SpikeSent OnSpikeSent;
     public SyncStarted OnSyncStarted;
     public SyncEnded OnSyncEnded;
+    public SpikeComputed OnSpikeComputed;
 
     public InPort input = new InPort();
     public OutPort output = new OutPort();
@@ -80,7 +83,7 @@ public sealed class CoreV1 : Actor, Core
                     // write all spikes that were waiting for sync event to happen
                     while (!inputBuffer.IsEmpty)
                     {
-                        var spike = (SpikeEvent) inputBuffer.Pop();
+                        var spike = (SpikeEvent)inputBuffer.Pop();
                         if (!coreBuffer.IsFull)
                             coreBuffer.Push(spike);
 
@@ -90,6 +93,7 @@ public sealed class CoreV1 : Actor, Core
                     TS = sync.TS + 1;
                     break;
                 case SpikeEvent spike:
+                    spike.ReceivedAt = env.Now;
                     if (spike.TS > TS)
                     {
                         if (!inputBuffer.IsFull)
@@ -131,14 +135,7 @@ public sealed class CoreV1 : Actor, Core
                     yield return env.Process(Sync(env, sync));
                     break;
                 case SpikeEvent spike:
-                    if (spike.Feedback)
-                    {
-                        yield return env.Process(Feedback(env, spike));
-                    }
-                    else
-                    {
-                        yield return env.Process(Compute(env, spike));
-                    }
+                    yield return env.Process(Compute(env, spike));
                     break;
                 default:
                     throw new Exception("Unknown event!");
@@ -146,15 +143,17 @@ public sealed class CoreV1 : Actor, Core
         }
     }
 
-    private IEnumerable<Event> Feedback(Environment env, SpikeEvent spike)
-    {
-        (spike.Layer as ALIFLayer).Feedback(spike.Neuron);
-        yield return env.Delay(delayModel.ComputeTime * spike.Layer.Size);
-    }
-
     private IEnumerable<Event> Compute(Environment env, SpikeEvent spike)
     {
-        (spike.Layer as HiddenLayer).Forward(spike.Neuron);
+        OnSpikeComputed?.Invoke(this, env.Now, spike);
+        if (spike.Feedback)
+        {
+            (spike.Layer as ALIFLayer).Feedback(spike.Neuron);
+        }
+        else
+        {
+            (spike.Layer as HiddenLayer).Forward(spike.Neuron);
+        }
         yield return env.Delay(delayModel.ComputeTime * spike.Layer.Size);
     }
 
@@ -197,6 +196,7 @@ public sealed class CoreV1 : Actor, Core
                     {
                         if (layer is ALIFLayer && !coreBuffer.IsFull)
                         {
+                            spikeEv.ReceivedAt = env.Now;
                             coreBuffer.Push(spikeEv);
                         }
                     }
@@ -229,6 +229,7 @@ public sealed class CoreV1 : Actor, Core
                     var destCoord = mapping.CoordOf(destLayer);
                     if (destCoord == thisLoc)
                     {
+                        spikeOut.ReceivedAt = env.Now;
                         if (!coreBuffer.IsFull)
                             coreBuffer.Push(spikeOut);
                     }

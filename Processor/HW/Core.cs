@@ -15,4 +15,5 @@ public class SpikeEvent : CoreEvent
     public bool Feedback = false;
     public int TS = -1;
     public long CreatedAt = -1;
+    public long ReceivedAt = -1;
 }

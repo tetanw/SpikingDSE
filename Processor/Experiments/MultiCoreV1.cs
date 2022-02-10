@@ -109,6 +109,7 @@ public class MultiCoreV1 : Experiment
     private TensorReporter spikes;
     private MemReporter mem;
     private TimeDelayReporter spikeDelays;
+    private TimeDelayReporter computeDelays;
     private Mapping mapping;
 
     public int Prediction = -1;
@@ -138,6 +139,7 @@ public class MultiCoreV1 : Experiment
         spikes.RegisterSNN(srnn);
 
         spikeDelays = new TimeDelayReporter("res/multi-core/v1/spike-delays.csv");
+        computeDelays = new TimeDelayReporter("res/multi-core/v1/compute-delays.csv");
 
         hw.controller.TimeAdvanced += (_, ts) => trace.AdvanceTimestep(ts);
         hw.controller.TimeAdvanced += (_, ts) =>
@@ -162,6 +164,9 @@ public class MultiCoreV1 : Experiment
             {
                 trace.OutputSpike(neuron, time);
                 spikes.InformSpike(fromLayer, neuron);
+            };
+            core.OnSpikeComputed += (_, time, spike) => {
+                computeDelays.ReportDelay(spike.ReceivedAt, time);
             };
             core.OnSyncStarted += (_, time, _, _) => trace.TimeRef(time);
         }
@@ -232,6 +237,7 @@ public class MultiCoreV1 : Experiment
         spikes?.Finish();
         mem?.Finish();
         spikeDelays?.Finish();
+        computeDelays?.Finish();
         if (spikes != null) PrintLn($"Nr spikes: {spikes.NrSpikes:n}");
         PrintLn($"Predicted: {this.Prediction}, Truth: {this.Correct}");
     }
