@@ -13,7 +13,7 @@ namespace SpikingDSE
         public FIFO(Environment env, int size)
         {
             this.env = env;
-            this.items = new Queue<T>(size);
+            this.items = new Queue<T>();
             this.size = size;
             this.itemsFilled = env.CreateResource(0);
             this.itemsEmpty = env.CreateResource(size);
