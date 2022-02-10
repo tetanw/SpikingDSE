@@ -22,7 +22,7 @@ public sealed class SimpleXYRouter : MeshRouter
             // 1. Monitor the inputs for any packet
             var select = env.Select(inNorth, inEast, inSouth, inWest, inLocal);
             yield return select;
-            MeshFlit flit = (MeshFlit)select.Message;
+            MeshPacket flit = (MeshPacket)select.Message;
 
             // 2. Add a delay to simulate processing
             yield return env.Delay(processingDelay);

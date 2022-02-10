@@ -122,9 +122,9 @@ public sealed class ControllerV1 : Actor, Core
             yield return rcv;
             var ev = rcv.Message;
 
-            if (ev is MeshFlit)
+            if (ev is MeshPacket)
             {
-                var spike = (ev as MeshFlit).Message as SpikeEvent;
+                var spike = (ev as MeshPacket).Message as SpikeEvent;
                 SpikeReceived?.Invoke(this, env.Now, spike);
             }
             else
@@ -141,7 +141,7 @@ public sealed class ControllerV1 : Actor, Core
             var spikeEv = message as SpikeEvent;
             // Get the right desitination layer for the spike and also the coord to send it to
             var dest = mapping.CoordOf(spikeEv.Layer);
-            var flit = new MeshFlit
+            var flit = new MeshPacket
             {
                 Src = (MeshCoord)location,
                 Dest = dest,
@@ -158,7 +158,7 @@ public sealed class ControllerV1 : Actor, Core
                     continue;
 
                 var coord = (MeshCoord)core.GetLocation();
-                var flit = new MeshFlit
+                var flit = new MeshPacket
                 {
                     Src = (MeshCoord)(location),
                     Dest = coord,

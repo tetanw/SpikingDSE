@@ -8,17 +8,17 @@ public class XYRouterTest : Experiment
     public override void Setup()
     {
         int i = 0;
-        var southProd = sim.AddActor(new Producer(20, () => new MeshFlit { Src = new MeshCoord(-1, -1), Dest = new MeshCoord(1, 1), Message = ("South", i++) }, "South"));
+        var southProd = sim.AddActor(new Producer(20, () => new MeshPacket { Src = new MeshCoord(-1, -1), Dest = new MeshCoord(1, 1), Message = ("South", i++) }, "South"));
 
         int j = 0;
-        var northProd = sim.AddActor(new Producer(15, () => new MeshFlit { Src = new MeshCoord(-1, -1), Dest = new MeshCoord(1, 1), Message = ("North", j++) }, "North"));
+        var northProd = sim.AddActor(new Producer(15, () => new MeshPacket { Src = new MeshCoord(-1, -1), Dest = new MeshCoord(1, 1), Message = ("North", j++) }, "North"));
 
         var router = sim.AddActor(new ProtoXYRouter(0, 1, name: "Router"));
 
         var consumer = sim.AddActor(new Consumer(interval: 50, name: "Consumer"));
         consumer.Consumed += (_, time, flit) =>
         {
-            var message = ((MeshFlit)flit).Message;
+            var message = ((MeshPacket)flit).Message;
             Console.WriteLine($"[{time}] {message}");
         };
 

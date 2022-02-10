@@ -19,8 +19,8 @@ public sealed class ProtoXYRouter : MeshRouter
 
     public override IEnumerable<Event> Run(Environment env)
     {
-        var inBuffers = new FIFO<MeshFlit>[5];
-        var outBuffers = new FIFO<MeshFlit>[5];
+        var inBuffers = new FIFO<MeshPacket>[5];
+        var outBuffers = new FIFO<MeshPacket>[5];
         var signal = env.CreateSignal();
 
         for (int dir = 0; dir < 5; dir++)
@@ -28,14 +28,14 @@ public sealed class ProtoXYRouter : MeshRouter
             var inPort = GetInputPort(dir);
             if (inPort.IsBound)
             {
-                inBuffers[dir] = new FIFO<MeshFlit>(env, inputBufferSize);
+                inBuffers[dir] = new FIFO<MeshPacket>(env, inputBufferSize);
                 env.Process(InLink(env, inPort, inBuffers[dir], signal));
             }
 
             var outPort = GetOutputPort(dir);
             if (outPort.IsBound)
             {
-                outBuffers[dir] = new FIFO<MeshFlit>(env, outputBufferSize);
+                outBuffers[dir] = new FIFO<MeshPacket>(env, outputBufferSize);
                 env.Process(OutLink(env, outPort, outBuffers[dir], signal));
             }
         }
@@ -65,7 +65,7 @@ public sealed class ProtoXYRouter : MeshRouter
         else throw new Exception("Unknown direction");
     }
 
-    private IEnumerable<Event> Switch(Environment env, FIFO<MeshFlit>[] inBuffers, FIFO<MeshFlit>[] outBuffers, Signal signal)
+    private IEnumerable<Event> Switch(Environment env, FIFO<MeshPacket>[] inBuffers, FIFO<MeshPacket>[] outBuffers, Signal signal)
     {
         while (true)
         {
@@ -76,8 +76,8 @@ public sealed class ProtoXYRouter : MeshRouter
             // 2. If an input was ready then we need to just check whether 
             // that new input needs to be routed. If an output is ready we need
             // to check whether any of the inputs is ready
-            FIFO<MeshFlit> inBuffer = null;
-            FIFO<MeshFlit> outBuffer = null;
+            FIFO<MeshPacket> inBuffer = null;
+            FIFO<MeshPacket> outBuffer = null;
             while (true)
             {
                 bool routeFound = false;
@@ -110,7 +110,7 @@ public sealed class ProtoXYRouter : MeshRouter
     }
 
 
-    private IEnumerable<Event> OutLink(Environment env, OutPort outPort, FIFO<MeshFlit> buffer, Signal signal)
+    private IEnumerable<Event> OutLink(Environment env, OutPort outPort, FIFO<MeshPacket> buffer, Signal signal)
     {
         while (true)
         {
@@ -122,20 +122,20 @@ public sealed class ProtoXYRouter : MeshRouter
         }
     }
 
-    private IEnumerable<Event> InLink(Environment env, InPort inPort, FIFO<MeshFlit> buffer, Signal signal)
+    private IEnumerable<Event> InLink(Environment env, InPort inPort, FIFO<MeshPacket> buffer, Signal signal)
     {
         while (true)
         {
             yield return buffer.RequestWrite();
             var rcv = env.Receive(inPort);
             yield return rcv;
-            buffer.Write((MeshFlit)rcv.Message);
+            buffer.Write((MeshPacket)rcv.Message);
             buffer.ReleaseWrite();
             env.Notify(signal);
         }
     }
 
-    private int DetermineOutput(MeshFlit flit)
+    private int DetermineOutput(MeshPacket flit)
     {
         int DX = flit.Dest.x - x;
         int DY = flit.Dest.y - y;

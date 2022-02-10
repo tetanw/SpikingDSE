@@ -67,7 +67,7 @@ public sealed class CoreV1 : Actor, Core
         {
             var rcv = env.Receive(input);
             yield return rcv;
-            var flit = (MeshFlit)rcv.Message;
+            var flit = (MeshPacket)rcv.Message;
             var @event = flit.Message as CoreEvent;
 
             switch (@event)
@@ -203,7 +203,7 @@ public sealed class CoreV1 : Actor, Core
                     else
                     {
                         // Send recurrent spikes to other core
-                        var flit = new MeshFlit
+                        var flit = new MeshPacket
                         {
                             Src = thisLoc,
                             Dest = siblingCoord,
@@ -235,7 +235,7 @@ public sealed class CoreV1 : Actor, Core
                     }
                     else
                     {
-                        var flit = new MeshFlit
+                        var flit = new MeshPacket
                         {
                             Src = thisLoc,
                             Dest = destCoord,

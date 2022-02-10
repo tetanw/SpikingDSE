@@ -132,7 +132,7 @@ public sealed class ProtoCore : Actor, Core
     {
         var rcv = env.Receive(input, waitBefore: delayModel.InputTime);
         yield return rcv;
-        var flit = (MeshFlit)rcv.Message;
+        var flit = (MeshPacket)rcv.Message;
         onReceive((CoreEvent)flit.Message);
     }
 
@@ -155,7 +155,7 @@ public sealed class ProtoCore : Actor, Core
             var outEvent = new SpikeEvent() { Layer = Layer, Neuron = spikingNeuron, Feedback = false };
             OnSpikeSent?.Invoke(this, syncTime, outEvent);
             if ((Layer is RLIFLayer2 || Layer is ALIFLayer) && feedback.Count <= feedbackBufferSize) feedback.Enqueue(spikingNeuron);
-            yield return env.SendAt(output, new MeshFlit { Src = location, Dest = destination, Message = outEvent }, syncTime);
+            yield return env.SendAt(output, new MeshPacket { Src = location, Dest = destination, Message = outEvent }, syncTime);
         }
         syncTime = start + nrNeurons * delayModel.ComputeTime + nrOutputSpikes * delayModel.OutputTime;
         totalInputSpikes++;

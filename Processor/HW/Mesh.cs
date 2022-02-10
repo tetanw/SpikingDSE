@@ -5,7 +5,7 @@ namespace SpikingDSE;
 
 public record struct MeshCoord(int x, int y);
 
-public sealed class MeshFlit
+public sealed class MeshPacket
 {
     public MeshCoord Src;
     public MeshCoord Dest;

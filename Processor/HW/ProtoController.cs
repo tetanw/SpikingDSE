@@ -117,9 +117,9 @@ public sealed class ProtoController : Actor, Core
             yield return rcv;
             var ev = rcv.Message;
 
-            if (ev is MeshFlit)
+            if (ev is MeshPacket)
             {
-                var spike = (ev as MeshFlit).Message as SpikeEvent;
+                var spike = (ev as MeshPacket).Message as SpikeEvent;
                 SpikeReceived?.Invoke(this, env.Now, spike);
             }
             else
@@ -137,7 +137,7 @@ public sealed class ProtoController : Actor, Core
             // Get the right desitination layer for the spike and also the coord to send it to
             Layer destLayer = snn.GetDestLayer(storedSpike.ODINSpike.Layer);
             MeshCoord dest = mappings[destLayer];
-            var flit = new MeshFlit
+            var flit = new MeshPacket
             {
                 Src = (MeshCoord)location,
                 Dest = dest,
@@ -150,7 +150,7 @@ public sealed class ProtoController : Actor, Core
             var timeEvent = message as SyncEvent;
             foreach (var coord in mappings.Values)
             {
-                var flit = new MeshFlit
+                var flit = new MeshPacket
                 {
                     Src = (MeshCoord)(location),
                     Dest = coord,

@@ -8,13 +8,13 @@ public class MeshTest : Experiment
     {
         public void Consumed(Consumer consumer, long time, object message)
         {
-            var realMessage = ((MeshFlit)message).Message;
+            var realMessage = ((MeshPacket)message).Message;
             Console.WriteLine($"[{time}] {consumer.Name} received message {realMessage}");
         }
 
         public void Produced(Producer producer, long time, object message)
         {
-            var realMessage = ((MeshFlit)message).Message;
+            var realMessage = ((MeshPacket)message).Message;
             Console.WriteLine($"[{time}] {producer.Name} sent message {realMessage}");
         }
     }
@@ -22,7 +22,7 @@ public class MeshTest : Experiment
     public override void Setup()
     {
         var reporter = new Reporter();
-        var producer = sim.AddActor(new Producer(4, () => new MeshFlit { Dest = new MeshCoord(1, 1), Message = "hi" }, name: "producer"));
+        var producer = sim.AddActor(new Producer(4, () => new MeshPacket { Dest = new MeshCoord(1, 1), Message = "hi" }, name: "producer"));
         producer.Produced += reporter.Produced;
         var consumer = sim.AddActor(new Consumer(name: "consumer"));
         consumer.Consumed += reporter.Consumed;
