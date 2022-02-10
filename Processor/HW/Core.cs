@@ -4,7 +4,8 @@ public class CoreEvent { }
 
 public class SyncEvent : CoreEvent
 {
-    public int TS { get; set; }
+    public int TS = -1;
+    public long CreatedAt = -1;
 }
 
 public class SpikeEvent : CoreEvent

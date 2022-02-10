@@ -59,13 +59,13 @@ public sealed class ControllerV1 : Actor, Core
             {
                 foreach (var destLayer in mapping.GetDestLayers(inputLayer))
                 {
-                    // TODO: CreatedAt
                     var spike = new SpikeEvent()
                     {
                         Layer = destLayer,
                         Neuron = neuron,
                         Feedback = false,
-                        TS = TS
+                        TS = TS,
+                        CreatedAt = env.Now
                     };
                     yield return outBuffer.RequestWrite();
                     outBuffer.Write(spike);
@@ -90,8 +90,11 @@ public sealed class ControllerV1 : Actor, Core
             yield return env.SleepUntil(startTime + interval * (TS + 1));
 
             yield return outBuffer.RequestWrite();
-            // TODO: CreatedAt
-            outBuffer.Write(new SyncEvent() { TS = TS });
+            outBuffer.Write(new SyncEvent()
+            {
+                TS = TS,
+                CreatedAt = env.Now
+            });
             outBuffer.ReleaseWrite();
             TimeAdvanced?.Invoke(this, TS);
 
@@ -172,7 +175,7 @@ public sealed class ControllerV1 : Actor, Core
 
     public bool AcceptsLayer(Layer layer) => false;
 
-    public void AddLayer(Layer layer) {}
+    public void AddLayer(Layer layer) { }
 
     string Core.Name() => this.Name;
 }

@@ -15,8 +15,8 @@ public struct V1DelayModel
 
 public sealed class CoreV1 : Actor, Core
 {
-    public delegate void SpikeReceived(CoreV1 core, long time, Layer layer, int neuron, bool feedback);
-    public delegate void SpikeSent(CoreV1 core, long time, Layer from, int neuron);
+    public delegate void SpikeReceived(CoreV1 core, long time, Layer layer, int neuron, bool feedback, SpikeEvent spike);
+    public delegate void SpikeSent(CoreV1 core, long time, Layer from, int neuron, SpikeEvent spike);
     public delegate void SyncStarted(CoreV1 core, long time, int ts, HiddenLayer layer);
     public delegate void SyncEnded(CoreV1 core, long time, int ts, HiddenLayer layer);
 
@@ -49,7 +49,7 @@ public sealed class CoreV1 : Actor, Core
 
     public object GetLocation() => thisLoc;
 
-    public void AddLayer(Layer layer) {}
+    public void AddLayer(Layer layer) { }
 
     public void LoadMapping(MappingTable mapping)
     {
@@ -80,9 +80,11 @@ public sealed class CoreV1 : Actor, Core
                     // write all spikes that were waiting for sync event to happen
                     while (!inputBuffer.IsEmpty)
                     {
-                        var spike = inputBuffer.Pop();
+                        var spike = (SpikeEvent) inputBuffer.Pop();
                         if (!coreBuffer.IsFull)
                             coreBuffer.Push(spike);
+
+                        OnSpikeReceived?.Invoke(this, env.Now, spike.Layer, spike.Neuron, spike.Feedback, spike);
                     }
 
                     TS = sync.TS + 1;
@@ -126,16 +128,16 @@ public sealed class CoreV1 : Actor, Core
             switch (core)
             {
                 case SyncEvent sync:
-                    yield return env.Process(Sync(env, sync.TS));
+                    yield return env.Process(Sync(env, sync));
                     break;
                 case SpikeEvent spike:
                     if (spike.Feedback)
                     {
-                        yield return env.Process(Feedback(env, spike.Layer, spike.Neuron));
+                        yield return env.Process(Feedback(env, spike));
                     }
                     else
                     {
-                        yield return env.Process(Compute(env, spike.Layer, spike.Neuron));
+                        yield return env.Process(Compute(env, spike));
                     }
                     break;
                 default:
@@ -144,30 +146,28 @@ public sealed class CoreV1 : Actor, Core
         }
     }
 
-    private IEnumerable<Event> Feedback(Environment env, Layer layer, int neuron)
+    private IEnumerable<Event> Feedback(Environment env, SpikeEvent spike)
     {
-        OnSpikeReceived?.Invoke(this, env.Now, layer, neuron, true);
-        (layer as ALIFLayer).Feedback(neuron);
-        yield return env.Delay(delayModel.ComputeTime * layer.Size);
+        (spike.Layer as ALIFLayer).Feedback(spike.Neuron);
+        yield return env.Delay(delayModel.ComputeTime * spike.Layer.Size);
     }
 
-    private IEnumerable<Event> Compute(Environment env, Layer layer, int neuron)
+    private IEnumerable<Event> Compute(Environment env, SpikeEvent spike)
     {
-        OnSpikeReceived?.Invoke(this, env.Now, layer, neuron, false);
-        (layer as HiddenLayer).Forward(neuron);
-        yield return env.Delay(delayModel.ComputeTime * layer.Size);
+        (spike.Layer as HiddenLayer).Forward(spike.Neuron);
+        yield return env.Delay(delayModel.ComputeTime * spike.Layer.Size);
     }
 
-    private IEnumerable<Event> Sync(Environment env, int TS)
+    private IEnumerable<Event> Sync(Environment env, SyncEvent sync)
     {
         totalOutputSpikes = 0;
         totalInputSpikes = 0;
         foreach (var l in mapping[this])
         {
-            var layer = (HiddenLayer) l;
+            var layer = (HiddenLayer)l;
 
             // Readout of timestep TS - 1
-            OnSyncStarted?.Invoke(this, env.Now, TS, layer);
+            OnSyncStarted?.Invoke(this, env.Now, sync.TS, layer);
 
             // Threshold of timestep TS - 1
             int nrOutputSpikes = 0;
@@ -184,13 +184,13 @@ public sealed class CoreV1 : Actor, Core
                 // Feedback spikes
                 foreach (var sibling in mapping.GetSiblings(layer))
                 {
-                    // TODO: CreatedAt
                     var spikeEv = new SpikeEvent()
                     {
                         Layer = sibling,
                         Neuron = spikingNeuron + offset,
                         Feedback = true,
-                        TS = TS + 1
+                        TS = sync.TS + 1,
+                        CreatedAt = env.Now
                     };
                     var siblingCoord = mapping.CoordOf(sibling);
                     if (siblingCoord == thisLoc)
@@ -218,19 +218,19 @@ public sealed class CoreV1 : Actor, Core
                 // Forward spikes
                 foreach (var destLayer in mapping.GetDestLayers(layer))
                 {
-                    // TODO: CreatedAt
-                    var spikeEv = new SpikeEvent()
+                    var spikeOut = new SpikeEvent()
                     {
                         Layer = destLayer,
                         Neuron = spikingNeuron + offset,
                         Feedback = false,
-                        TS = TS + 1
+                        TS = sync.TS + 1,
+                        CreatedAt = env.Now
                     };
                     var destCoord = mapping.CoordOf(destLayer);
                     if (destCoord == thisLoc)
                     {
                         if (!coreBuffer.IsFull)
-                            coreBuffer.Push(spikeEv);
+                            coreBuffer.Push(spikeOut);
                     }
                     else
                     {
@@ -238,19 +238,19 @@ public sealed class CoreV1 : Actor, Core
                         {
                             Src = thisLoc,
                             Dest = destCoord,
-                            Message = spikeEv
+                            Message = spikeOut
                         };
                         yield return env.Delay(delayModel.OutputTime);
                         yield return env.Send(output, flit);
                     }
-                    OnSpikeSent?.Invoke(this, env.Now, layer, spikingNeuron);
+                    OnSpikeSent?.Invoke(this, env.Now, layer, spikingNeuron, spikeOut);
                 }
             }
             yield return env.Delay((layer.Size - lastSpikingNeuron) * delayModel.ComputeTime);
             totalInputSpikes++;
             totalOutputSpikes += nrOutputSpikes;
 
-            OnSyncEnded?.Invoke(this, env.Now, TS, layer);
+            OnSyncEnded?.Invoke(this, env.Now, sync.TS, layer);
         }
     }
 
