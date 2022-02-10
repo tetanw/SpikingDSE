@@ -24,8 +24,10 @@
     - [] ECG-QTDB
 - Extra reporting
     - [] Implement proxy metrics
-    - [] Some reporting to see congestion on the NoC
+    - [x] Some reporting to see congestion on the NoC
+        - [x] Spike travel times
     - [] Report utilization of routers and cores
+    - [x] Core compute delays
 - Reporting
     - [] Write introduction & related work
     - [] Document current simulator
