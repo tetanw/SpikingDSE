@@ -65,7 +65,7 @@ public class MulitCoreV1HW
         routers = MeshUtils.CreateMesh(sim, width, height, createRouters);
     }
 
-    public void AddController(InputLayer input,int x, int y)
+    public void AddController(InputLayer input, int x, int y)
     {
         var controllerCoord = new MeshCoord(x, y);
         var controller = sim.AddActor(new ControllerV1(input, controllerCoord, 100, 0, interval, name: "controller"));
@@ -151,24 +151,26 @@ public class MultiCoreV1 : Experiment
         {
             var core = c as CoreV1;
 
-            core.OnSyncEnded += (_, _, ts, layer) =>
+            core.OnSyncEnded += (_, ts, layer) =>
             {
                 float[] pots = (layer as ALIFLayer)?.Readout ?? (layer as OutputLayer)?.Readout;
                 mem.AdvanceLayer(layer, ts, pots);
             };
-            core.OnSpikeReceived += (_, time, layer, neuron, feedback, spike) => {
+            core.OnSpikeReceived += (time, layer, neuron, feedback, spike) =>
+            {
                 trace.InputSpike(neuron, time);
                 spikeDelays.ReportDelay(spike.CreatedAt, time);
             };
-            core.OnSpikeSent += (_, time, fromLayer, neuron, _) =>
+            core.OnSpikeSent += (time, fromLayer, neuron, _) =>
             {
                 trace.OutputSpike(neuron, time);
                 spikes.InformSpike(fromLayer, neuron);
             };
-            core.OnSpikeComputed += (_, time, spike) => {
+            core.OnSpikeComputed += (time, spike) =>
+            {
                 computeDelays.ReportDelay(spike.ReceivedAt, time);
             };
-            core.OnSyncStarted += (_, time, _, _) => trace.TimeRef(time);
+            core.OnSyncStarted += (time, _, _) => trace.TimeRef(time);
         }
     }
 
