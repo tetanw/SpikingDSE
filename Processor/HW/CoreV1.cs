@@ -86,14 +86,14 @@ public sealed class CoreV1 : Actor, Core
                         var spike = (SpikeEvent)inputBuffer.Pop();
                         if (!coreBuffer.IsFull)
                             coreBuffer.Push(spike);
-
-                        OnSpikeReceived?.Invoke(env.Now, spike.Layer, spike.Neuron, spike.Feedback, spike);
                     }
 
                     TS = sync.TS + 1;
                     break;
                 case SpikeEvent spike:
                     spike.ReceivedAt = env.Now;
+                    OnSpikeReceived?.Invoke(env.Now, spike.Layer, spike.Neuron, spike.Feedback, spike);
+
                     if (spike.TS > TS)
                     {
                         if (!inputBuffer.IsFull)

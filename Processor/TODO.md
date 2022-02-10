@@ -26,6 +26,8 @@
     - [] Implement proxy metrics
     - [x] Some reporting to see congestion on the NoC
         - [x] Spike travel times
+        - [x] Debug why there are so few spikes in spike travel times
+        - [] Debug why so many spikes have such a short travel delay
     - [] Report utilization of routers and cores
     - [x] Core compute delays
 - Reporting
