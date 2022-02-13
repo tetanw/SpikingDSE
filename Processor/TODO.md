@@ -35,3 +35,11 @@
 - Reporting
     - [] Write introduction & related work
     - [] Document current simulator
+
+# Next meeting
+- [] Move output layer to controller
+- [] Implement one other benchmark
+- [] Maybe add sender process to the core?
+- [] Fix & validate router and core models
+- [] Report utilization of routers and cores
+- [] Rewrite simulator
