@@ -15,7 +15,6 @@ public struct V1DelayModel
 
 public sealed class CoreV1 : Actor, Core
 {
-    // TODO: Consider removing core as it is kind of redundant
     public delegate void SpikeReceived(long time, Layer layer, int neuron, bool feedback, SpikeEvent spike);
     public delegate void SpikeSent(long time, Layer from, int neuron, SpikeEvent spike);
     public delegate void SyncStarted(long time, int ts, HiddenLayer layer);
