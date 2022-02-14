@@ -225,11 +225,11 @@ public sealed class Simulator
 
                     break;
                 }
-            case ResReqEvent resWait:
+            case MutexReqEvent resWait:
                 {
                     var res = resWait.Mutex;
                     if (res.Waiting == null)
-                        res.Waiting = new List<(ResReqEvent, Process)>();
+                        res.Waiting = new List<(MutexReqEvent, Process)>();
                     res.Waiting.Add((resWait, CurrentProcess));
                     CheckBlocking(res);
                     break;
@@ -395,9 +395,9 @@ public sealed class Simulator
         return new ProcessWaitEvent { Process = process };
     }
     
-    public ResReqEvent Wait(Mutex resource, int amount)
+    public MutexReqEvent Wait(Mutex resource, int amount)
     {
-        return new ResReqEvent { Mutex = resource, Amount = amount };
+        return new MutexReqEvent { Mutex = resource, Amount = amount };
     }
 
     public SignalWaitEvent Wait(Signal signal)

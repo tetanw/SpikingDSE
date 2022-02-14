@@ -4,6 +4,15 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace SpikingDSE;
 
+public class ProcessWaitEvent : Event
+{
+    // To scheduler
+    public Process Process;
+
+    // Result
+    public object Value;
+}
+
 public sealed class Process : IComparable<Process>
 {
     public IEnumerator<Event> Runnable;

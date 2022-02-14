@@ -18,7 +18,7 @@ public sealed class Buffer<T>
         this.itemsEmpty = new Mutex(size);
     }
 
-    public ResReqEvent RequestRead()
+    public MutexReqEvent RequestRead()
     {
         return env.Wait(itemsFilled, 1);
     }
@@ -33,7 +33,7 @@ public sealed class Buffer<T>
         env.Increase(itemsEmpty, 1);
     }
 
-    public ResReqEvent RequestWrite()
+    public MutexReqEvent RequestWrite()
     {
         return env.Wait(itemsEmpty, 1);
     }
