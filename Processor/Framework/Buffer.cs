@@ -35,7 +35,7 @@ public sealed class Buffer<T>
 
     public MutexReqEvent RequestWrite()
     {
-        return itemsFilled.Wait(1);
+        return itemsEmpty.Wait(1);
     }
 
     public void Write(T item)
