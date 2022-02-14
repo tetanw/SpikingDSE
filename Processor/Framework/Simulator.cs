@@ -19,12 +19,6 @@ public sealed class Simulator
     {
     }
 
-    public Signal CreateSignal()
-    {
-        var signal = new Signal();
-        return signal;
-    }
-
     public void Notify(Signal signal)
     {
         if (signal.Waiting == null)
@@ -141,7 +135,7 @@ public sealed class Simulator
         }
     }
 
-    public (long time, long nrEvents) RunUntil(long stopTime = long.MaxValue, long stopEvents = long.MaxValue)
+    public void RunUntil(long stopTime = long.MaxValue, long stopEvents = long.MaxValue)
     {
         Now = 0;
         while (NrEventsProcessed < stopEvents && Now < stopTime && ready.Count > 0)
@@ -160,8 +154,6 @@ public sealed class Simulator
             var ev = CurrentProcess.Runnable.Current;
             HandleEvent(ev);
         }
-
-        return (Now, NrEventsProcessed);
     }
 
     private void HandleEvent(Event ev)
