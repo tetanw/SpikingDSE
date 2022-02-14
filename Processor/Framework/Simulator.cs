@@ -203,7 +203,7 @@ public sealed class Simulator
             case MutexReqEvent resWait:
                 {
                     var res = resWait.Mutex;
-                    res.Waiting.Add((resWait, CurrentProcess));
+                    res.Waiting.Add(resWait);
                     CheckBlocking(res);
                     break;
                 }
@@ -224,7 +224,6 @@ public sealed class Simulator
 
     private void OnThreadCompleted(Process thread)
     {
-        if (thread.Waiting == null) return;
         foreach (var waitingThread in thread.Waiting)
         {
             waitingThread.Time = Now;
@@ -236,15 +235,15 @@ public sealed class Simulator
     private void CheckBlocking(Mutex mutex)
     {
         // Schedule any of the waiting cmds if enough mutexs are available
-        if (mutex.Waiting == null) return;
         for (int i = mutex.Waiting.Count - 1; i >= 0; i--)
         {
-            var (decreaseCmd, waitingThread) = mutex.Waiting[i];
+            var decreaseCmd = mutex.Waiting[i];
             if (decreaseCmd.Amount <= mutex.Amount)
             {
+                var proc = decreaseCmd.Process;
                 mutex.Amount -= decreaseCmd.Amount;
-                waitingThread.Time = Now;
-                ready.Enqueue(waitingThread);
+                proc.Time = Now;
+                ready.Enqueue(proc);
                 mutex.Waiting.RemoveAt(i);
             }
         }

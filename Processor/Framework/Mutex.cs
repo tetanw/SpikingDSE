@@ -6,16 +6,19 @@ public class MutexReqEvent : Event
 {
     // To scheduler
     public Mutex Mutex;
+    public Process Process;
     public int Amount;
 }
 
 public sealed class Mutex
 {
-    public List<(MutexReqEvent, Process)> Waiting = new();
+    private Simulator env;
+    public List<MutexReqEvent> Waiting = new();
     public int Amount;
 
-    public Mutex(int amount)
+    public Mutex(Simulator env, int amount)
     {
+        this.env = env;
         this.Amount = amount;
     }
 
@@ -26,6 +29,6 @@ public sealed class Mutex
 
     public MutexReqEvent Wait(int amount)
     {
-        return new MutexReqEvent { Mutex = this, Amount = amount };
+        return new MutexReqEvent { Mutex = this, Amount = amount, Process = env.CurrentProcess };
     }
 }

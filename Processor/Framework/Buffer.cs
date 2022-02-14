@@ -14,8 +14,8 @@ public sealed class Buffer<T>
         this.env = env;
         this.items = new Queue<T>();
         this.size = size;
-        this.itemsFilled = new Mutex(0);
-        this.itemsEmpty = new Mutex(size);
+        this.itemsFilled = new Mutex(env, 0);
+        this.itemsEmpty = new Mutex(env, size);
     }
 
     public MutexReqEvent RequestRead()

@@ -37,7 +37,7 @@ public sealed class ControllerV1 : Actor, Core
     {
         outBuffer = new(env, 1);
 
-        var timesteps = new Mutex(0);
+        var timesteps = new Mutex(env, 0);
 
         env.Process(SpikeSender(env, timesteps));
         env.Process(SyncSender(env, timesteps));
