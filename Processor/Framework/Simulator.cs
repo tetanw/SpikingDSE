@@ -4,50 +4,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 namespace SpikingDSE;
-public sealed class Process : IComparable<Process>
-{
-    public IEnumerator<Event> Runnable;
-    public long Time;
-    public List<Process> Waiting;
-
-    public int CompareTo([AllowNull] Process other)
-    {
-        return Time.CompareTo(other.Time);
-    }
-
-    public override string ToString()
-    {
-        return Runnable.ToString();
-    }
-}
-
-public sealed class Channel
-{
-    public string Name;
-    public OutPort OutPort;
-    public InPort InPort;
-
-    public Process SendProcess;
-    public SendEvent SendEvent;
-    public Process ReceiveProcess;
-    public Event ReceiveEvent;
-
-    public override string ToString()
-    {
-        return Name;
-    }
-}
-
-public sealed class Resource
-{
-    public List<(ResReqEvent, Process)> Waiting;
-    public int Amount;
-}
-
-public sealed class Signal
-{
-    public List<Process> Waiting;
-}
 
 public sealed class Simulator
 {

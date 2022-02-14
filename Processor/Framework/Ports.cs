@@ -1,24 +1,23 @@
-namespace SpikingDSE
+namespace SpikingDSE;
+
+public class Port
 {
-    public class Port
+    public int ChannelHandle;
+    public bool IsBound;
+    public string Name;
+
+    public override string ToString()
     {
-        public int ChannelHandle;
-        public bool IsBound;
-        public string Name;
-
-        public override string ToString()
-        {
-            return Name;
-        }
+        return Name;
     }
+}
 
-    public class InPort : Port
-    {
+public class InPort : Port
+{
 
-    }
+}
 
-    public class OutPort : Port
-    {
+public class OutPort : Port
+{
 
-    }
 }
