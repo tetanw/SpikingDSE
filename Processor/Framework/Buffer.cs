@@ -20,7 +20,7 @@ public sealed class Buffer<T>
 
     public MutexReqEvent RequestRead()
     {
-        return env.Wait(itemsFilled, 1);
+        return itemsFilled.Wait(1);
     }
 
     public T Read()
@@ -35,7 +35,7 @@ public sealed class Buffer<T>
 
     public MutexReqEvent RequestWrite()
     {
-        return env.Wait(itemsEmpty, 1);
+        return itemsFilled.Wait(1);
     }
 
     public void Write(T item)

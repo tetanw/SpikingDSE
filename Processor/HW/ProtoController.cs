@@ -74,7 +74,7 @@ public sealed class ProtoController : Actor, Core
             }
 
             // Wait until until the sync sender goes to next timestep
-            yield return env.Wait(timesteps, 1);
+            yield return timesteps.Wait(1);
         }
     }
 

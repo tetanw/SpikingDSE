@@ -15,10 +15,6 @@ public sealed class Simulator
     public Process CurrentProcess { get; private set; }
     public long Now { get; private set; }
 
-    public Simulator()
-    {
-    }
-
     public void Schedule(Process process)
     {
         process.Time = Now;
@@ -372,15 +368,5 @@ public sealed class Simulator
     {
         var process = AddProcess(runnable);
         return new ProcessWaitEvent { Process = process };
-    }
-
-    public MutexReqEvent Wait(Mutex mutex, int amount)
-    {
-        return new MutexReqEvent { Mutex = mutex, Amount = amount };
-    }
-
-    public SignalWaitEvent Wait(Signal signal)
-    {
-        return new SignalWaitEvent { Signal = signal };
     }
 }

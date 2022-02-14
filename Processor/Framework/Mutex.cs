@@ -23,4 +23,9 @@ public sealed class Mutex
     {
         Amount -= dec;
     }
+
+    public MutexReqEvent Wait(int amount)
+    {
+        return new MutexReqEvent { Mutex = this, Amount = amount };
+    }
 }

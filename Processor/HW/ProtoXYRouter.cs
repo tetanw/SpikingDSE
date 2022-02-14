@@ -71,7 +71,7 @@ public sealed class ProtoXYRouter : MeshRouter
         {
             // 1. Wait for a new packet to arrive at an input
             // or a new packet to be sent from the output
-            yield return env.Wait(signal);
+            yield return signal.Wait();
 
             // 2. If an input was ready then we need to just check whether 
             // that new input needs to be routed. If an output is ready we need

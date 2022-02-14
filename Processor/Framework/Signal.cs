@@ -26,4 +26,9 @@ public sealed class Signal
         }
         Waiting.Clear();
     }
+
+    public SignalWaitEvent Wait()
+    {
+        return new SignalWaitEvent { Signal = this };
+    }
 }
