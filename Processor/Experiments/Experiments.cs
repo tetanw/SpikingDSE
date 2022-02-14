@@ -40,14 +40,12 @@ public abstract class Experiment
     public void Run()
     {
         Setup();
-
         sim.Compile();
         PrintLn("Simulation starting");
         Stopwatch stopwatch = new Stopwatch();
         stopwatch.Start();
         sim.RunUntil(simStop.StopTime, simStop.StopEvents);
         stopwatch.Stop();
-
         Cleanup();
 
         PrintLn("Simulation done");
