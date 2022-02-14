@@ -1,0 +1,12 @@
+# Tasks
+- [] Implement
+    - [] Buffer
+    - [x] Channel
+    - [x] Process
+    - [] Select
+- [] Make tests for all collections
+    - [] Buffer
+    - [x] Channel
+    - [x] Process
+    - [] Select
+- [] Make compatible with old simulator

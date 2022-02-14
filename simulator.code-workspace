@@ -8,6 +8,9 @@
 		},
 		{
 			"path": "SNNs"
+		},
+		{
+			"path": "NewSimulator"
 		}
 	],
 	"settings": {}
