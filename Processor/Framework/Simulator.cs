@@ -31,15 +31,15 @@ public sealed class Simulator
         signal.Waiting.Clear();
     }
 
-    public void Increase(Mutex resource, int amount)
+    public void Increase(Mutex mutex, int amount)
     {
-        resource.Amount += amount;
-        CheckBlocking(resource);
+        mutex.Amount += amount;
+        CheckBlocking(mutex);
     }
 
-    public void Decrease(Mutex resource, int amount)
+    public void Decrease(Mutex mutex, int amount)
     {
-        resource.Amount -= amount;
+        mutex.Amount -= amount;
     }
 
     public Process AddProcess(IEnumerable<Event> runnable)
@@ -256,19 +256,19 @@ public sealed class Simulator
         thread.Waiting.Clear();
     }
 
-    private void CheckBlocking(Mutex resource)
+    private void CheckBlocking(Mutex mutex)
     {
-        // Schedule any of the waiting cmds if enough resources are available
-        if (resource.Waiting == null) return;
-        for (int i = resource.Waiting.Count - 1; i >= 0; i--)
+        // Schedule any of the waiting cmds if enough mutexs are available
+        if (mutex.Waiting == null) return;
+        for (int i = mutex.Waiting.Count - 1; i >= 0; i--)
         {
-            var (decreaseCmd, waitingThread) = resource.Waiting[i];
-            if (decreaseCmd.Amount <= resource.Amount)
+            var (decreaseCmd, waitingThread) = mutex.Waiting[i];
+            if (decreaseCmd.Amount <= mutex.Amount)
             {
-                resource.Amount -= decreaseCmd.Amount;
+                mutex.Amount -= decreaseCmd.Amount;
                 waitingThread.Time = Now;
                 ready.Enqueue(waitingThread);
-                resource.Waiting.RemoveAt(i);
+                mutex.Waiting.RemoveAt(i);
             }
         }
     }
@@ -387,9 +387,9 @@ public sealed class Simulator
         return new ProcessWaitEvent { Process = process };
     }
     
-    public MutexReqEvent Wait(Mutex resource, int amount)
+    public MutexReqEvent Wait(Mutex mutex, int amount)
     {
-        return new MutexReqEvent { Mutex = resource, Amount = amount };
+        return new MutexReqEvent { Mutex = mutex, Amount = amount };
     }
 
     public SignalWaitEvent Wait(Signal signal)

@@ -21,7 +21,7 @@ public sealed class ProtoXYRouter : MeshRouter
     {
         var inBuffers = new Buffer<MeshPacket>[5];
         var outBuffers = new Buffer<MeshPacket>[5];
-        var signal = env.CreateSignal();
+        var signal = new Signal();
 
         for (int dir = 0; dir < 5; dir++)
         {

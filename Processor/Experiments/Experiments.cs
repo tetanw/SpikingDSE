@@ -45,20 +45,20 @@ public abstract class Experiment
         PrintLn("Simulation starting");
         Stopwatch stopwatch = new Stopwatch();
         stopwatch.Start();
-        var (time, nrEvents) = sim.RunUntil(simStop.StopTime, simStop.StopEvents);
+        sim.RunUntil(simStop.StopTime, simStop.StopEvents);
         stopwatch.Stop();
 
         Cleanup();
 
         PrintLn("Simulation done");
         if (Debug) sim.PrintDeadlockReport();
-        PrintLn($"Simulation was stopped at time: {time:n}");
+        PrintLn($"Simulation was stopped at time: {sim.Now:n}");
         PrintLn($"Running time was: {stopwatch.ElapsedMilliseconds} ms");
-        PrintLn($"Events handled: {nrEvents:n}");
-        PrintLn($"Performance was about: {nrEvents / stopwatch.Elapsed.TotalSeconds:n} event/s");
-        if (nrEvents > 0)
+        PrintLn($"Events handled: {sim.NrEventsProcessed:n}");
+        PrintLn($"Performance was about: {sim.NrEventsProcessed / stopwatch.Elapsed.TotalSeconds:n} event/s");
+        if (sim.NrEventsProcessed > 0)
         {
-            PrintLn($"Time per event: {Measurements.FormatSI(stopwatch.Elapsed.TotalSeconds / nrEvents, "s")}");
+            PrintLn($"Time per event: {Measurements.FormatSI(stopwatch.Elapsed.TotalSeconds / sim.NrEventsProcessed, "s")}");
         }
 
     }
