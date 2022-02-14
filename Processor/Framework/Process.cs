@@ -17,7 +17,7 @@ public sealed class Process : IComparable<Process>
 {
     public IEnumerator<Event> Runnable;
     public long Time;
-    public List<Process> Waiting;
+    public List<Process> Waiting = new();
 
     public int CompareTo([AllowNull] Process other)
     {

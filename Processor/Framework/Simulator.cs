@@ -203,23 +203,17 @@ public sealed class Simulator
             case MutexReqEvent resWait:
                 {
                     var res = resWait.Mutex;
-                    if (res.Waiting == null)
-                        res.Waiting = new List<(MutexReqEvent, Process)>();
                     res.Waiting.Add((resWait, CurrentProcess));
                     CheckBlocking(res);
                     break;
                 }
             case ProcessWaitEvent processWait:
                 {
-                    if (processWait.Process.Waiting == null)
-                        processWait.Process.Waiting = new List<Process>();
                     processWait.Process.Waiting.Add(CurrentProcess);
                     break;
                 }
             case SignalWaitEvent signalWait:
                 {
-                    if (signalWait.Signal.Waiting == null)
-                        signalWait.Signal.Waiting = new List<Process>();
                     signalWait.Signal.Waiting.Add(CurrentProcess);
                     break;
                 }
