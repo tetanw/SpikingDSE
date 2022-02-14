@@ -19,27 +19,16 @@ public sealed class Simulator
     {
     }
 
-    public void Notify(Signal signal)
+    public void Schedule(Process process)
     {
-        if (signal.Waiting == null)
-            return;
-        foreach (var thread in signal.Waiting)
-        {
-            thread.Time = Now;
-            ready.Enqueue(thread);
-        }
-        signal.Waiting.Clear();
+        process.Time = Now;
+        ready.Enqueue(process);
     }
 
     public void Increase(Mutex mutex, int amount)
     {
         mutex.Amount += amount;
         CheckBlocking(mutex);
-    }
-
-    public void Decrease(Mutex mutex, int amount)
-    {
-        mutex.Amount -= amount;
     }
 
     public Process AddProcess(IEnumerable<Event> runnable)
@@ -73,15 +62,13 @@ public sealed class Simulator
         outPort.ChannelHandle = newId;
     }
 
+    public void AddChannel(OutPort outPort, InPort inPort) => AddChannel(inPort, outPort);
+
+
     public T AddActor<T>(T process) where T : Actor
     {
         actors.Add(process);
         return process;
-    }
-
-    public void AddChannel(OutPort outPort, InPort inPort)
-    {
-        AddChannel(inPort, outPort);
     }
 
     public void Compile()
@@ -386,7 +373,7 @@ public sealed class Simulator
         var process = AddProcess(runnable);
         return new ProcessWaitEvent { Process = process };
     }
-    
+
     public MutexReqEvent Wait(Mutex mutex, int amount)
     {
         return new MutexReqEvent { Mutex = mutex, Amount = amount };

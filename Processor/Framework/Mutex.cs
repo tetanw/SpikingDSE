@@ -18,4 +18,9 @@ public sealed class Mutex
     {
         this.Amount = amount;
     }
+
+    public void Decrease(int dec)
+    {
+        Amount -= dec;
+    }
 }

@@ -51,14 +51,14 @@ public sealed class Buffer<T>
     public void Push(T item)
     {
         items.Enqueue(item);
-        env.Decrease(itemsEmpty, 1);
+        itemsEmpty.Decrease(1);
         env.Increase(itemsFilled, 1);
     }
 
     public T Pop()
     {
         T item = items.Dequeue();
-        env.Decrease(itemsFilled, 1);
+        itemsFilled.Decrease(1);
         env.Increase(itemsEmpty, 1);
         return item;
     }

@@ -9,5 +9,21 @@ public class SignalWaitEvent : Event
 
 public sealed class Signal
 {
-    public List<Process> Waiting;
+    private Simulator env;
+
+    public List<Process> Waiting = new();
+
+    public Signal(Simulator env)
+    {
+        this.env = env;
+    }
+
+    public void Notify()
+    {
+        foreach (var process in Waiting)
+        {
+            env.Schedule(process);
+        }
+        Waiting.Clear();
+    }
 }

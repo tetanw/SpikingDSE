@@ -21,7 +21,7 @@ public sealed class ProtoXYRouter : MeshRouter
     {
         var inBuffers = new Buffer<MeshPacket>[5];
         var outBuffers = new Buffer<MeshPacket>[5];
-        var signal = new Signal();
+        var signal = new Signal(env);
 
         for (int dir = 0; dir < 5; dir++)
         {
@@ -118,7 +118,7 @@ public sealed class ProtoXYRouter : MeshRouter
             var flit = buffer.Read();
             yield return env.Send(outPort, flit);
             buffer.ReleaseRead();
-            env.Notify(signal);
+            signal.Notify();
         }
     }
 
@@ -131,7 +131,7 @@ public sealed class ProtoXYRouter : MeshRouter
             yield return rcv;
             buffer.Write((MeshPacket)rcv.Message);
             buffer.ReleaseWrite();
-            env.Notify(signal);
+            signal.Notify();
         }
     }
 
