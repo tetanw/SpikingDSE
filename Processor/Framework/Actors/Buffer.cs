@@ -1,49 +1,47 @@
 using System.Collections.Generic;
 
-namespace SpikingDSE
+namespace SpikingDSE;
+public sealed class BufferActor : Actor
 {
-    public sealed class BufferActor : Actor
+    public InPort input = new InPort();
+    public OutPort output = new OutPort();
+
+    private int depth;
+    private Buffer<object> fifo;
+
+    public BufferActor(int depth)
     {
-        public InPort input = new InPort();
-        public OutPort output = new OutPort();
+        this.depth = depth;
+    }
 
-        private int depth;
-        private Buffer<object> fifo;
+    public override IEnumerable<Event> Run(Simulator env)
+    {
+        fifo = new Buffer<object>(env, depth);
+        env.Process(Send(env));
+        env.Process(Receive(env));
+        yield break;
+    }
 
-        public BufferActor(int depth)
+    public IEnumerable<Event> Send(Simulator env)
+    {
+        while (true)
         {
-            this.depth = depth;
+            yield return fifo.RequestRead();
+            var message = fifo.Read();
+            yield return env.Send(output, message);
+            fifo.ReleaseRead();
         }
+    }
 
-        public override IEnumerable<Event> Run(Simulator env)
+    public IEnumerable<Event> Receive(Simulator env)
+    {
+        while (true)
         {
-            fifo = new Buffer<object>(env, depth);
-            env.Process(Send(env));
-            env.Process(Receive(env));
-            yield break;
-        }
-
-        public IEnumerable<Event> Send(Simulator env)
-        {
-            while (true)
-            {
-                yield return fifo.RequestRead();
-                var message = fifo.Read();
-                yield return env.Send(output, message);
-                fifo.ReleaseRead();
-            }
-        }
-
-        public IEnumerable<Event> Receive(Simulator env)
-        {
-            while (true)
-            {
-                yield return fifo.RequestWrite();
-                var rcv = env.Receive(input);
-                yield return rcv;
-                fifo.Write(rcv.Message);
-                fifo.ReleaseWrite();
-            }
+            yield return fifo.RequestWrite();
+            var rcv = env.Receive(input);
+            yield return rcv;
+            fifo.Write(rcv.Message);
+            fifo.ReleaseWrite();
         }
     }
 }

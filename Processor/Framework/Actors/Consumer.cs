@@ -1,33 +1,32 @@
 using System;
 using System.Collections.Generic;
 
-namespace SpikingDSE
+namespace SpikingDSE;
+
+public delegate void Consumed(Consumer consumer, long time, object message);
+
+public sealed class Consumer : Actor
 {
-    public delegate void Consumed(Consumer consumer, long time, object message);
+    public Consumed Consumed;
 
-    public sealed class Consumer : Actor
+    public InPort In = new InPort();
+
+    private int interval;
+
+    public Consumer(string name = "", int interval = 0)
     {
-        public Consumed Consumed;
+        this.interval = interval;
+        this.Name = name;
+    }
 
-        public InPort In = new InPort();
-
-        private int interval;
-
-        public Consumer(string name = "", int interval = 0)
+    public override IEnumerable<Event> Run(Simulator env)
+    {
+        ReceiveEvent rcv;
+        while (true)
         {
-            this.interval = interval;
-            this.Name = name;
-        }
-
-        public override IEnumerable<Event> Run(Simulator env)
-        {
-            ReceiveEvent rcv;
-            while (true)
-            {
-                rcv = env.Receive(In, waitBefore: interval);
-                yield return rcv;
-                Consumed?.Invoke(this, env.Now, rcv.Message);
-            }
+            rcv = env.Receive(In, waitBefore: interval);
+            yield return rcv;
+            Consumed?.Invoke(this, env.Now, rcv.Message);
         }
     }
 }

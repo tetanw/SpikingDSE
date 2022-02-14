@@ -23,7 +23,7 @@ public class MeshTest : Experiment
     {
         var reporter = new Reporter();
         var producer = sim.AddActor(new Producer(4, () => new MeshPacket { Dest = new MeshCoord(1, 1), Message = "hi" }, name: "producer"));
-        producer.Produced += reporter.Produced;
+        producer.WhenProduced += reporter.Produced;
         var consumer = sim.AddActor(new Consumer(name: "consumer"));
         consumer.Consumed += reporter.Consumed;
         var routers = MeshUtils.CreateMesh(sim, 2, 2, (x, y) => new SimpleXYRouter(x, y, 1, name: $"router({x},{y})"));

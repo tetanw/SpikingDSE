@@ -22,7 +22,7 @@ public class RepTest : Experiment
         var reporter = new Reporter();
 
         var producer = sim.AddActor(new Producer(4, () => "hi"));
-        producer.Produced += reporter.Produced;
+        producer.WhenProduced += reporter.Produced;
         var consumer = sim.AddActor(new Consumer());
         consumer.Consumed += reporter.Consumed;
 

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 
 namespace SpikingDSE;
+
 public class Event
 {
 
