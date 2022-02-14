@@ -22,7 +22,7 @@ public class ResTest : Experiment
         var reporter = new Reporter();
         var producer = sim.AddActor(new Producer(0, () => "Hi", name: "producer"));
         producer.Produced = reporter.Produced;
-        var buffer = sim.AddActor(new Buffer(5));
+        var buffer = sim.AddActor(new BufferActor(5));
         var consumer = sim.AddActor(new Consumer(interval: 3, name: "consumer"));
         consumer.Consumed = reporter.Consumed;
 

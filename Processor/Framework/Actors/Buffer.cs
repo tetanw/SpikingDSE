@@ -2,22 +2,22 @@ using System.Collections.Generic;
 
 namespace SpikingDSE
 {
-    public sealed class Buffer : Actor
+    public sealed class BufferActor : Actor
     {
         public InPort input = new InPort();
         public OutPort output = new OutPort();
 
         private int depth;
-        private FIFO<object> fifo;
+        private Buffer<object> fifo;
 
-        public Buffer(int depth)
+        public BufferActor(int depth)
         {
             this.depth = depth;
         }
 
         public override IEnumerable<Event> Run(Simulator env)
         {
-            fifo = new FIFO<object>(env, depth);
+            fifo = new Buffer<object>(env, depth);
             env.Process(Send(env));
             env.Process(Receive(env));
             yield break;

@@ -36,8 +36,8 @@ public sealed class CoreV1 : Actor, Core
     private int totalOutputSpikes = 0;
     private int totalInputSpikes = 0;
     private int bufferSize;
-    private FIFO<CoreEvent> coreBuffer;
-    private FIFO<CoreEvent> inputBuffer;
+    private Buffer<CoreEvent> coreBuffer;
+    private Buffer<CoreEvent> inputBuffer;
 
     public CoreV1(MeshCoord location, V1DelayModel delayModel, int feedbackBufferSize = int.MaxValue, string name = "")
     {

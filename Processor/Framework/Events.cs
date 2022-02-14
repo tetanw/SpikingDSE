@@ -46,7 +46,7 @@ public class SelectEvent : Event
 public class ResReqEvent : Event
 {
     // To scheduler
-    public Resource Resource;
+    public Mutex Mutex;
     public int Amount;
 }
 

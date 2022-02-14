@@ -37,24 +37,15 @@ public sealed class Simulator
         signal.Waiting.Clear();
     }
 
-    public void Increase(Resource resource, int amount)
+    public void Increase(Mutex resource, int amount)
     {
         resource.Amount += amount;
         CheckBlocking(resource);
     }
 
-    public void Decrease(Resource resource, int amount)
+    public void Decrease(Mutex resource, int amount)
     {
         resource.Amount -= amount;
-    }
-
-    public Resource CreateResource(int initial)
-    {
-        var resource = new Resource
-        {
-            Amount = initial
-        };
-        return resource;
     }
 
     public Process AddProcess(IEnumerable<Event> runnable)
@@ -236,7 +227,7 @@ public sealed class Simulator
                 }
             case ResReqEvent resWait:
                 {
-                    var res = resWait.Resource;
+                    var res = resWait.Mutex;
                     if (res.Waiting == null)
                         res.Waiting = new List<(ResReqEvent, Process)>();
                     res.Waiting.Add((resWait, CurrentProcess));
@@ -273,7 +264,7 @@ public sealed class Simulator
         thread.Waiting.Clear();
     }
 
-    private void CheckBlocking(Resource resource)
+    private void CheckBlocking(Mutex resource)
     {
         // Schedule any of the waiting cmds if enough resources are available
         if (resource.Waiting == null) return;
@@ -404,9 +395,9 @@ public sealed class Simulator
         return new ProcessWaitEvent { Process = process };
     }
     
-    public ResReqEvent RequestResource(Resource resource, int amount)
+    public ResReqEvent Wait(Mutex resource, int amount)
     {
-        return new ResReqEvent { Resource = resource, Amount = amount };
+        return new ResReqEvent { Mutex = resource, Amount = amount };
     }
 
     public SignalWaitEvent Wait(Signal signal)

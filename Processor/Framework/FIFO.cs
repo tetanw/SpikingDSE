@@ -1,26 +1,26 @@
 using System.Collections.Generic;
 
 namespace SpikingDSE;
-public sealed class FIFO<T>
+public sealed class Buffer<T>
 {
     private Simulator env;
     private Queue<T> items;
     private int size;
-    private Resource itemsFilled;
-    private Resource itemsEmpty;
+    private Mutex itemsFilled;
+    private Mutex itemsEmpty;
 
-    public FIFO(Simulator env, int size)
+    public Buffer(Simulator env, int size)
     {
         this.env = env;
         this.items = new Queue<T>();
         this.size = size;
-        this.itemsFilled = env.CreateResource(0);
-        this.itemsEmpty = env.CreateResource(size);
+        this.itemsFilled = new Mutex(0);
+        this.itemsEmpty = new Mutex(size);
     }
 
     public ResReqEvent RequestRead()
     {
-        return env.RequestResource(itemsFilled, 1);
+        return env.Wait(itemsFilled, 1);
     }
 
     public T Read()
@@ -35,7 +35,7 @@ public sealed class FIFO<T>
 
     public ResReqEvent RequestWrite()
     {
-        return env.RequestResource(itemsEmpty, 1);
+        return env.Wait(itemsEmpty, 1);
     }
 
     public void Write(T item)

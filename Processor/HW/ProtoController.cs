@@ -20,7 +20,7 @@ public sealed class ProtoController : Actor, Core
     private SNN snn;
     private long startTime;
     private long interval;
-    private FIFO<object> outBuffer;
+    private Buffer<object> outBuffer;
     private Dictionary<Layer, MeshCoord> mappings = new();
 
     public ProtoController(object location, int nrTimesteps, SNN snn, long startTime, long interval, string name = null)
@@ -47,7 +47,7 @@ public sealed class ProtoController : Actor, Core
     {
         outBuffer = new(env, 1);
 
-        var timesteps = env.CreateResource(0);
+        var timesteps = new Mutex(0);
 
         env.Process(SpikeSender(env, timesteps));
         env.Process(SyncSender(env, timesteps));
@@ -58,7 +58,7 @@ public sealed class ProtoController : Actor, Core
         yield break;
     }
 
-    private IEnumerable<Event> SpikeSender(Simulator env, Resource timesteps)
+    private IEnumerable<Event> SpikeSender(Simulator env, Mutex timesteps)
     {
         while (inputLayer.spikeSource.NextTimestep())
         {
@@ -74,11 +74,11 @@ public sealed class ProtoController : Actor, Core
             }
 
             // Wait until until the sync sender goes to next timestep
-            yield return env.RequestResource(timesteps, 1);
+            yield return env.Wait(timesteps, 1);
         }
     }
 
-    private IEnumerable<Event> SyncSender(Simulator env, Resource timesteps)
+    private IEnumerable<Event> SyncSender(Simulator env, Mutex timesteps)
     {
         yield return env.SleepUntil(startTime);
 

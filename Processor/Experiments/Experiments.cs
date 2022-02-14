@@ -72,7 +72,7 @@ public abstract class DSEExperiment<T>
 {
     public void Run()
     {
-        var m = new Mutex();
+        var m = new System.Threading.Mutex();
 
         foreach (var config in Configs())
         {
