@@ -79,7 +79,7 @@ public sealed class ProtoCore : Actor, Core
         this.destination = coord;
     }
 
-    public override IEnumerable<Event> Run(Environment env)
+    public override IEnumerable<Event> Run(Simulator env)
     {
         while (true)
         {
@@ -109,7 +109,7 @@ public sealed class ProtoCore : Actor, Core
         }
     }
 
-    private IEnumerable<Event> Compute(Environment env, int neuron, bool feedback)
+    private IEnumerable<Event> Compute(Simulator env, int neuron, bool feedback)
     {
         OnSpikeReceived?.Invoke(this, env.Now, Layer, neuron, feedback);
         if (feedback)
@@ -128,7 +128,7 @@ public sealed class ProtoCore : Actor, Core
         // yield return env.Delay(delayModel.ComputeTime * this.Layer.Size);
     }
 
-    private IEnumerable<Event> Receive(Environment env, Action<CoreEvent> onReceive)
+    private IEnumerable<Event> Receive(Simulator env, Action<CoreEvent> onReceive)
     {
         var rcv = env.Receive(input, waitBefore: delayModel.InputTime);
         yield return rcv;
@@ -136,7 +136,7 @@ public sealed class ProtoCore : Actor, Core
         onReceive((CoreEvent)flit.Message);
     }
 
-    private IEnumerable<Event> Sync(Environment env, int TS)
+    private IEnumerable<Event> Sync(Simulator env, int TS)
     {
         totalOutputSpikes = 0;
         totalInputSpikes = 0;

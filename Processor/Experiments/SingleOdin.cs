@@ -19,7 +19,7 @@ public sealed class SpikeSourceTrace : Actor
         this.startTime = startTime;
     }
 
-    public override IEnumerable<Event> Run(Environment env)
+    public override IEnumerable<Event> Run(Simulator env)
     {
         yield return env.SleepUntil(startTime);
         foreach (var neuron in spikeTrace)
@@ -42,7 +42,7 @@ public sealed class SpikeSink : Actor
         this.Name = name;
     }
 
-    public override IEnumerable<Event> Run(Environment env)
+    public override IEnumerable<Event> Run(Simulator env)
     {
         while (true)
         {

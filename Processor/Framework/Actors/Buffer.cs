@@ -15,7 +15,7 @@ namespace SpikingDSE
             this.depth = depth;
         }
 
-        public override IEnumerable<Event> Run(Environment env)
+        public override IEnumerable<Event> Run(Simulator env)
         {
             fifo = new FIFO<object>(env, depth);
             env.Process(Send(env));
@@ -23,7 +23,7 @@ namespace SpikingDSE
             yield break;
         }
 
-        public IEnumerable<Event> Send(Environment env)
+        public IEnumerable<Event> Send(Simulator env)
         {
             while (true)
             {
@@ -34,7 +34,7 @@ namespace SpikingDSE
             }
         }
 
-        public IEnumerable<Event> Receive(Environment env)
+        public IEnumerable<Event> Receive(Simulator env)
         {
             while (true)
             {

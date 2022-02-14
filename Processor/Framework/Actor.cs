@@ -6,6 +6,6 @@ namespace SpikingDSE
     {
         public string Name { get; protected set; }
 
-        public abstract IEnumerable<Event> Run(Environment env);
+        public abstract IEnumerable<Event> Run(Simulator env);
     }
 }

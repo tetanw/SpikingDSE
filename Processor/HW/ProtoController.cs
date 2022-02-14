@@ -21,7 +21,6 @@ public sealed class ProtoController : Actor, Core
     private long startTime;
     private long interval;
     private FIFO<object> outBuffer;
-    private Queue<StoredSpike> storedSpikes = new();
     private Dictionary<Layer, MeshCoord> mappings = new();
 
     public ProtoController(object location, int nrTimesteps, SNN snn, long startTime, long interval, string name = null)
@@ -44,7 +43,7 @@ public sealed class ProtoController : Actor, Core
 
     public object GetLocation() => location;
 
-    public override IEnumerable<Event> Run(Environment env)
+    public override IEnumerable<Event> Run(Simulator env)
     {
         outBuffer = new(env, 1);
 
@@ -59,7 +58,7 @@ public sealed class ProtoController : Actor, Core
         yield break;
     }
 
-    private IEnumerable<Event> SpikeSender(Environment env, Resource timesteps)
+    private IEnumerable<Event> SpikeSender(Simulator env, Resource timesteps)
     {
         while (inputLayer.spikeSource.NextTimestep())
         {
@@ -79,7 +78,7 @@ public sealed class ProtoController : Actor, Core
         }
     }
 
-    private IEnumerable<Event> SyncSender(Environment env, Resource timesteps)
+    private IEnumerable<Event> SyncSender(Simulator env, Resource timesteps)
     {
         yield return env.SleepUntil(startTime);
 
@@ -93,12 +92,12 @@ public sealed class ProtoController : Actor, Core
             outBuffer.ReleaseWrite();
             TimeAdvanced?.Invoke(this, TS);
 
-            env.IncreaseResource(timesteps, 1);
+            env.Increase(timesteps, 1);
             TS++;
         }
     }
 
-    private IEnumerable<Event> Sender(Environment env)
+    private IEnumerable<Event> Sender(Simulator env)
     {
         while (true)
         {
@@ -109,7 +108,7 @@ public sealed class ProtoController : Actor, Core
         }
     }
 
-    private IEnumerable<Event> Receiver(Environment env)
+    private IEnumerable<Event> Receiver(Simulator env)
     {
         while (true)
         {
@@ -129,7 +128,7 @@ public sealed class ProtoController : Actor, Core
         }
     }
 
-    private IEnumerable<Event> SendODINEvent(Environment env, object message)
+    private IEnumerable<Event> SendODINEvent(Simulator env, object message)
     {
         if (message is StoredSpike)
         {

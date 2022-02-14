@@ -19,7 +19,7 @@ public sealed class XYRouter : MeshRouter
         this.switchDelay = switchDelay;
     }
 
-    public override IEnumerable<Event> Run(Environment env)
+    public override IEnumerable<Event> Run(Simulator env)
     {
         var inBuffers = new FIFO<MeshPacket>[5];
         var outBuffers = new FIFO<MeshPacket>[5];
@@ -67,7 +67,7 @@ public sealed class XYRouter : MeshRouter
         else throw new Exception("Unknown direction");
     }
 
-    private IEnumerable<Event> Switch(Environment env, FIFO<MeshPacket>[] inBuffers, FIFO<MeshPacket>[] outBuffers, Signal signal)
+    private IEnumerable<Event> Switch(Simulator env, FIFO<MeshPacket>[] inBuffers, FIFO<MeshPacket>[] outBuffers, Signal signal)
     {
         while (true)
         {
@@ -120,7 +120,7 @@ public sealed class XYRouter : MeshRouter
     }
 
 
-    private IEnumerable<Event> OutLink(Environment env, OutPort outPort, FIFO<MeshPacket> buffer, Signal signal)
+    private IEnumerable<Event> OutLink(Simulator env, OutPort outPort, FIFO<MeshPacket> buffer, Signal signal)
     {
         while (true)
         {
@@ -132,7 +132,7 @@ public sealed class XYRouter : MeshRouter
         }
     }
 
-    private IEnumerable<Event> InLink(Environment env, InPort inPort, FIFO<MeshPacket> buffer, Signal signal)
+    private IEnumerable<Event> InLink(Simulator env, InPort inPort, FIFO<MeshPacket> buffer, Signal signal)
     {
         while (true)
         {

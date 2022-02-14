@@ -12,7 +12,7 @@ class ToyProducer : Actor
         this.Name = name;
     }
 
-    public override IEnumerable<Event> Run(Environment env)
+    public override IEnumerable<Event> Run(Simulator env)
     {
         while (true)
         {
@@ -28,7 +28,7 @@ class ToyConsumer : Actor
     public InPort in1 = new();
     public InPort in2 = new();
 
-    public override IEnumerable<Event> Run(Environment env)
+    public override IEnumerable<Event> Run(Simulator env)
     {
         while (true)
         {

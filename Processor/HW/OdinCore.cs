@@ -79,7 +79,7 @@ public sealed class OdinCore : Actor, Core
         this.layer = (OdinIFLayer)layer;
     }
 
-    public override IEnumerable<Event> Run(Environment env)
+    public override IEnumerable<Event> Run(Simulator env)
     {
         while (true)
         {
@@ -110,7 +110,7 @@ public sealed class OdinCore : Actor, Core
         }
     }
 
-    private IEnumerable<Event> Compute(Environment env)
+    private IEnumerable<Event> Compute(Simulator env)
     {
         var inputSpike = (SpikeEvent)received;
         OnSpikeRecived?.Invoke(this, env.Now, inputSpike);
@@ -134,14 +134,14 @@ public sealed class OdinCore : Actor, Core
         yield return env.SleepUntil(syncTime);
     }
 
-    private IEnumerable<Event> Receive(Environment env)
+    private IEnumerable<Event> Receive(Simulator env)
     {
         var rcv = env.Receive(input, waitBefore: delayModel.InputTime);
         yield return rcv;
         received = (CoreEvent)rcv.Message;
     }
 
-    private IEnumerable<Event> AdvanceTime(Environment env)
+    private IEnumerable<Event> AdvanceTime(Simulator env)
     {
         OnTimeReceived?.Invoke(this, env.Now, (received as SyncEvent).TS, layer);
         totalOutputSpikes = 0;

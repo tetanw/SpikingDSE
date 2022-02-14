@@ -58,7 +58,7 @@ public sealed class CoreV1 : Actor, Core
         this.mapping = mapping;
     }
 
-    private IEnumerable<Event> Receiver(Environment env)
+    private IEnumerable<Event> Receiver(Simulator env)
     {
         int TS = 0;
 
@@ -116,7 +116,7 @@ public sealed class CoreV1 : Actor, Core
         }
     }
 
-    public override IEnumerable<Event> Run(Environment env)
+    public override IEnumerable<Event> Run(Simulator env)
     {
         inputBuffer = new(env, bufferSize);
         coreBuffer = new(env, bufferSize);
@@ -142,7 +142,7 @@ public sealed class CoreV1 : Actor, Core
         }
     }
 
-    private IEnumerable<Event> Compute(Environment env, SpikeEvent spike)
+    private IEnumerable<Event> Compute(Simulator env, SpikeEvent spike)
     {
         OnSpikeComputed?.Invoke(env.Now, spike);
         if (spike.Feedback)
@@ -156,7 +156,7 @@ public sealed class CoreV1 : Actor, Core
         yield return env.Delay(delayModel.ComputeTime * spike.Layer.Size);
     }
 
-    private IEnumerable<Event> Sync(Environment env, SyncEvent sync)
+    private IEnumerable<Event> Sync(Simulator env, SyncEvent sync)
     {
         totalOutputSpikes = 0;
         totalInputSpikes = 0;

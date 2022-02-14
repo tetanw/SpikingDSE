@@ -21,7 +21,7 @@ namespace SpikingDSE
             this.reporter = reporter;
         }
 
-        public override IEnumerable<Event> Run(Environment env)
+        public override IEnumerable<Event> Run(Simulator env)
         {
             while (true)
             {

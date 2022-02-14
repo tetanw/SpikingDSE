@@ -18,7 +18,7 @@ public class MergeSplit : Actor
         }
     }
 
-    public override IEnumerable<Event> Run(Environment env)
+    public override IEnumerable<Event> Run(Simulator env)
     {
         var allInports = FromMesh.Concat(new InPort[] { FromController });
         while (true)

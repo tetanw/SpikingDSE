@@ -19,7 +19,7 @@ namespace SpikingDSE
             this.Name = name;
         }
 
-        public override IEnumerable<Event> Run(Environment env)
+        public override IEnumerable<Event> Run(Simulator env)
         {
             ReceiveEvent rcv;
             while (true)

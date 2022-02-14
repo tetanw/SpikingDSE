@@ -15,7 +15,7 @@ public sealed class SimpleXYRouter : MeshRouter
         this.processingDelay = processingDelay;
     }
 
-    public override IEnumerable<Event> Run(Environment env)
+    public override IEnumerable<Event> Run(Simulator env)
     {
         while (true)
         {

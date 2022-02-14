@@ -4,13 +4,13 @@ namespace SpikingDSE
 {
     public sealed class FIFO<T>
     {
-        private Environment env;
+        private Simulator env;
         private Queue<T> items;
         private int size;
         private Resource itemsFilled;
         private Resource itemsEmpty;
 
-        public FIFO(Environment env, int size)
+        public FIFO(Simulator env, int size)
         {
             this.env = env;
             this.items = new Queue<T>();
@@ -31,7 +31,7 @@ namespace SpikingDSE
 
         public void ReleaseRead()
         {
-            env.IncreaseResource(itemsEmpty, 1);
+            env.Increase(itemsEmpty, 1);
         }
 
         public ResReqEvent RequestWrite()
@@ -46,21 +46,21 @@ namespace SpikingDSE
 
         public void ReleaseWrite()
         {
-            env.IncreaseResource(itemsFilled, 1);
+            env.Increase(itemsFilled, 1);
         }
 
         public void Push(T item)
         {
             items.Enqueue(item);
-            env.DecreaseResource(itemsEmpty, 1);
-            env.IncreaseResource(itemsFilled, 1);
+            env.Decrease(itemsEmpty, 1);
+            env.Increase(itemsFilled, 1);
         }
 
         public T Pop()
         {
             T item = items.Dequeue();
-            env.DecreaseResource(itemsFilled, 1);
-            env.IncreaseResource(itemsEmpty, 1);
+            env.Decrease(itemsFilled, 1);
+            env.Increase(itemsEmpty, 1);
             return item;
         }
 
