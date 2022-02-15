@@ -1,7 +1,7 @@
 # Todo list
 - Fix delay model in both router and core
     - Implement
-        - [] Router
+        - [x] Router
         - [x] Core
     - Validate
         - [] Router
@@ -39,7 +39,6 @@
 # Next meeting
 - [] Move output layer to controller
 - [] Implement one other benchmark
-- [] Maybe add sender process to the core?
 - [] Fix & validate router and core models
 - [] Report utilization of routers and cores
-- [] Rewrite simulator
+- [x] Clean up simulator
