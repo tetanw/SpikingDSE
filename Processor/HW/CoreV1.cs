@@ -47,16 +47,13 @@ public sealed class CoreV1 : Actor, Core
         this.delayModel = delayModel;
     }
 
-    public bool AcceptsLayer(Layer layer) => false;
+    public bool AcceptsLayer(Layer layer) => throw new NotImplementedException();
 
     public object GetLocation() => thisLoc;
 
-    public void AddLayer(Layer layer) { }
+    public void AddLayer(Layer layer) => throw new NotImplementedException();
 
-    public void LoadMapping(MappingTable mapping)
-    {
-        this.mapping = mapping;
-    }
+    public void LoadMapping(MappingTable mapping) => this.mapping = mapping;
 
     private IEnumerable<Event> Receiver(Simulator env)
     {
