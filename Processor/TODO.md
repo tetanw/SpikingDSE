@@ -39,6 +39,6 @@
 # Next meeting
 - [] Move output layer to controller
 - [] Implement one other benchmark
-- [] Fix & validate router and core models
+- [x] Fix & validate router and core models
 - [] Report utilization of routers and cores
 - [x] Clean up simulator
