@@ -101,7 +101,7 @@ public class ALIFLayer : HiddenLayer
 
     public ALIFLayer Copy()
     {
-        return new ALIFLayer(this.InWeights, this.RecWeights, this.Bias, this.Alpha, this.Rho, this.VTh, this.Name);
+        return new ALIFLayer(this.InWeights, this.RecWeights, this.Bias, this.Alpha, this.Rho, this.VTh, this.Name, offset: this.Offset);
     }
 
     public ALIFLayer Slice(int start, int end, int index)
