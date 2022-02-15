@@ -213,7 +213,10 @@ public sealed class Simulator
                     break;
                 }
             case SignalWaitEvent signalWait:
-                break;
+                {
+                    signalWait.Signal.Waiting.Add(signalWait);
+                    break;
+                }
             default:
                 throw new Exception("Unknown event: " + ev);
         }
