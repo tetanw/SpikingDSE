@@ -110,7 +110,7 @@ public class MultiCoreV1 : Experiment
     private MemReporter mem;
     private TimeDelayReporter spikeDelays;
     private TimeDelayReporter computeDelays;
-    private FileReporter transfers; 
+    private FileReporter transfers;
     private Mapping mapping;
 
     public int Prediction = -1;
@@ -179,11 +179,13 @@ public class MultiCoreV1 : Experiment
             core.OnSyncStarted += (time, _, _) => trace.TimeRef(time);
         }
 
+        transfers.ReportLine($"hw-time,router-x,router-y,from,to,snn-time");
         foreach (var r in hw.routers)
         {
             var router = r as XYRouter;
 
-            router.OnTransfer += (time, from, to) => {
+            router.OnTransfer += (time, from, to) =>
+            {
                 transfers.ReportLine($"{time},{router.x},{router.y},{from},{to},{myTS}");
             };
         }
