@@ -7,19 +7,23 @@ public sealed class XYRouter : MeshRouter
 {
     private int inputBufferSize;
     private int outputBufferSize;
-    private int switchDelay;
+    private int reswitchDelay;
+    private int packetRouteDelay;
+    private int receiveDelay;
     private Buffer<MeshPacket>[] inBuffers;
     private Buffer<MeshPacket>[] outBuffers;
     private CondVar<int[]> condVar;
 
-    public XYRouter(int x, int y, string name = "", int inputBufferSize = 1, int outputBufferSize = 1, int switchDelay = 1)
+    public XYRouter(int x, int y, int reswitchDelay, int packetRouteDelay, int receiveDelay, string name = "", int inputBufferSize = 1, int outputBufferSize = 1)
     {
         this.x = x;
         this.y = y;
+        this.reswitchDelay = reswitchDelay;
+        this.packetRouteDelay = packetRouteDelay;
+        this.receiveDelay = receiveDelay;
         this.Name = name;
         this.inputBufferSize = inputBufferSize;
         this.outputBufferSize = outputBufferSize;
-        this.switchDelay = switchDelay;
     }
 
     public override IEnumerable<Event> Run(Simulator env)
@@ -88,23 +92,34 @@ public sealed class XYRouter : MeshRouter
             // Find the offending port
             int i = Array.FindIndex(condVar.Value, (v) => v > 0);
 
+            // Update dir
+            condVar.Value[i]--;
+            condVar.Update();
+
+            bool packetFound;
             if (i < 5)
             {
                 // Is input event
-                OnInputEvent(i);
+                packetFound = OnInputEvent(i);
             }
             else
             {
                 // Is output event
-                OnOutputEvent(ref lastDir, i - 5);
+                packetFound = OnOutputEvent(ref lastDir, i - 5);
             }
-
-            condVar.Value[i]--;
-            condVar.Update();
+            
+            if (packetFound)
+            {
+                yield return env.Delay(packetRouteDelay);
+            }
+            else
+            {
+                yield return env.Delay(reswitchDelay);
+            }
         }
     }
 
-    private void OnInputEvent(int dir)
+    private bool OnInputEvent(int dir)
     {
         var inBuffer = inBuffers[dir];
         var packet = inBuffer.Peek();
@@ -113,10 +128,15 @@ public sealed class XYRouter : MeshRouter
         if (!outBuffer.IsFull)
         {
             outBuffer.Push(inBuffer.Pop());
+            return true;
+        }
+        else
+        {
+            return false;
         }
     }
 
-    private void OnOutputEvent(ref int lastDir, int freeDir)
+    private bool OnOutputEvent(ref int lastDir, int freeDir)
     {
         for (int i = 0; i < 5; i++)
         {
@@ -130,9 +150,10 @@ public sealed class XYRouter : MeshRouter
             {
                 outBuffers[outDir].Push(inBuffer.Pop());
                 lastDir = inDir;
-                break;
+                return true;
             }
         }
+        return false;
     }
 
     private IEnumerable<Event> OutLink(Simulator env, int dir)
@@ -160,6 +181,8 @@ public sealed class XYRouter : MeshRouter
         while (true)
         {
             yield return buffer.RequestWrite();
+            // This symbolises the amount of time for the transfer to take place
+            yield return env.Delay(receiveDelay);
             var rcv = env.Receive(inPort);
             yield return rcv;
             buffer.Write((MeshPacket)rcv.Message);
