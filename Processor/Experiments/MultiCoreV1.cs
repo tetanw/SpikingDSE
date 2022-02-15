@@ -214,7 +214,7 @@ public class MultiCoreV1 : Experiment
             TimeRefTime = 2
         };
         hw = new MulitCoreV1HW(sim, 3, 2, interval, bufferSize);
-        hw.CreateRouters((x, y) => new ProtoXYRouter(x, y, name: $"router({x},{y})"));
+        hw.CreateRouters((x, y) => new XYRouter(x, y, name: $"router({x},{y})"));
         hw.AddController(srnn.Input, -1, 0);
         hw.AddCore(delayModel, 0, 0, "core1");
         hw.AddCore(delayModel, 0, 1, "core2");

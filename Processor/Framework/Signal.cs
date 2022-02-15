@@ -4,6 +4,7 @@ namespace SpikingDSE;
 
 public class SignalWaitEvent : Event
 {
+    public Signal Signal;
     public Process Process;
 }
 
@@ -11,7 +12,7 @@ public sealed class Signal
 {
     private Simulator env;
 
-    private List<SignalWaitEvent> waiting = new();
+    public List<SignalWaitEvent> Waiting = new();
 
     public Signal(Simulator env)
     {
@@ -20,17 +21,16 @@ public sealed class Signal
 
     public void Notify()
     {
-        foreach (var waitingEv in waiting)
+        foreach (var waitingEv in Waiting)
         {
             env.Schedule(waitingEv.Process);
         }
-        waiting.Clear();
+        Waiting.Clear();
     }
 
     public SignalWaitEvent Wait()
     {
-        var w = new SignalWaitEvent { Process = env.CurrentProcess };
-        waiting.Add(w);
+        var w = new SignalWaitEvent { Signal = this, Process = env.CurrentProcess };
         return w;
     }
 }

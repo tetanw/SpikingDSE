@@ -88,5 +88,16 @@ namespace SpikingDSE
             Array.Copy(y, 0, x, oldLen, y.Length);
             return x;
         }
+
+        public static bool Any<T>(this T[] array, Predicate<T> when)
+        {
+            if (array == null) throw new ArgumentNullException("array");
+            foreach (var item in array)
+            {
+                if (when(item))
+                    return true;
+            }
+            return false;
+        }
     }
 }

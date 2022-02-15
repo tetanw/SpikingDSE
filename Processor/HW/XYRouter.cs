@@ -8,6 +8,9 @@ public sealed class XYRouter : MeshRouter
     private int inputBufferSize;
     private int outputBufferSize;
     private int switchDelay;
+    private Buffer<MeshPacket>[] inBuffers;
+    private Buffer<MeshPacket>[] outBuffers;
+    private CondVar<int[]> condVar;
 
     public XYRouter(int x, int y, string name = "", int inputBufferSize = 1, int outputBufferSize = 1, int switchDelay = 1)
     {
@@ -21,9 +24,9 @@ public sealed class XYRouter : MeshRouter
 
     public override IEnumerable<Event> Run(Simulator env)
     {
-        var inBuffers = new Buffer<MeshPacket>[5];
-        var outBuffers = new Buffer<MeshPacket>[5];
-        var signal = new Signal(env);
+        inBuffers = new Buffer<MeshPacket>[5];
+        outBuffers = new Buffer<MeshPacket>[5];
+        condVar = new(env, new int[10]);
 
         for (int dir = 0; dir < 5; dir++)
         {
@@ -31,18 +34,18 @@ public sealed class XYRouter : MeshRouter
             if (inPort.IsBound)
             {
                 inBuffers[dir] = new Buffer<MeshPacket>(env, inputBufferSize);
-                env.Process(InLink(env, inPort, inBuffers[dir], signal));
+                env.Process(InLink(env, dir));
             }
 
             var outPort = GetOutputPort(dir);
             if (outPort.IsBound)
             {
                 outBuffers[dir] = new Buffer<MeshPacket>(env, outputBufferSize);
-                env.Process(OutLink(env, outPort, outBuffers[dir], signal));
+                env.Process(OutLink(env, dir));
             }
         }
 
-        env.Process(Switch(env, inBuffers, outBuffers, signal));
+        env.Process(Switch(env));
 
         yield break;
     }
@@ -67,73 +70,93 @@ public sealed class XYRouter : MeshRouter
         else throw new Exception("Unknown direction");
     }
 
-    private IEnumerable<Event> Switch(Simulator env, Buffer<MeshPacket>[] inBuffers, Buffer<MeshPacket>[] outBuffers, Signal signal)
+    private static bool AnyPortEvent(int[] events)
     {
+        return events.Any((v) => v > 0);
+    }
+
+    private IEnumerable<Event> Switch(Simulator env)
+    {
+        int lastDir = 0;
+
         while (true)
         {
-            // 1. Wait for a new packet to arrive at an input
-            // or a new packet to be sent from the output
-            yield return signal.Wait();
+            // Wait until one of the input ports is filled or output port is free
+            foreach (var ev in condVar.BlockUntil(AnyPortEvent))
+                yield return ev;
 
-            // 2. If an input was ready then we need to just check whether 
-            // that new input needs to be routed. If an output is ready we need
-            // to check whether any of the inputs is ready
-            Buffer<MeshPacket> inBuffer = null;
-            Buffer<MeshPacket> outBuffer = null;
-            int dir = (int)((env.Now % switchDelay) % 5);
-            // long syncTime = env.Now;
-            int nrDirsChecked = 0;
-            while (true)
+            // Find the offending port
+            int i = Array.FindIndex(condVar.Value, (v) => v > 0);
+
+            if (i < 5)
             {
-                inBuffer = inBuffers[dir];
-                if (inBuffer != null && inBuffer.Count > 0)
-                {
-                    var outDir = DetermineOutput(inBuffer.Peek());
-                    outBuffer = outBuffers[outDir];
-                    if (outBuffer != null && !outBuffer.IsFull)
-                    {
-                        // Sync up with the right time we do not delay each cycle
-                        // for performance reasons
-                        // yield return env.SleepUntil(syncTime);
+                // Is input event
+                OnInputEvent(i);
+            }
+            else
+            {
+                // Is output event
+                OnOutputEvent(ref lastDir, i - 5);
+            }
 
-                        // We do not have to wait for buffer space because we know we have it
-                        var item = inBuffer.Pop();
-                        outBuffer.Push(item);
+            condVar.Value[i]--;
+            condVar.Update();
+        }
+    }
 
-                        nrDirsChecked = 0;
-                    }
-                }
+    private void OnInputEvent(int dir)
+    {
+        var inBuffer = inBuffers[dir];
+        var packet = inBuffer.Peek();
+        int outDir = DetermineOutput(packet);
+        var outBuffer = outBuffers[outDir];
+        if (!outBuffer.IsFull)
+        {
+            outBuffer.Push(inBuffer.Pop());
+        }
+    }
 
-                // Standard things to do in each cycle
-                dir = (dir + 1) % 5;
-                yield return env.Delay(switchDelay);
-                nrDirsChecked++;
-
-                // If we checked all 5 directions and found nothing then we can 
-                // go to sleep until a next notification
-                if (nrDirsChecked == 5)
-                {
-                    break;
-                }
+    private void OnOutputEvent(ref int lastDir, int freeDir)
+    {
+        for (int i = 0; i < 5; i++)
+        {
+            int inDir = (lastDir + i) % 5;
+            var inBuffer = inBuffers[inDir];
+            if (inBuffer == null || inBuffer.Count == 0)
+                continue;
+            var packet = inBuffer.Peek();
+            int outDir = DetermineOutput(packet);
+            if (outDir == freeDir)
+            {
+                outBuffers[outDir].Push(inBuffer.Pop());
+                lastDir = inDir;
+                break;
             }
         }
     }
 
-
-    private IEnumerable<Event> OutLink(Simulator env, OutPort outPort, Buffer<MeshPacket> buffer, Signal signal)
+    private IEnumerable<Event> OutLink(Simulator env, int dir)
     {
+        var outPort = GetOutputPort(dir);
+        var buffer = outBuffers[dir];
+
         while (true)
         {
             yield return buffer.RequestRead();
             var flit = buffer.Read();
             yield return env.Send(outPort, flit);
             buffer.ReleaseRead();
-            signal.Notify();
+
+            condVar.Value[dir + 5]++;
+            condVar.Update();
         }
     }
 
-    private IEnumerable<Event> InLink(Simulator env, InPort inPort, Buffer<MeshPacket> buffer, Signal signal)
+    private IEnumerable<Event> InLink(Simulator env, int dir)
     {
+        var inPort = GetInputPort(dir);
+        var buffer = inBuffers[dir];
+
         while (true)
         {
             yield return buffer.RequestWrite();
@@ -141,7 +164,9 @@ public sealed class XYRouter : MeshRouter
             yield return rcv;
             buffer.Write((MeshPacket)rcv.Message);
             buffer.ReleaseWrite();
-            signal.Notify();
+
+            condVar.Value[dir]++;
+            condVar.Update();
         }
     }
 
