@@ -5,7 +5,7 @@ namespace SpikingDSE;
 
 public abstract class MeshRouter : Actor
 {
-    protected int x, y;
+    public int x, y;
 
     public InPort inNorth = new InPort();
     public InPort inSouth = new InPort();

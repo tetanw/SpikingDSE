@@ -5,6 +5,10 @@ namespace SpikingDSE;
 
 public sealed class XYRouter : MeshRouter
 {
+    public delegate void Transfer(long now, int from, int to);
+
+    public Transfer OnTransfer;
+
     private int inputBufferSize;
     private int outputBufferSize;
     private int reswitchDelay;
@@ -100,14 +104,14 @@ public sealed class XYRouter : MeshRouter
             if (i < 5)
             {
                 // Is input event
-                packetFound = OnInputEvent(ref lastDir, i);
+                packetFound = OnInputEvent(env, ref lastDir, i);
             }
             else
             {
                 // Is output event
-                packetFound = OnOutputEvent(ref lastDir, i - 5);
+                packetFound = OnOutputEvent(env, ref lastDir, i - 5);
             }
-            
+
             if (packetFound)
             {
                 yield return env.Delay(packetRouteDelay);
@@ -119,7 +123,7 @@ public sealed class XYRouter : MeshRouter
         }
     }
 
-    private bool OnInputEvent(ref int lastDir, int dir)
+    private bool OnInputEvent(Simulator env, ref int lastDir, int dir)
     {
         var inBuffer = inBuffers[dir];
         var packet = inBuffer.Peek();
@@ -129,6 +133,7 @@ public sealed class XYRouter : MeshRouter
         {
             lastDir = dir;
             outBuffer.Push(inBuffer.Pop());
+            OnTransfer?.Invoke(env.Now, dir, outDir);
             return true;
         }
         else
@@ -137,7 +142,7 @@ public sealed class XYRouter : MeshRouter
         }
     }
 
-    private bool OnOutputEvent(ref int lastDir, int freeDir)
+    private bool OnOutputEvent(Simulator env, ref int lastDir, int freeDir)
     {
         for (int i = 0; i < 5; i++)
         {
@@ -151,6 +156,7 @@ public sealed class XYRouter : MeshRouter
             {
                 outBuffers[outDir].Push(inBuffer.Pop());
                 lastDir = inDir;
+                OnTransfer?.Invoke(env.Now, inDir, outDir);
                 return true;
             }
         }

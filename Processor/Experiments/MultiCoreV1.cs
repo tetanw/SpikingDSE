@@ -7,7 +7,7 @@ public class MultiCoreV1Mapping
 {
     public static Mapping CreateMapping(Mapper mapper, SRNN srnn)
     {
-        for (int i = 1; i <= 6; i++)
+        for (int i = 1; i <= 10; i++)
         {
             mapper.AddCore(new MapCore
             {
@@ -110,6 +110,7 @@ public class MultiCoreV1 : Experiment
     private MemReporter mem;
     private TimeDelayReporter spikeDelays;
     private TimeDelayReporter computeDelays;
+    private FileReporter transfers; 
     private Mapping mapping;
 
     public int Prediction = -1;
@@ -130,6 +131,8 @@ public class MultiCoreV1 : Experiment
         if (!Debug)
             return;
 
+        transfers = new FileReporter("res/multi-core/v1/transfers.csv");
+
         trace = new TraceReporter("res/multi-core/v1/result.trace");
 
         mem = new MemReporter(srnn, "res/multi-core/v1");
@@ -141,9 +144,12 @@ public class MultiCoreV1 : Experiment
         spikeDelays = new TimeDelayReporter("res/multi-core/v1/spike-delays.csv");
         computeDelays = new TimeDelayReporter("res/multi-core/v1/compute-delays.csv");
 
+        int myTS = 0;
+
         hw.controller.TimeAdvanced += (_, ts) => trace.AdvanceTimestep(ts);
         hw.controller.TimeAdvanced += (_, ts) =>
         {
+            myTS++;
             spikes.AdvanceTimestep(ts);
         };
 
@@ -171,6 +177,15 @@ public class MultiCoreV1 : Experiment
                 computeDelays.ReportDelay(spike.ReceivedAt, time);
             };
             core.OnSyncStarted += (time, _, _) => trace.TimeRef(time);
+        }
+
+        foreach (var r in hw.routers)
+        {
+            var router = r as XYRouter;
+
+            router.OnTransfer += (time, from, to) => {
+                transfers.ReportLine($"{time},{router.x},{router.y},{from},{to},{myTS}");
+            };
         }
     }
 
@@ -240,6 +255,7 @@ public class MultiCoreV1 : Experiment
         mem?.Finish();
         spikeDelays?.Finish();
         computeDelays?.Finish();
+        transfers?.Finish();
         if (spikes != null) PrintLn($"Nr spikes: {spikes.NrSpikes:n}");
         PrintLn($"Predicted: {this.Prediction}, Truth: {this.Correct}");
     }
