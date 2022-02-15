@@ -189,8 +189,7 @@ public sealed class XYRouter : MeshRouter
         {
             yield return buffer.RequestWrite();
             // This symbolises the amount of time for the transfer to take place
-            yield return env.Delay(receiveDelay);
-            var rcv = env.Receive(inPort);
+            var rcv = env.Receive(inPort, waitBefore: receiveDelay);
             yield return rcv;
             buffer.Write((MeshPacket)rcv.Message);
             buffer.ReleaseWrite();
