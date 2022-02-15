@@ -4,7 +4,7 @@
         - [x] Router
         - [x] Core
     - Validate
-        - [] Router
+        - [x] Router
         - [] Core
 - More mapping
     - [x] Simple splittable mapper implementation 
