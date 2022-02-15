@@ -112,6 +112,10 @@ namespace SpikingDSE
                     {
                         new MapperTest().Run();
                     }
+                    else if (opts.Name.Equals("XYRouterValidation"))
+                    {
+                        new XYRouterValidation().Run();
+                    }
                     else
                     {
                         throw new Exception($"Unknown simulation: {opts.Name}");

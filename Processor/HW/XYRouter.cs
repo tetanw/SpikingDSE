@@ -100,7 +100,7 @@ public sealed class XYRouter : MeshRouter
             if (i < 5)
             {
                 // Is input event
-                packetFound = OnInputEvent(i);
+                packetFound = OnInputEvent(ref lastDir, i);
             }
             else
             {
@@ -119,7 +119,7 @@ public sealed class XYRouter : MeshRouter
         }
     }
 
-    private bool OnInputEvent(int dir)
+    private bool OnInputEvent(ref int lastDir, int dir)
     {
         var inBuffer = inBuffers[dir];
         var packet = inBuffer.Peek();
@@ -127,6 +127,7 @@ public sealed class XYRouter : MeshRouter
         var outBuffer = outBuffers[outDir];
         if (!outBuffer.IsFull)
         {
+            lastDir = dir;
             outBuffer.Push(inBuffer.Pop());
             return true;
         }
@@ -140,7 +141,7 @@ public sealed class XYRouter : MeshRouter
     {
         for (int i = 0; i < 5; i++)
         {
-            int inDir = (lastDir + i) % 5;
+            int inDir = (lastDir + 1 + i) % 5;
             var inBuffer = inBuffers[inDir];
             if (inBuffer == null || inBuffer.Count == 0)
                 continue;
