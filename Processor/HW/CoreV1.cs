@@ -162,6 +162,7 @@ public sealed class CoreV1 : Actor, Core
         totalInputSpikes = 0;
         foreach (var l in mapping[this])
         {
+            long startTime = env.Now;
             var layer = (HiddenLayer)l;
 
             // Readout of timestep TS - 1
@@ -172,8 +173,9 @@ public sealed class CoreV1 : Actor, Core
             int lastSpikingNeuron = 0;
             foreach (var spikingNeuron in layer.Sync())
             {
-                var neuronsComputed = lastSpikingNeuron - spikingNeuron;
+                var neuronsComputed = spikingNeuron - lastSpikingNeuron;
                 yield return env.Delay(delayModel.ComputeTime * neuronsComputed);
+                long afterDelayTime = env.Now;
                 lastSpikingNeuron = spikingNeuron;
 
                 nrOutputSpikes++;

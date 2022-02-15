@@ -317,11 +317,17 @@ public sealed class Simulator
 
     public SleepEvent Delay(long time)
     {
+        if (time < 0)
+            throw new Exception("Can not go back in time");
+
         return new SleepEvent { Time = time };
     }
 
     public SleepEvent SleepUntil(long newTime)
     {
+        if (newTime < Now)
+            throw new Exception("Can not go back in time");
+
         return new SleepEvent { Time = newTime - Now };
     }
 

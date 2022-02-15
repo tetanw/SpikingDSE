@@ -5,7 +5,7 @@
         - [x] Core
     - Validate
         - [x] Router
-        - [] Core
+        - [x] Core
 - More mapping
     - [x] Simple splittable mapper implementation 
     - [x] Create new mapping implementation that does not use actor, so totally decoupled
