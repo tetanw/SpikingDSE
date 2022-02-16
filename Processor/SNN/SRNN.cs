@@ -15,7 +15,7 @@ public class SRNN : SNN
         hidden[0] = createALIFLayer(folderPath, "i", "h1");
         for (int i = 1; i < nrLayers; i++)
         {
-            hidden[i] = createALIFLayer(folderPath, $"h{i}", $"h{i+1}");
+            hidden[i] = createALIFLayer(folderPath, $"h{i}", $"h{i + 1}");
         }
         var output = createOutputLayer(folderPath);
         return new SRNN(input, hidden, output);
@@ -27,8 +27,12 @@ public class SRNN : SNN
         this.Hidden = hidden;
         this.Output = output;
         AddForward(input, hidden[0]);
-        AddForward(hidden[0], hidden[1]);
-        AddForward(hidden[1], output);
+        int nrHiddenLayers = hidden.Length;
+        for (int i = 0; i < nrHiddenLayers - 1; i++)
+        {
+            AddForward(hidden[i], hidden[i + 1]);
+        }
+        AddForward(hidden[nrHiddenLayers - 1], output);
     }
 
     private static ALIFLayer createALIFLayer(string folderPath, string inputName, string name)

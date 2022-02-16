@@ -27,11 +27,13 @@ def save_output_layer(layer, dest_dir, input_name, layer_name):
     data = layer.tau_m.detach().cpu().numpy()
     pd.DataFrame(data).to_csv(f"{dest_dir}/tau_m_{layer_name}.csv")
 
-model = torch.load('./model/test20/model_test20_7_37.05830388692579.pth')
-dest_dir = f"./extracted/bigger-test"
+model = torch.load('./model/super-big/model_super-big_16_69.8321554770318.pth')
+dest_dir = f"./extracted/super-big"
 if not os.path.isdir(dest_dir):
     os.mkdir(dest_dir)
 
 save_alif_layer(model.hidden[0], dest_dir, "i", "h1")
 save_alif_layer(model.hidden[1], dest_dir, "h1", "h2")
+save_alif_layer(model.hidden[2], dest_dir, "h2", "h3")
+save_alif_layer(model.hidden[3], dest_dir, "h3", "h4")
 save_output_layer(model.output, dest_dir, "h2", "o")

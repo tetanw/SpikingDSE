@@ -13,7 +13,7 @@ public class MultiCoreV1Mapping
             {
                 Name = $"core{i}",
                 AcceptedTypes = new() { typeof(ALIFLayer), typeof(OutputLayer) },
-                MaxNrNeurons = 32
+                MaxNrNeurons = 64
             });
         }
         mapper.AddCore(new MapCore
