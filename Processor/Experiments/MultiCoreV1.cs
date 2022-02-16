@@ -111,6 +111,7 @@ public class MultiCoreV1 : Experiment
     private TimeDelayReporter spikeDelays;
     private TimeDelayReporter computeDelays;
     private FileReporter transfers;
+    private FileReporter blockings;
     private Mapping mapping;
 
     public int Prediction = -1;
@@ -132,6 +133,7 @@ public class MultiCoreV1 : Experiment
             return;
 
         transfers = new FileReporter("res/multi-core/v1/transfers.csv");
+        // blockings = new FileReporter("res/multi-core/v1/blockings.csv");
 
         trace = new TraceReporter("res/multi-core/v1/result.trace");
 
@@ -165,7 +167,7 @@ public class MultiCoreV1 : Experiment
             core.OnSpikeReceived += (time, layer, neuron, feedback, spike) =>
             {
                 trace.InputSpike(neuron, time);
-                spikeDelays.ReportDelay(spike.CreatedAt, time);
+                spikeDelays.ReportDelay(spike.CreatedAt, time, layer.Name);
             };
             core.OnSpikeSent += (time, fromLayer, neuron, _) =>
             {
@@ -174,12 +176,13 @@ public class MultiCoreV1 : Experiment
             };
             core.OnSpikeComputed += (time, spike) =>
             {
-                computeDelays.ReportDelay(spike.ReceivedAt, time);
+                computeDelays.ReportDelay(spike.ReceivedAt, time, "");
             };
             core.OnSyncStarted += (time, _, _) => trace.TimeRef(time);
         }
 
         transfers.ReportLine($"hw-time,router-x,router-y,from,to,snn-time");
+        blockings?.ReportLine($"hw-time,snn-time,router-x,router-y");
         foreach (var r in hw.routers)
         {
             var router = r as XYRouter;
@@ -188,6 +191,14 @@ public class MultiCoreV1 : Experiment
             {
                 transfers.ReportLine($"{time},{router.x},{router.y},{from},{to},{myTS}");
             };
+
+            if (blockings != null)
+            {
+                router.OnBlocking += (time) =>
+                {
+                    blockings.ReportLine($"{time},{myTS},{router.x},{router.y}");
+                };
+            }
         }
     }
 
@@ -258,6 +269,7 @@ public class MultiCoreV1 : Experiment
         spikeDelays?.Finish();
         computeDelays?.Finish();
         transfers?.Finish();
+        blockings?.Finish();
         if (spikes != null) PrintLn($"Nr spikes: {spikes.NrSpikes:n}");
         PrintLn($"Predicted: {this.Prediction}, Truth: {this.Correct}");
     }

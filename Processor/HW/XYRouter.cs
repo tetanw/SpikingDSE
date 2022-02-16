@@ -6,25 +6,27 @@ namespace SpikingDSE;
 public sealed class XYRouter : MeshRouter
 {
     public delegate void Transfer(long now, int from, int to);
+    public delegate void Blocking(long now);
 
     public Transfer OnTransfer;
+    public Blocking OnBlocking;
 
     private int inputBufferSize;
     private int outputBufferSize;
     private int reswitchDelay;
     private int packetRouteDelay;
-    private int receiveDelay;
+    private int transferDelay;
     private Buffer<MeshPacket>[] inBuffers;
     private Buffer<MeshPacket>[] outBuffers;
     private CondVar<int[]> condVar;
 
-    public XYRouter(int x, int y, int reswitchDelay, int packetRouteDelay, int receiveDelay, string name = "", int inputBufferSize = 1, int outputBufferSize = 1)
+    public XYRouter(int x, int y, int reswitchDelay, int packetRouteDelay, int transferDelay, string name = "", int inputBufferSize = 1, int outputBufferSize = 1)
     {
         this.x = x;
         this.y = y;
         this.reswitchDelay = reswitchDelay;
         this.packetRouteDelay = packetRouteDelay;
-        this.receiveDelay = receiveDelay;
+        this.transferDelay = transferDelay;
         this.Name = name;
         this.inputBufferSize = inputBufferSize;
         this.outputBufferSize = outputBufferSize;
@@ -100,30 +102,33 @@ public sealed class XYRouter : MeshRouter
             condVar.Value[i]--;
             condVar.Update();
 
-            bool packetFound;
+            int from, to;
+            bool routeFound;
             if (i < 5)
             {
                 // Is input event
-                packetFound = OnInputEvent(env, ref lastDir, i);
+                (routeFound, from, to) = OnInputEvent(env, ref lastDir, i);
             }
             else
             {
                 // Is output event
-                packetFound = OnOutputEvent(env, ref lastDir, i - 5);
+                (routeFound, from, to) = OnOutputEvent(env, ref lastDir, i - 5);
             }
 
-            if (packetFound)
+            if (routeFound)
             {
                 yield return env.Delay(packetRouteDelay);
+                outBuffers[to].Push(inBuffers[from].Pop());
             }
             else
             {
+                OnBlocking?.Invoke(env.Now);
                 yield return env.Delay(reswitchDelay);
             }
         }
     }
 
-    private bool OnInputEvent(Simulator env, ref int lastDir, int dir)
+    private (bool, int, int) OnInputEvent(Simulator env, ref int lastDir, int dir)
     {
         var inBuffer = inBuffers[dir];
         var packet = inBuffer.Peek();
@@ -134,15 +139,15 @@ public sealed class XYRouter : MeshRouter
             lastDir = dir;
             outBuffer.Push(inBuffer.Pop());
             OnTransfer?.Invoke(env.Now, dir, outDir);
-            return true;
+            return (false, dir, outDir);
         }
         else
         {
-            return false;
+            return (false, -1, -1);
         }
     }
 
-    private bool OnOutputEvent(Simulator env, ref int lastDir, int freeDir)
+    private (bool, int, int) OnOutputEvent(Simulator env, ref int lastDir, int freeDir)
     {
         for (int i = 0; i < 5; i++)
         {
@@ -154,13 +159,12 @@ public sealed class XYRouter : MeshRouter
             int outDir = DetermineOutput(packet);
             if (outDir == freeDir)
             {
-                outBuffers[outDir].Push(inBuffer.Pop());
                 lastDir = inDir;
                 OnTransfer?.Invoke(env.Now, inDir, outDir);
-                return true;
+                return (true, inDir, outDir);
             }
         }
-        return false;
+        return (false, -1, -1);
     }
 
     private IEnumerable<Event> OutLink(Simulator env, int dir)
@@ -189,7 +193,7 @@ public sealed class XYRouter : MeshRouter
         {
             yield return buffer.RequestWrite();
             // This symbolises the amount of time for the transfer to take place
-            var rcv = env.Receive(inPort, waitBefore: receiveDelay);
+            var rcv = env.Receive(inPort, waitBefore: transferDelay);
             yield return rcv;
             buffer.Write((MeshPacket)rcv.Message);
             buffer.ReleaseWrite();
