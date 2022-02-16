@@ -27,8 +27,8 @@ def save_output_layer(layer, dest_dir, input_name, layer_name):
     data = layer.tau_m.detach().cpu().numpy()
     pd.DataFrame(data).to_csv(f"{dest_dir}/tau_m_{layer_name}.csv")
 
-model = torch.load('./model/super-big/model_super-big_16_69.8321554770318.pth')
-dest_dir = f"./extracted/super-big"
+model = torch.load('./model/super-big-2/model_super-big-2_19_75.13250883392226.pth')
+dest_dir = f"./extracted/super-big-2"
 if not os.path.isdir(dest_dir):
     os.mkdir(dest_dir)
 

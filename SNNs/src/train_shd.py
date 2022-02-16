@@ -40,7 +40,7 @@ test_loader = data.DataLoader(
 STEP 4: INSTANTIATE MODEL CLASS
 '''
 input_dim = 700
-hidden_dim = [128, 128, 128, 128]  # 128
+hidden_dim = [256, 256, 256, 256]  # 128
 output_dim = 20
 seq_dim = 100  # Number of steps to unroll
 
@@ -98,6 +98,6 @@ def test(model, dataloader=test_loader):
     accuracy = 100. * correct.numpy() / total
     return accuracy
 
-acc = train(model, "super-big", 50)
+acc = train(model, "super-big-2", 50)
 accuracy = test(model)
 print('Final accuracy: ', accuracy)

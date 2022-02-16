@@ -21,6 +21,9 @@ public sealed class CoreV1 : Actor, Core
     public delegate void SyncEnded(long time, int ts, HiddenLayer layer);
     public delegate void SpikeComputed(long time, SpikeEvent spike);
 
+    public long lastSpike = 0;
+    public long lastSync = 0;
+
     public SpikeReceived OnSpikeReceived;
     public SpikeSent OnSpikeSent;
     public SyncStarted OnSyncStarted;
@@ -128,10 +131,14 @@ public sealed class CoreV1 : Actor, Core
             switch (core)
             {
                 case SyncEvent sync:
-                    yield return env.Process(Sync(env, sync));
+                    foreach (var ev in Sync(env, sync))
+                        yield return ev;
+                    lastSync = env.Now;
                     break;
                 case SpikeEvent spike:
-                    yield return env.Process(Compute(env, spike));
+                    foreach (var ev in Compute(env, spike))
+                        yield return env.Process(Compute(env, spike));
+                    lastSpike = env.Now;
                     break;
                 default:
                     throw new Exception("Unknown event!");

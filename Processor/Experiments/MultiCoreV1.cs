@@ -13,7 +13,7 @@ public class MultiCoreV1Mapping
             {
                 Name = $"core{i}",
                 AcceptedTypes = new() { typeof(ALIFLayer), typeof(OutputLayer) },
-                MaxNrNeurons = 64
+                MaxNrNeurons = 128
             });
         }
         mapper.AddCore(new MapCore
@@ -110,6 +110,7 @@ public class MultiCoreV1 : Experiment
     private MemReporter mem;
     private TimeDelayReporter spikeDelays;
     private TimeDelayReporter computeDelays;
+    private FileReporter coreUtils;
     private FileReporter transfers;
     private FileReporter blockings;
     private Mapping mapping;
@@ -134,6 +135,8 @@ public class MultiCoreV1 : Experiment
 
         transfers = new FileReporter("res/multi-core/v1/transfers.csv");
         // blockings = new FileReporter("res/multi-core/v1/blockings.csv");
+        coreUtils = new FileReporter("res/multi-core/v1/util-core.csv");
+        coreUtils.ReportLine("core-x,core-y,util");
 
         trace = new TraceReporter("res/multi-core/v1/result.trace");
 
@@ -153,6 +156,15 @@ public class MultiCoreV1 : Experiment
         {
             myTS++;
             spikes.AdvanceTimestep(ts);
+            foreach (var c in hw.cores)
+            {
+                var core = c as CoreV1;
+
+                var timeBusy = core.lastSpike - core.lastSync;
+                double util = (double) timeBusy / interval; 
+                var coord = (MeshCoord) c.GetLocation();
+                coreUtils.ReportLine($"{coord.x},{coord.y},{util}");
+            }
         };
 
         foreach (var c in hw.cores)
@@ -274,6 +286,7 @@ public class MultiCoreV1 : Experiment
         computeDelays?.Finish();
         transfers?.Finish();
         blockings?.Finish();
+        coreUtils?.Finish();
         if (spikes != null) PrintLn($"Nr spikes: {spikes.NrSpikes:n}");
         PrintLn($"Predicted: {this.Prediction}, Truth: {this.Correct}");
     }
