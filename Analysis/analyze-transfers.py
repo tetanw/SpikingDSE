@@ -44,12 +44,17 @@ def plot_router_dirs(x, y, name, ax):
     # ax.legend()
 
 
-fig, ax = plt.subplots(3, 2)
+fig, ax = plt.subplots(5, 2)
 plot_router_dirs(0, 0, "core1", ax[0][0])
 plot_router_dirs(0, 1, "core2", ax[0][1])
 plot_router_dirs(1, 0, "core3", ax[1][0])
 plot_router_dirs(1, 1, "core4", ax[1][1])
 plot_router_dirs(2, 0, "core5", ax[2][0])
+plot_router_dirs(2, 1, "core6", ax[2][1])
+plot_router_dirs(3, 0, "core7", ax[3][0])
+plot_router_dirs(3, 1, "core8", ax[3][1])
+plot_router_dirs(4, 0, "core7", ax[4][0])
+plot_router_dirs(4, 1, "core8", ax[4][1])
 handles, labels = ax[0][0].get_legend_handles_labels()
 fig.legend(handles, labels)
 plt.show()

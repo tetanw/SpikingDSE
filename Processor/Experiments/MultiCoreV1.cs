@@ -13,7 +13,7 @@ public class MultiCoreV1Mapping
             {
                 Name = $"core{i}",
                 AcceptedTypes = new() { typeof(ALIFLayer), typeof(OutputLayer) },
-                MaxNrNeurons = 64
+                MaxNrNeurons = 32
             });
         }
         mapper.AddCore(new MapCore
@@ -241,7 +241,7 @@ public class MultiCoreV1 : Experiment
             OutputTime = 8,
             TimeRefTime = 2
         };
-        hw = new MulitCoreV1HW(sim, 3, 2, interval, bufferSize);
+        hw = new MulitCoreV1HW(sim, 5, 2, interval, bufferSize);
         hw.CreateRouters((x, y) => new XYRouter(x, y, 3, 5, 10, name: $"router({x},{y})"));
         hw.AddController(srnn.Input, -1, 0);
         hw.AddCore(delayModel, 0, 0, "core1");
@@ -250,6 +250,10 @@ public class MultiCoreV1 : Experiment
         hw.AddCore(delayModel, 1, 1, "core4");
         hw.AddCore(delayModel, 2, 0, "core5");
         hw.AddCore(delayModel, 2, 1, "core6");
+        hw.AddCore(delayModel, 3, 0, "core7");
+        hw.AddCore(delayModel, 3, 1, "core8");
+        hw.AddCore(delayModel, 4, 0, "core9");
+        hw.AddCore(delayModel, 4, 1, "core10");
 
         // Reporters
         AddReporters();
