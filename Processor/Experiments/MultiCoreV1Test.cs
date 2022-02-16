@@ -9,7 +9,7 @@ public class MultiCoreV1Test : Experiment
 
     public MultiCoreV1Test()
     {
-        var srnn = SRNN.Load("res/snn/best", null);
+        var srnn = SRNN.Load("res/snn/best", null, 2);
         var mapping = MultiCoreV1Mapping.CreateMapping(new FirstFitMapper(), srnn);
         mapping.PrintReport();
 

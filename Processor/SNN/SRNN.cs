@@ -8,12 +8,15 @@ public class SRNN : SNN
     public ALIFLayer[] Hidden;
     public OutputLayer Output;
 
-    public static SRNN Load(string folderPath, ISpikeSource spikeSource)
+    public static SRNN Load(string folderPath, ISpikeSource spikeSource, int nrLayers = 2)
     {
         var input = new InputLayer(spikeSource, name: "i");
-        var hidden = new ALIFLayer[2];
+        var hidden = new ALIFLayer[nrLayers];
         hidden[0] = createALIFLayer(folderPath, "i", "h1");
-        hidden[1] = createALIFLayer(folderPath, "h1", "h2");
+        for (int i = 1; i < nrLayers; i++)
+        {
+            hidden[i] = createALIFLayer(folderPath, $"h{i}", $"h{i+1}");
+        }
         var output = createOutputLayer(folderPath);
         return new SRNN(input, hidden, output);
     }
