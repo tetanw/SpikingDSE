@@ -10,6 +10,7 @@ spike_delays["delay"] = spike_delays["end"] - spike_delays["start"]
 
 # Histogram of spike delays
 plt.hist(spike_delays["delay"], log=True)       
+plt.show()
 
 # count more precisely
 delay_counts = spike_delays.groupby("delay").count()["start"]

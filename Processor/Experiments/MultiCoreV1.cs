@@ -13,7 +13,7 @@ public class MultiCoreV1Mapping
             {
                 Name = $"core{i}",
                 AcceptedTypes = new() { typeof(ALIFLayer), typeof(OutputLayer) },
-                MaxNrNeurons = 128
+                MaxNrNeurons = 64
             });
         }
         mapper.AddCore(new MapCore
@@ -136,7 +136,7 @@ public class MultiCoreV1 : Experiment
         transfers = new FileReporter("res/multi-core/v1/transfers.csv");
         // blockings = new FileReporter("res/multi-core/v1/blockings.csv");
         coreUtils = new FileReporter("res/multi-core/v1/util-core.csv");
-        coreUtils.ReportLine("core-x,core-y,util");
+        coreUtils.ReportLine("core_x,core_y,util");
 
         trace = new TraceReporter("res/multi-core/v1/result.trace");
 
@@ -151,8 +151,8 @@ public class MultiCoreV1 : Experiment
 
         int myTS = 0;
 
-        hw.controller.TimeAdvanced += (_, ts) => trace.AdvanceTimestep(ts);
-        hw.controller.TimeAdvanced += (_, ts) =>
+        hw.controller.TimeAdvanced += (_, _, ts) => trace.AdvanceTimestep(ts);
+        hw.controller.TimeAdvanced += (_, _, ts) =>
         {
             myTS++;
             spikes.AdvanceTimestep(ts);

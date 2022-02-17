@@ -9,8 +9,8 @@ public class TraceGenerator
 {
     public void Run()
     {
-        int nrLayers = 2;
-        var srnnTemplate = SRNN.Load("res/snn/best", null, nrLayers);
+        int nrLayers = 4;
+        var srnnTemplate = SRNN.Load("res/snn/super-big", null, nrLayers);
         var spikeCounts = new Dictionary<(string, int), int>();
         var countsFile = new StreamWriter("res/multi-core/counts.csv");
         countsFile.WriteLine("layer,ts,count");

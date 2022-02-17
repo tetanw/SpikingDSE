@@ -9,13 +9,13 @@ public class MultiCoreV1Test : Experiment
 
     public MultiCoreV1Test()
     {
-        var srnn = SRNN.Load("res/snn/super-big-2", null, 4);
+        var srnn = SRNN.Load("res/snn/super-big", null, 4);
         var mapping = MultiCoreV1Mapping.CreateMapping(new FirstFitMapper(), srnn);
         mapping.PrintReport();
 
-        var inputFile = new InputTraceFile($"res/shd/input_0.trace", 700, 100);
+        var inputFile = new InputTraceFile($"res/shd/input_200.trace", 700, 100);
         var splittedSRNN = SplittedSRNN.SplitSRNN(srnn, mapping, inputFile);
-        this.exp = new MultiCoreV1(sim, true, inputFile.Correct, splittedSRNN, mapping, 100_000, 512);
+        this.exp = new MultiCoreV1(sim, true, inputFile.Correct, splittedSRNN, mapping, 50_000, 512);
     }
 
     public override void Setup()

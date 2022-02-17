@@ -8,7 +8,7 @@ public sealed class ControllerV1 : Actor, Core
 {
     public Action<Actor, long, SpikeEvent> SpikeSent;
     public Action<Actor, long, SpikeEvent> SpikeReceived;
-    public Action<Actor, int> TimeAdvanced;
+    public Action<Actor, long, int> TimeAdvanced;
 
     public InPort Input = new();
     public OutPort Output = new();
@@ -96,7 +96,7 @@ public sealed class ControllerV1 : Actor, Core
                 CreatedAt = env.Now
             });
             outBuffer.ReleaseWrite();
-            TimeAdvanced?.Invoke(this, TS);
+            TimeAdvanced?.Invoke(this, env.Now, TS);
 
             env.Increase(timesteps, 1);
             TS++;
