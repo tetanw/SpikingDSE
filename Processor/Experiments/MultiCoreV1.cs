@@ -152,7 +152,7 @@ public class MultiCoreV1 : Experiment
         int myTS = 0;
 
         hw.controller.TimeAdvanced += (_, _, ts) => trace.AdvanceTimestep(ts);
-        hw.controller.TimeAdvanced += (_, _, ts) =>
+        hw.controller.TimeAdvanced += (_, time, ts) =>
         {
             myTS++;
             spikes.AdvanceTimestep(ts);
@@ -160,9 +160,17 @@ public class MultiCoreV1 : Experiment
             {
                 var core = c as CoreV1;
 
-                var timeBusy = core.lastSpike - core.lastSync;
-                double util = (double) timeBusy / interval; 
-                var coord = (MeshCoord) c.GetLocation();
+                long timeBusy;
+                if (core.lastSpike < time - interval)
+                {
+                    timeBusy = 0;
+                }
+                else
+                {
+                    timeBusy = core.lastSpike - (time - interval);
+                }
+                double util = (double)timeBusy / interval;
+                var coord = (MeshCoord)c.GetLocation();
                 coreUtils.ReportLine($"{coord.x},{coord.y},{util}");
             }
         };
