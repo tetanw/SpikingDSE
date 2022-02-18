@@ -4,66 +4,17 @@ using System.Linq;
 
 namespace SpikingDSE;
 
-public class ProtoMulitCoreHW
+public class ProtoMultiCore : Experiment
 {
-    private Simulator sim;
+    private SRNN srnn;
 
     public MeshRouter[,] routers;
     public ProtoController controller;
     public List<Core> cores = new();
 
-    private long interval;
-    private int bufferSize;
-
-    public int width, height;
-
-    public ProtoMulitCoreHW(Simulator sim, int width, int height, long interval, int bufferSize)
-    {
-        this.sim = sim;
-        this.width = width;
-        this.height = height;
-        this.interval = interval;
-        this.bufferSize = bufferSize;
-    }
-
-    public void CreateRouters(MeshUtils.ConstructRouter createRouters)
-    {
-        routers = MeshUtils.CreateMesh(sim, width, height, createRouters);
-    }
-
-    public void AddController(SNN snn, int x, int y)
-    {
-        var controllerCoord = new MeshCoord(x, y);
-        var controller = sim.AddActor(new ProtoController(controllerCoord, 100, snn, 0, interval, name: "controller"));
-        sim.AddChannel(controller.spikesOut, routers[x, y].inLocal);
-        sim.AddChannel(routers[x, y].outLocal, controller.spikesIn);
-        this.controller = controller;
-    }
-
-    public void AddCore(ProtoDelayModel delayModel, int size, int x, int y, string name)
-    {
-        var coreCoord = new MeshCoord(x, y);
-        var core = sim.AddActor(new ProtoCore(coreCoord, size, delayModel, name: name, feedbackBufferSize: bufferSize));
-        sim.AddChannel(core.output, routers[x, y].inLocal);
-        sim.AddChannel(routers[x, y].outLocal, core.input);
-        this.cores.Add(core);
-    }
-
-    public List<Core> GetPEs()
-    {
-        var newCores = new List<Core>(cores);
-        newCores.Add(controller);
-        return newCores;
-    }
-}
-
-public class ProtoMultiCore : Experiment
-{
-    private SRNN srnn;
     private int bufferSize;
     private long interval;
 
-    private ProtoMulitCoreHW hw;
     private TraceReporter trace;
     private TensorReporter tensor;
     private MemReporter mem;
@@ -80,6 +31,36 @@ public class ProtoMultiCore : Experiment
         this.interval = interval;
     }
 
+    private void CreateRouters(int width, int height, MeshUtils.ConstructRouter createRouters)
+    {
+        routers = MeshUtils.CreateMesh(sim, width, height, createRouters);
+    }
+
+    private void AddController(SNN snn, int x, int y)
+    {
+        var controllerCoord = new MeshCoord(x, y);
+        var controller = sim.AddActor(new ProtoController(controllerCoord, 100, snn, 0, interval, name: "controller"));
+        sim.AddChannel(controller.spikesOut, routers[x, y].inLocal);
+        sim.AddChannel(routers[x, y].outLocal, controller.spikesIn);
+        this.controller = controller;
+    }
+
+    private void AddCore(ProtoDelayModel delayModel, int size, int x, int y, string name)
+    {
+        var coreCoord = new MeshCoord(x, y);
+        var core = sim.AddActor(new ProtoCore(coreCoord, size, delayModel, name: name, feedbackBufferSize: bufferSize));
+        sim.AddChannel(core.output, routers[x, y].inLocal);
+        sim.AddChannel(routers[x, y].outLocal, core.input);
+        this.cores.Add(core);
+    }
+
+    private List<Core> GetPEs()
+    {
+        var newCores = new List<Core>(cores);
+        newCores.Add(controller);
+        return newCores;
+    }
+
     private void AddReporters()
     {
         if (Debug)
@@ -92,14 +73,14 @@ public class ProtoMultiCore : Experiment
             tensor = new TensorReporter(srnn, "res/multi-core/proto");
             tensor.RegisterSNN(srnn);
 
-            hw.controller.TimeAdvanced += (_, ts) => trace.AdvanceTimestep(ts);
-            hw.controller.TimeAdvanced += (_, ts) =>
+            controller.TimeAdvanced += (_, ts) => trace.AdvanceTimestep(ts);
+            controller.TimeAdvanced += (_, ts) =>
             {
                 tensor.AdvanceTimestep(ts);
             };
         }
 
-        foreach (var core in hw.cores)
+        foreach (var core in cores)
         {
             var protoCore = core as ProtoCore;
 
@@ -128,12 +109,11 @@ public class ProtoMultiCore : Experiment
             OutputTime = 8,
             TimeRefTime = 2
         };
-        hw = new ProtoMulitCoreHW(sim, 2, 2, interval, bufferSize);
-        hw.CreateRouters((x, y) => new ProtoXYRouter(x, y, name: $"router({x},{y})"));
-        hw.AddController(srnn, 0, 0);
-        hw.AddCore(delayModel, 1024, 0, 1, "core1");
-        hw.AddCore(delayModel, 1024, 1, 1, "core2");
-        hw.AddCore(delayModel, 1024, 1, 0, "core3");
+        CreateRouters(2, 2, (x, y) => new ProtoXYRouter(x, y, name: $"router({x},{y})"));
+        AddController(srnn, 0, 0);
+        AddCore(delayModel, 1024, 0, 1, "core1");
+        AddCore(delayModel, 1024, 1, 1, "core2");
+        AddCore(delayModel, 1024, 1, 0, "core3");
 
         // Reporters
         if (Debug)
@@ -142,7 +122,7 @@ public class ProtoMultiCore : Experiment
         }
 
         // Mapping
-        var mapper = new ProtoMapper(srnn, hw.GetPEs());
+        var mapper = new ProtoMapper(srnn, GetPEs());
         var mapping = new MappingTable(srnn);
         mapper.OnMappingFound += mapping.Map;
         mapper.Run();
@@ -150,7 +130,7 @@ public class ProtoMultiCore : Experiment
         foreach (var (layer, core) in mapping.Pairs)
         {
             if (core is not ProtoCore) continue;
-            hw.controller.LayerToCoord(layer, (MeshCoord)core.GetLocation());
+            controller.LayerToCoord(layer, (MeshCoord)core.GetLocation());
         }
 
         foreach (var core in mapping.Cores)
@@ -160,7 +140,7 @@ public class ProtoMultiCore : Experiment
             var destLayer = srnn.GetDestLayer(mapping[core].First());
             MeshCoord dest;
             if (destLayer == null)
-                dest = (MeshCoord)hw.controller.GetLocation();
+                dest = (MeshCoord)controller.GetLocation();
             else
                 dest = (MeshCoord)mapping[destLayer].GetLocation();
 
