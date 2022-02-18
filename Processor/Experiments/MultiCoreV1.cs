@@ -38,73 +38,17 @@ public class MultiCoreV1Mapping
     }
 }
 
-public class MulitCoreV1HW
+public class MultiCoreV1 : Experiment
 {
-    private Simulator sim;
+    private SplittedSRNN srnn;
 
     public MeshRouter[,] routers;
     public ControllerV1 controller;
     public List<Core> cores = new();
 
-    private long interval;
-    private int bufferSize;
-
-    public int width, height;
-
-    public MulitCoreV1HW(Simulator sim, int width, int height, long interval, int bufferSize)
-    {
-        this.sim = sim;
-        this.width = width;
-        this.height = height;
-        this.interval = interval;
-        this.bufferSize = bufferSize;
-    }
-
-    public void CreateRouters(MeshUtils.ConstructRouter createRouters)
-    {
-        routers = MeshUtils.CreateMesh(sim, width, height, createRouters);
-    }
-
-    public void AddController(InputLayer input, int x, int y)
-    {
-        var controllerCoord = new MeshCoord(x, y);
-        var controller = sim.AddActor(new ControllerV1(input, controllerCoord, 100, 0, interval, name: "controller"));
-        this.controller = controller;
-        var mergeSplit = MeshUtils.ConnectMergeSplit(sim, routers);
-        sim.AddChannel(mergeSplit.ToController, controller.Input);
-        sim.AddChannel(controller.Output, mergeSplit.FromController);
-        sim.AddChannel(mergeSplit.ToMesh, routers[0, 0].inWest);
-    }
-
-    public void AddCore(V1DelayModel delayModel, int x, int y, string name)
-    {
-        var coreCoord = new MeshCoord(x, y);
-        var core = sim.AddActor(new CoreV1(coreCoord, delayModel, name: name, feedbackBufferSize: bufferSize));
-        sim.AddChannel(core.output, routers[x, y].inLocal);
-        sim.AddChannel(routers[x, y].outLocal, core.input);
-        this.cores.Add(core);
-    }
-
-    public Core FindCore(string name)
-    {
-        var core = cores.Find(c => c.Name() == name);
-        if (core != null)
-            return core;
-
-        if (name == controller.Name)
-            return controller;
-
-        return null;
-    }
-}
-
-public class MultiCoreV1 : Experiment
-{
-    private SplittedSRNN srnn;
     private int bufferSize;
     private long interval;
 
-    private MulitCoreV1HW hw;
     private TraceReporter trace;
     private TensorReporter spikes;
     private MemReporter mem;
@@ -125,6 +69,43 @@ public class MultiCoreV1 : Experiment
         this.bufferSize = bufferSize;
         this.interval = interval;
         this.mapping = mapping;
+    }
+
+    private void CreateRouters(int width, int height, MeshUtils.ConstructRouter createRouters)
+    {
+        routers = MeshUtils.CreateMesh(sim, width, height, createRouters);
+    }
+
+    private void AddController(InputLayer input, int x, int y)
+    {
+        var controllerCoord = new MeshCoord(x, y);
+        var controller = sim.AddActor(new ControllerV1(input, controllerCoord, 100, 0, interval, name: "controller"));
+        this.controller = controller;
+        var mergeSplit = MeshUtils.ConnectMergeSplit(sim, routers);
+        sim.AddChannel(mergeSplit.ToController, controller.Input);
+        sim.AddChannel(controller.Output, mergeSplit.FromController);
+        sim.AddChannel(mergeSplit.ToMesh, routers[0, 0].inWest);
+    }
+
+    private void AddCore(V1DelayModel delayModel, int x, int y, string name)
+    {
+        var coreCoord = new MeshCoord(x, y);
+        var core = sim.AddActor(new CoreV1(coreCoord, delayModel, name: name, feedbackBufferSize: bufferSize));
+        sim.AddChannel(core.output, routers[x, y].inLocal);
+        sim.AddChannel(routers[x, y].outLocal, core.input);
+        this.cores.Add(core);
+    }
+
+    private Core FindCore(string name)
+    {
+        var core = cores.Find(c => c.Name() == name);
+        if (core != null)
+            return core;
+
+        if (name == controller.Name)
+            return controller;
+
+        return null;
     }
 
     private void AddReporters()
@@ -149,12 +130,12 @@ public class MultiCoreV1 : Experiment
 
         int myTS = 0;
 
-        hw.controller.TimeAdvanced += (_, _, ts) => trace.AdvanceTimestep(ts);
-        hw.controller.TimeAdvanced += (_, time, ts) =>
+        controller.TimeAdvanced += (_, _, ts) => trace.AdvanceTimestep(ts);
+        controller.TimeAdvanced += (_, time, ts) =>
         {
             myTS++;
             spikes.AdvanceTimestep(ts);
-            foreach (var c in hw.cores)
+            foreach (var c in cores)
             {
                 var core = c as CoreV1;
 
@@ -173,7 +154,7 @@ public class MultiCoreV1 : Experiment
             }
         };
 
-        foreach (var c in hw.cores)
+        foreach (var c in cores)
         {
             var core = c as CoreV1;
 
@@ -200,7 +181,7 @@ public class MultiCoreV1 : Experiment
         }
 
         transfers.ReportLine($"hw-time,router-x,router-y,from,to,snn-time");
-        foreach (var r in hw.routers)
+        foreach (var r in routers)
         {
             var router = r as XYRouter;
 
@@ -216,7 +197,7 @@ public class MultiCoreV1 : Experiment
         var mappingTable = new MappingTable(srnn);
         foreach (var entry in mapping.Mapped)
         {
-            var core = hw.FindCore(entry.Core.Name);
+            var core = FindCore(entry.Core.Name);
             string name = entry.Partial ? $"{entry.Layer.Name}-{entry.Index}" : entry.Layer.Name;
             var layer = srnn.FindLayer(name);
             mappingTable.Map(core, layer);
@@ -250,19 +231,18 @@ public class MultiCoreV1 : Experiment
             OutputTime = 8,
             TimeRefTime = 2
         };
-        hw = new MulitCoreV1HW(sim, 5, 2, interval, bufferSize);
-        hw.CreateRouters((x, y) => new XYRouter(x, y, 3, 5, 10, name: $"router({x},{y})"));
-        hw.AddController(srnn.Input, -1, 0);
-        hw.AddCore(delayModel, 0, 0, "core1");
-        hw.AddCore(delayModel, 0, 1, "core2");
-        hw.AddCore(delayModel, 1, 0, "core3");
-        hw.AddCore(delayModel, 1, 1, "core4");
-        hw.AddCore(delayModel, 2, 0, "core5");
-        hw.AddCore(delayModel, 2, 1, "core6");
-        hw.AddCore(delayModel, 3, 0, "core7");
-        hw.AddCore(delayModel, 3, 1, "core8");
-        hw.AddCore(delayModel, 4, 0, "core9");
-        hw.AddCore(delayModel, 4, 1, "core10");
+        CreateRouters(5, 2, (x, y) => new XYRouter(x, y, 3, 5, 10, name: $"router({x},{y})"));
+        AddController(srnn.Input, -1, 0);
+        AddCore(delayModel, 0, 0, "core1");
+        AddCore(delayModel, 0, 1, "core2");
+        AddCore(delayModel, 1, 0, "core3");
+        AddCore(delayModel, 1, 1, "core4");
+        AddCore(delayModel, 2, 0, "core5");
+        AddCore(delayModel, 2, 1, "core6");
+        AddCore(delayModel, 3, 0, "core7");
+        AddCore(delayModel, 3, 1, "core8");
+        AddCore(delayModel, 4, 0, "core9");
+        AddCore(delayModel, 4, 1, "core10");
 
         // Reporters
         AddReporters();
