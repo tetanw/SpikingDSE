@@ -54,7 +54,7 @@ public class MultiCoreV1 : Experiment
     private MemReporter mem;
     private TimeDelayReporter spikeDelays;
     private TimeDelayReporter computeDelays;
-    private FileReporter coreUtils;
+    private FileReporter coreStats;
     private FileReporter transfers;
     private Mapping mapping;
 
@@ -114,8 +114,8 @@ public class MultiCoreV1 : Experiment
             return;
 
         transfers = new FileReporter("res/multi-core/v1/transfers.csv");
-        coreUtils = new FileReporter("res/multi-core/v1/util-core.csv");
-        coreUtils.ReportLine("core_x,core_y,util");
+        coreStats = new FileReporter("res/multi-core/v1/core-stats.csv");
+        coreStats.ReportLine("core_x,core_y,ts,util,spikes_prod,spikes_cons,sops");
 
         trace = new TraceReporter("res/multi-core/v1/result.trace");
 
@@ -133,8 +133,6 @@ public class MultiCoreV1 : Experiment
         controller.TimeAdvanced += (_, _, ts) => trace.AdvanceTimestep(ts);
         controller.TimeAdvanced += (_, time, ts) =>
         {
-            myTS++;
-            spikes.AdvanceTimestep(ts);
             foreach (var c in cores)
             {
                 var core = c as CoreV1;
@@ -150,8 +148,12 @@ public class MultiCoreV1 : Experiment
                 }
                 double util = (double)timeBusy / interval;
                 var coord = (MeshCoord)c.GetLocation();
-                coreUtils.ReportLine($"{coord.x},{coord.y},{util}");
+                coreStats.ReportLine($"{coord.x},{coord.y},{myTS},{util},{core.nrSpikesProduced},{core.nrSpikesConsumed},{core.nrSOPs}");
             }
+
+            // Acounting to go to the next TS
+            spikes.AdvanceTimestep(ts);
+            myTS++;
         };
 
         foreach (var c in cores)
@@ -262,7 +264,7 @@ public class MultiCoreV1 : Experiment
         spikeDelays?.Finish();
         computeDelays?.Finish();
         transfers?.Finish();
-        coreUtils?.Finish();
+        coreStats?.Finish();
         if (spikes != null) PrintLn($"Nr spikes: {spikes.NrSpikes:n}");
         PrintLn($"Predicted: {this.Prediction}, Truth: {this.Correct}");
     }

@@ -23,6 +23,9 @@ public sealed class CoreV1 : Actor, Core
 
     public long lastSpike = 0;
     public long lastSync = 0;
+    public int nrSpikesProduced = 0;
+    public int nrSpikesConsumed = 0;
+    public int nrSOPs = 0; 
 
     public SpikeReceived OnSpikeReceived;
     public SpikeSent OnSpikeSent;
@@ -36,8 +39,6 @@ public sealed class CoreV1 : Actor, Core
     private MeshCoord thisLoc;
     private MappingTable mapping;
     private V1DelayModel delayModel;
-    private int totalOutputSpikes = 0;
-    private int totalInputSpikes = 0;
     private int bufferSize;
     private Buffer<CoreEvent> coreBuffer;
     private Buffer<CoreEvent> inputBuffer;
@@ -157,13 +158,17 @@ public sealed class CoreV1 : Actor, Core
         {
             (spike.Layer as HiddenLayer).Forward(spike.Neuron);
         }
+        nrSpikesConsumed++;
+        nrSOPs += spike.Layer.Size;
         yield return env.Delay(delayModel.ComputeTime * spike.Layer.Size);
     }
 
     private IEnumerable<Event> Sync(Simulator env, SyncEvent sync)
     {
-        totalOutputSpikes = 0;
-        totalInputSpikes = 0;
+        nrSpikesProduced = 0;
+        nrSpikesConsumed = 0;
+        nrSOPs = 0;
+
         foreach (var l in mapping[this])
         {
             long startTime = env.Now;
@@ -173,19 +178,20 @@ public sealed class CoreV1 : Actor, Core
             OnSyncStarted?.Invoke(env.Now, sync.TS, layer);
 
             // Threshold of timestep TS - 1
-            int nrOutputSpikes = 0;
             int lastSpikingNeuron = 0;
             foreach (var spikingNeuron in layer.Sync())
             {
+                // Delay accounting
                 var neuronsComputed = spikingNeuron - lastSpikingNeuron;
                 yield return env.Delay(delayModel.ComputeTime * neuronsComputed);
                 long afterDelayTime = env.Now;
                 lastSpikingNeuron = spikingNeuron;
 
-                nrOutputSpikes++;
-                int offset = (layer as ALIFLayer).Offset;
+                // Stats accounting
+                nrSpikesProduced++;
 
                 // Feedback spikes
+                int offset = (layer as ALIFLayer).Offset;
                 foreach (var sibling in mapping.GetSiblings(layer))
                 {
                     var spikeEv = new SpikeEvent()
@@ -253,8 +259,6 @@ public sealed class CoreV1 : Actor, Core
                 }
             }
             yield return env.Delay((layer.Size - lastSpikingNeuron) * delayModel.ComputeTime);
-            totalInputSpikes++;
-            totalOutputSpikes += nrOutputSpikes;
 
             OnSyncEnded?.Invoke(env.Now, sync.TS, layer);
         }
