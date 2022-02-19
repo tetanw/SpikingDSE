@@ -15,6 +15,7 @@ public class ReceiveEvent : Event
     // To scheduler
     public InPort Port;
     public long Time;
+    public long TransferTime;
 
     // Result
     public object Message;

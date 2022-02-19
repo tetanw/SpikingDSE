@@ -10,12 +10,11 @@ public struct V1DelayModel
     public int InputTime;
     public int ComputeTime;
     public int OutputTime;
-    public int TimeRefTime;
 }
 
 public sealed class CoreV1 : Actor, Core
 {
-    public delegate void SpikeReceived(long time, Layer layer, int neuron, bool feedback, SpikeEvent spike);
+    public delegate void SpikeReceived(long time, Layer layer, int neuron, bool feedback, SpikeEvent spike, int nrHopsTravelled);
     public delegate void SpikeSent(long time, Layer from, int neuron, SpikeEvent spike);
     public delegate void SyncStarted(long time, int ts, HiddenLayer layer);
     public delegate void SyncEnded(long time, int ts, HiddenLayer layer);
@@ -25,7 +24,7 @@ public sealed class CoreV1 : Actor, Core
     public long lastSync = 0;
     public int nrSpikesProduced = 0;
     public int nrSpikesConsumed = 0;
-    public int nrSOPs = 0; 
+    public int nrSOPs = 0;
 
     public SpikeReceived OnSpikeReceived;
     public SpikeSent OnSpikeSent;
@@ -65,10 +64,10 @@ public sealed class CoreV1 : Actor, Core
 
         while (true)
         {
-            var rcv = env.Receive(input);
+            var rcv = env.Receive(input, transferTime: delayModel.InputTime);
             yield return rcv;
-            var flit = (MeshPacket)rcv.Message;
-            var @event = flit.Message as CoreEvent;
+            var packet = (MeshPacket)rcv.Message;
+            var @event = packet.Message as CoreEvent;
 
             switch (@event)
             {
@@ -84,6 +83,7 @@ public sealed class CoreV1 : Actor, Core
                     while (!inputBuffer.IsEmpty)
                     {
                         var spike = (SpikeEvent)inputBuffer.Pop();
+
                         if (!coreBuffer.IsFull)
                             coreBuffer.Push(spike);
                     }
@@ -92,7 +92,7 @@ public sealed class CoreV1 : Actor, Core
                     break;
                 case SpikeEvent spike:
                     spike.ReceivedAt = env.Now;
-                    OnSpikeReceived?.Invoke(env.Now, spike.Layer, spike.Neuron, spike.Feedback, spike);
+                    OnSpikeReceived?.Invoke(env.Now, spike.Layer, spike.Neuron, spike.Feedback, spike, packet.NrHops);
 
                     if (spike.TS > TS)
                     {

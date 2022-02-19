@@ -255,7 +255,7 @@ public sealed class Simulator
         {
             var rcv = channel.ReceiveEvent as ReceiveEvent;
             rcv.Message = channel.SendEvent.Message;
-            long newTime = Math.Max(channel.SendEvent.Time, rcv.Time);
+            long newTime = Math.Max(channel.SendEvent.Time, rcv.Time) + rcv.TransferTime;
             QueueThreads(channel, newTime);
             CleanChannel(channel);
         }
@@ -349,13 +349,13 @@ public sealed class Simulator
         return new SendEvent { Port = port, Message = message, Time = time };
     }
 
-    public ReceiveEvent Receive(InPort port, long waitBefore = 0)
+    public ReceiveEvent Receive(InPort port, long transferTime = 0)
     {
         if (!port.IsBound)
         {
             throw new Exception("Port is not bound!");
         }
-        return new ReceiveEvent { Port = port, Time = Now + waitBefore };
+        return new ReceiveEvent { Port = port, Time = Now, TransferTime = transferTime };
     }
 
     public SelectEvent Select(params InPort[] ports)

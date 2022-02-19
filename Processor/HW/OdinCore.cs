@@ -136,7 +136,7 @@ public sealed class OdinCore : Actor, Core
 
     private IEnumerable<Event> Receive(Simulator env)
     {
-        var rcv = env.Receive(input, waitBefore: delayModel.InputTime);
+        var rcv = env.Receive(input, transferTime: delayModel.InputTime);
         yield return rcv;
         received = (CoreEvent)rcv.Message;
     }

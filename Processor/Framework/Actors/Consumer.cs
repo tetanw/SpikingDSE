@@ -24,7 +24,7 @@ public sealed class Consumer : Actor
         ReceiveEvent rcv;
         while (true)
         {
-            rcv = env.Receive(In, waitBefore: interval);
+            rcv = env.Receive(In, transferTime: interval);
             yield return rcv;
             Consumed?.Invoke(this, env.Now, rcv.Message);
         }

@@ -177,6 +177,7 @@ public sealed class XYRouter : MeshRouter
             yield return buffer.RequestRead();
             var flit = buffer.Read();
             yield return env.Send(outPort, flit);
+            var after = env.Now;
             buffer.ReleaseRead();
 
             condVar.Value[dir + 5]++;
@@ -193,9 +194,11 @@ public sealed class XYRouter : MeshRouter
         {
             yield return buffer.RequestWrite();
             // This symbolises the amount of time for the transfer to take place
-            var rcv = env.Receive(inPort, waitBefore: transferDelay);
+            var rcv = env.Receive(inPort, transferTime: transferDelay);
             yield return rcv;
-            buffer.Write((MeshPacket)rcv.Message);
+            var packet = (MeshPacket)rcv.Message;
+            packet.NrHops++;
+            buffer.Write(packet);
             buffer.ReleaseWrite();
 
             condVar.Value[dir]++;

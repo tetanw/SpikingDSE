@@ -165,10 +165,10 @@ public class MultiCoreV1 : Experiment
                 float[] pots = (layer as ALIFLayer)?.Readout ?? (layer as OutputLayer)?.Readout;
                 mem.AdvanceLayer(layer, ts, pots);
             };
-            core.OnSpikeReceived += (time, layer, neuron, feedback, spike) =>
+            core.OnSpikeReceived += (time, layer, neuron, feedback, spike, nrHops) =>
             {
                 trace.InputSpike(neuron, time);
-                spikeDelays.ReportDelay(spike.CreatedAt, time, layer.Name);
+                spikeDelays.ReportDelay(spike.CreatedAt, time, layer.Name, nrHops.ToString());
             };
             core.OnSpikeSent += (time, fromLayer, neuron, _) =>
             {
@@ -182,14 +182,14 @@ public class MultiCoreV1 : Experiment
             core.OnSyncStarted += (time, _, _) => trace.TimeRef(time);
         }
 
-        transfers.ReportLine($"hw-time,router-x,router-y,from,to,snn-time");
+        transfers.ReportLine($"hw-time,snn-time,router-x,router-y,from,to");
         foreach (var r in routers)
         {
             var router = r as XYRouter;
 
             router.OnTransfer += (time, from, to) =>
             {
-                transfers.ReportLine($"{time},{router.x},{router.y},{from},{to},{myTS}");
+                transfers.ReportLine($"{time},{myTS},{router.x},{router.y},{from},{to}");
             };
         }
     }
@@ -228,12 +228,11 @@ public class MultiCoreV1 : Experiment
         // Hardware
         var delayModel = new V1DelayModel
         {
-            InputTime = 7,
+            InputTime = 16,
             ComputeTime = 2,
-            OutputTime = 8,
-            TimeRefTime = 2
+            OutputTime = 0
         };
-        CreateRouters(5, 2, (x, y) => new XYRouter(x, y, 3, 5, 10, name: $"router({x},{y})"));
+        CreateRouters(5, 2, (x, y) => new XYRouter(x, y, 3, 5, 16, name: $"router({x},{y})"));
         AddController(srnn.Input, -1, 0);
         AddCore(delayModel, 0, 0, "core1");
         AddCore(delayModel, 0, 1, "core2");

@@ -11,12 +11,13 @@ public class TimeDelayReporter
     {
         this.sw = new StreamWriter(filePath);
         this.FilePath = filePath;
-        sw.WriteLine("start,end,layer");
+        sw.WriteLine("start,end,layer,hops");
     }
 
-    public void ReportDelay(long start, long end, string extra)
+    public void ReportDelay(long start, long end, params string[] extra)
     {
-        sw.WriteLine($"{start},{end},{extra}");
+        string parts = string.Join(",", extra);
+        sw.WriteLine($"{start},{end},{parts}");
     }
 
     public void Finish()

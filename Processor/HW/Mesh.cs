@@ -10,6 +10,7 @@ public sealed class MeshPacket
     public MeshCoord Src;
     public MeshCoord Dest;
     public object Message;
+    public int NrHops = 0;
 
     public override string ToString()
     {

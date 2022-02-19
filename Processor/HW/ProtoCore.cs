@@ -130,7 +130,7 @@ public sealed class ProtoCore : Actor, Core
 
     private IEnumerable<Event> Receive(Simulator env, Action<CoreEvent> onReceive)
     {
-        var rcv = env.Receive(input, waitBefore: delayModel.InputTime);
+        var rcv = env.Receive(input, transferTime: delayModel.InputTime);
         yield return rcv;
         var flit = (MeshPacket)rcv.Message;
         onReceive((CoreEvent)flit.Message);
