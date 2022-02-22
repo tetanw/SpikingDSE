@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 
 namespace SpikingDSE;
@@ -44,6 +45,18 @@ public class Mapping
     public IEnumerable<MapEntry> GetAllSplits(string name)
     {
         return Mapped.FindAll((m) => m.Layer.Name == name);
+    }
+
+    public void Save(string path)
+    {
+        var sw = new StreamWriter(path);
+
+        sw.WriteLine("layer,core,index,partial,start,end");
+        foreach (var mapping in Mapped)
+        {
+            sw.WriteLine($"{mapping.Layer.Name},{mapping.Core.Name},{mapping.Index},{mapping.Partial},{mapping.Start},{mapping.End}");
+        }
+        sw.Close();
     }
 }
 

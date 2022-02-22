@@ -228,9 +228,9 @@ public class MultiCoreV1 : Experiment
         // Hardware
         var delayModel = new V1DelayModel
         {
-            InputTime = 16,
+            InputTime = 7,
             ComputeTime = 2,
-            OutputTime = 0
+            OutputTime = 8
         };
         CreateRouters(5, 2, (x, y) => new XYRouter(x, y, 3, 5, 16, name: $"router({x},{y})"));
         AddController(srnn.Input, -1, 0);

@@ -107,6 +107,7 @@ public sealed class CoreV1 : Actor, Core
                     else
                     {
                         // Else drop spike
+                        throw new Exception("Weird spike typing");
                     }
                     break;
                 default:
