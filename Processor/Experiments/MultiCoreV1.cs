@@ -79,10 +79,14 @@ public class MultiCoreV1 : Experiment
         sim.AddChannel(mergeSplit.ToMesh, Routers[0, 0].inWest);
     }
 
-    private void AddCore(int x, int y, string name)
+    private void AddCore(CoreV1Spec coreSpec)
     {
+        var parts = coreSpec.ConnectsTo.Split(",");
+        var x = int.Parse(parts[0]);
+        var y = int.Parse(parts[1]);
+
         var coreCoord = new MeshCoord(x, y);
-        var core = sim.AddActor(new CoreV1(coreCoord, spec.FindByName(name) as CoreV1Spec));
+        var core = sim.AddActor(new CoreV1(coreCoord, coreSpec));
         sim.AddChannel(core.output, Routers[x, y].inLocal);
         sim.AddChannel(Routers[x, y].outLocal, core.input);
         this.Cores.Add(core);
@@ -143,10 +147,12 @@ public class MultiCoreV1 : Experiment
         // Hardware
         CreateRouters(2, 2, (x, y) => new XYRouter(x, y, 3, 5, 16, name: $"router({x},{y})"));
         AddController(srnn.Input, -1, 0);
-        AddCore(0, 0, "core1");
-        AddCore(0, 1, "core2");
-        AddCore(1, 0, "core3");
-        AddCore(1, 1, "core4");
+        foreach (var coreSpec in spec.Cores)
+        {
+            if (coreSpec is not CoreV1Spec) continue;
+
+            AddCore(coreSpec as CoreV1Spec);
+        }
 
         // Mapping
         ApplyMapping();

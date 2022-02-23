@@ -27,6 +27,7 @@ public class HWSpec
             {
                 Name = instance["Name"].GetString(),
                 Interval = instance["Interval"].GetInt64(),
+                ConnectsTo = instance["ConnectsTo"].GetString()
             };
         }
         else if (type == "core-v1")
@@ -37,7 +38,8 @@ public class HWSpec
                 BufferSize = instance["BufferSize"].GetInt32(),
                 ComputeDelay = instance["ComputeDelay"].GetInt32(),
                 InputDelay = instance["InputDelay"].GetInt32(),
-                OutputDelay = instance["OutputDelay"].GetInt32()
+                OutputDelay = instance["OutputDelay"].GetInt32(),
+                ConnectsTo = instance["ConnectsTo"].GetString()
             };
         }
         else
@@ -71,6 +73,7 @@ public class CoreSpec
 {
     public string Name { get; set; }
     public int MaxNeurons { get; set; } = int.MaxValue;
+    public string ConnectsTo { get; set; }
 }
 
 public class CoreV1Spec : CoreSpec
