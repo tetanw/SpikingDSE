@@ -8,7 +8,7 @@ public class MultiCoreV1Mapping
 {
     public static Mapping CreateMapping(Mapper mapper, SRNN srnn)
     {
-        for (int i = 1; i <= 10; i++)
+        for (int i = 1; i <= 4; i++)
         {
             mapper.AddCore(new MapCore
             {
@@ -54,14 +54,16 @@ public class MultiCoreV1 : Experiment
 
     private Mapping mapping;
     private ISpikeSource source;
+    private HWSpec spec;
 
-    public MultiCoreV1(ISpikeSource source, SplittedSRNN srnn, Mapping mapping, long interval, int bufferSize)
+    public MultiCoreV1(ISpikeSource source, SplittedSRNN srnn, Mapping mapping, long interval, int bufferSize, HWSpec spec)
     {
         this.srnn = srnn;
         this.source = source;
         this.BufferSize = bufferSize;
         this.Interval = interval;
         this.mapping = mapping;
+        this.spec = spec;
     }
 
     private void CreateRouters(int width, int height, MeshUtils.ConstructRouter createRouters)
@@ -72,7 +74,7 @@ public class MultiCoreV1 : Experiment
     private void AddController(InputLayer input, int x, int y)
     {
         var controllerCoord = new MeshCoord(x, y);
-        var controller = sim.AddActor(new ControllerV1(input, source, controllerCoord, 100, 0, Interval, name: "controller"));
+        var controller = sim.AddActor(new ControllerV1(input, source, controllerCoord, spec.FindByType<ControllerV1Spec>()));
         this.Controller = controller;
         var mergeSplit = MeshUtils.ConnectMergeSplit(sim, Routers);
         sim.AddChannel(mergeSplit.ToController, controller.Input);

@@ -16,19 +16,17 @@ public sealed class ControllerV1 : Actor, Core
     private object location;
     private InputLayer inputLayer;
     private ISpikeSource source;
-    private long startTime;
-    private long interval;
     private Buffer<object> outBuffer;
     private MappingTable mapping;
+    private ControllerV1Spec spec;
 
-    public ControllerV1(InputLayer inputLayer, ISpikeSource source, object location, int nrTimesteps, long startTime, long interval, string name = null)
+    public ControllerV1(InputLayer inputLayer, ISpikeSource source, object location, ControllerV1Spec spec)
     {
         this.inputLayer = inputLayer;
         this.source = source;
         this.location = location;
-        this.startTime = startTime;
-        this.interval = interval;
-        this.Name = name;
+        this.spec = spec;
+        this.Name = spec.Name;
     }
 
     public void LoadMapping(MappingTable mapping) => this.mapping = mapping;
@@ -85,12 +83,12 @@ public sealed class ControllerV1 : Actor, Core
 
     private IEnumerable<Event> SyncSender(Simulator env, Mutex timesteps)
     {
-        yield return env.SleepUntil(startTime);
+        yield return env.SleepUntil(spec.StartTime);
 
         int TS = 0;
         while (TS < source.NrTimesteps())
         {
-            yield return env.SleepUntil(startTime + interval * (TS + 1));
+            yield return env.SleepUntil(spec.StartTime + spec.Interval * (TS + 1));
 
             yield return outBuffer.RequestWrite();
             outBuffer.Write(new SyncEvent()

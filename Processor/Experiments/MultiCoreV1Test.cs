@@ -27,7 +27,7 @@ public class MultiCoreV1Test
         var inputFile = new InputTraceFile($"res/shd/input_0.trace", 700, 100);
         this.correct = inputFile.Correct;
         var splittedSRNN = SplittedSRNN.SplitSRNN(srnn, mapping);
-        this.exp = new MultiCoreV1(inputFile, splittedSRNN, mapping, 100_000, 512);
+        this.exp = new MultiCoreV1(inputFile, splittedSRNN, mapping, 100_000, 512, HWSpec.Load("./data/mesh-hw.json"));
     }
 
     public void Run()
