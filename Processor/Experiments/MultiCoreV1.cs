@@ -145,7 +145,7 @@ public class MultiCoreV1 : Experiment
     public override void Setup()
     {
         // Hardware
-        CreateRouters(2, 2, (x, y) => new XYRouter(x, y, 3, 5, 16, name: $"router({x},{y})"));
+        CreateRouters(3, 2, (x, y) => new XYRouter(x, y, 3, 5, 16, name: $"router({x},{y})"));
         AddController(srnn.Input, -1, 0);
         foreach (var coreSpec in spec.Cores)
         {
