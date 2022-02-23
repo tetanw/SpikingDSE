@@ -90,13 +90,13 @@ namespace SpikingDSE
                     {
                         new SingleOdin().Run();
                     }
-                    else if (opts.Name.Equals("MultiCoreV1Test"))
+                    else if (opts.Name.Equals("MultiCoreTest"))
                     {
-                        new MultiCoreV1Test().Run();
+                        new MultiCoreTest().Run();
                     }
-                    else if (opts.Name.Equals("MultiCoreV1DSE"))
+                    else if (opts.Name.Equals("MultiCoreDSE"))
                     {
-                        new MultiCoreV1DSE().Run();
+                        new MultiCoreDSE().Run();
                     }
                     else if (opts.Name.Equals("XYRouterTest"))
                     {

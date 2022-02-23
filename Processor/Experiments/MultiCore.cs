@@ -4,7 +4,7 @@ using System.IO;
 
 namespace SpikingDSE;
 
-public class MultiCoreV1Mapping
+public class MultiCoreMapping
 {
     public static Mapping CreateMapping(Mapper mapper, HWSpec spec, SRNN srnn)
     {
@@ -42,7 +42,7 @@ public class MultiCoreV1Mapping
     }
 }
 
-public class MultiCoreV1 : Experiment
+public class MultiCore : Experiment
 {
     public Action SetupDone;
     public SplittedSRNN srnn;
@@ -55,7 +55,7 @@ public class MultiCoreV1 : Experiment
     private ISpikeSource source;
     private HWSpec spec;
 
-    public MultiCoreV1(ISpikeSource source, SplittedSRNN srnn, Mapping mapping, HWSpec spec)
+    public MultiCore(ISpikeSource source, SplittedSRNN srnn, Mapping mapping, HWSpec spec)
     {
         this.srnn = srnn;
         this.source = source;

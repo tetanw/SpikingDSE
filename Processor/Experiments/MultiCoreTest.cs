@@ -4,7 +4,7 @@ using System.IO;
 
 namespace SpikingDSE;
 
-public class MultiCoreV1Test
+public class MultiCoreTest
 {
     // Reporting
     private TraceReporter trace;
@@ -15,20 +15,20 @@ public class MultiCoreV1Test
     private FileReporter coreStats;
     private FileReporter transfers;
 
-    private MultiCoreV1 exp;
+    private MultiCore exp;
     private int correct;
 
-    public MultiCoreV1Test()
+    public MultiCoreTest()
     {
         var srnn = SRNN.Load("res/snn/best", 700, 2);
         var hw =  HWSpec.Load("./data/mesh-hw.json");
-        var mapping = MultiCoreV1Mapping.CreateMapping(new FirstFitMapper(), hw, srnn);
+        var mapping = MultiCoreMapping.CreateMapping(new FirstFitMapper(), hw, srnn);
         mapping.PrintReport();
 
         var inputFile = new InputTraceFile($"res/shd/input_0.trace", 700, 100);
         this.correct = inputFile.Correct;
         var splittedSRNN = SplittedSRNN.SplitSRNN(srnn, mapping);
-        this.exp = new MultiCoreV1(inputFile, splittedSRNN, mapping, hw);
+        this.exp = new MultiCore(inputFile, splittedSRNN, mapping, hw);
     }
 
     public void Run()
@@ -39,7 +39,7 @@ public class MultiCoreV1Test
         CleanupReporters();
     }
 
-    private void SetupReporters(MultiCoreV1 multi, string resultsFolder)
+    private void SetupReporters(MultiCore multi, string resultsFolder)
     {
         Directory.CreateDirectory(resultsFolder);
 
