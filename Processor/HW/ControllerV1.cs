@@ -51,13 +51,14 @@ public sealed class ControllerV1 : Actor, Core
     private IEnumerable<Event> SpikeSender(Simulator env, Mutex timesteps)
     {
         int TS = 0;
+        var destLayers = mapping.GetDestLayers(inputLayer);
         while (inputLayer.spikeSource.NextTimestep())
         {
             // Send spikes for input layer
             var inputSpikes = inputLayer.spikeSource.NeuronSpikes();
             foreach (var neuron in inputSpikes)
             {
-                foreach (var destLayer in mapping.GetDestLayers(inputLayer))
+                foreach (var destLayer in destLayers)
                 {
                     var spike = new SpikeEvent()
                     {

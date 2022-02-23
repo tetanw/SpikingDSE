@@ -170,7 +170,8 @@ public sealed class CoreV1 : Actor, Core
         nrSpikesConsumed = 0;
         nrSOPs = 0;
 
-        foreach (var l in mapping[this])
+        var mappedLayers = mapping[this];
+        foreach (var l in mappedLayers)
         {
             long startTime = env.Now;
             var layer = (HiddenLayer)l;
@@ -272,6 +273,3 @@ public sealed class CoreV1 : Actor, Core
 
     string Core.Name() => this.Name;
 }
-
-
-

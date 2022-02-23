@@ -100,13 +100,18 @@ public class SplittedSRNN : SNN
         {
             List<ALIFLayer> parts = new();
             int i = 1;
+
             foreach (var split in mapping.GetAllSplits(hidden.Name))
             {
-                parts.Add(hidden.Slice(
-                    split.Start,
-                    split.End,
-                    i++
-                ));
+                if (split.Partial)
+                {
+                    parts.Add(hidden.Slice(split.Start, split.End, i++));
+                }
+                else
+                {
+                    parts.Add(hidden.Copy());
+                }
+
             }
             hiddenLayers.Add(parts);
         }

@@ -13,7 +13,7 @@ public class MultiCoreV1Mapping
             {
                 Name = $"core{i}",
                 AcceptedTypes = new() { typeof(ALIFLayer), typeof(OutputLayer) },
-                MaxNrNeurons = 64
+                MaxNrNeurons = 128
             });
         }
         mapper.AddCore(new MapCore
@@ -200,8 +200,17 @@ public class MultiCoreV1 : Experiment
         foreach (var entry in mapping.Mapped)
         {
             var core = FindCore(entry.Core.Name);
-            string name = entry.Partial ? $"{entry.Layer.Name}-{entry.Index}" : entry.Layer.Name;
-            var layer = srnn.FindLayer(name);
+            var layer = srnn.FindLayer(entry.Layer.Name);
+            if (layer == null)
+            {
+                string name = $"{entry.Layer.Name}-{entry.Index}";
+                layer = srnn.FindLayer(name);
+            }
+            if (layer == null)
+            {
+                string name = $"{entry.Layer.Name}-1";
+                layer = srnn.FindLayer(name);
+            }
             mappingTable.Map(core, layer);
         }
 
