@@ -6,22 +6,25 @@ namespace SpikingDSE;
 
 public class MultiCoreV1Mapping
 {
-    public static Mapping CreateMapping(Mapper mapper, SRNN srnn)
+    public static Mapping CreateMapping(Mapper mapper, HWSpec spec, SRNN srnn)
     {
-        for (int i = 1; i <= 4; i++)
+        foreach (var coreSpec in spec.Cores)
         {
+            if (coreSpec is not CoreV1Spec) continue;
+
             mapper.AddCore(new MapCore
             {
-                Name = $"core{i}",
+                Name = coreSpec.Name,
                 AcceptedTypes = new() { typeof(ALIFLayer), typeof(OutputLayer) },
-                MaxNrNeurons = 128
+                MaxNrNeurons = coreSpec.MaxNeurons
             });
         }
+        var controllerSpec = spec.FindByType<ControllerV1Spec>();
         mapper.AddCore(new MapCore
         {
-            Name = "controller",
+            Name = controllerSpec.Name,
             AcceptedTypes = new() { typeof(InputLayer) },
-            MaxNrNeurons = int.MaxValue
+            MaxNrNeurons = controllerSpec.MaxNeurons
         });
 
         foreach (var layer in srnn.GetAllLayers())

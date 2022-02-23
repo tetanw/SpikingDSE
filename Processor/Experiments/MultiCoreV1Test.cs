@@ -21,13 +21,14 @@ public class MultiCoreV1Test
     public MultiCoreV1Test()
     {
         var srnn = SRNN.Load("res/snn/best", 700, 2);
-        var mapping = MultiCoreV1Mapping.CreateMapping(new FirstFitMapper(), srnn);
+        var hw =  HWSpec.Load("./data/mesh-hw.json");
+        var mapping = MultiCoreV1Mapping.CreateMapping(new FirstFitMapper(), hw, srnn);
         mapping.PrintReport();
 
         var inputFile = new InputTraceFile($"res/shd/input_0.trace", 700, 100);
         this.correct = inputFile.Correct;
         var splittedSRNN = SplittedSRNN.SplitSRNN(srnn, mapping);
-        this.exp = new MultiCoreV1(inputFile, splittedSRNN, mapping, HWSpec.Load("./data/mesh-hw.json"));
+        this.exp = new MultiCoreV1(inputFile, splittedSRNN, mapping, hw);
     }
 
     public void Run()

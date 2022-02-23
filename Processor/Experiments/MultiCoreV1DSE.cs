@@ -9,6 +9,7 @@ public class MultiCoreV1DSE : DSEExperiment<MultiCoreV1>
 {
     private int size = 2264;
     private Mapping mapping;
+    private HWSpec hw;
     private SRNN srnn;
     private SplittedSRNN splittedSRNN = null;
     private int nrCorrect = 0;
@@ -17,7 +18,8 @@ public class MultiCoreV1DSE : DSEExperiment<MultiCoreV1>
     public MultiCoreV1DSE()
     {
         this.srnn = SRNN.Load("res/snn/best", 700, 2);
-        this.mapping = MultiCoreV1Mapping.CreateMapping(new FirstFitMapper(), srnn);
+        this.hw = HWSpec.Load("data/mesh-hw.json");
+        this.mapping = MultiCoreV1Mapping.CreateMapping(new FirstFitMapper(), hw, srnn);
         this.splittedSRNN = SplittedSRNN.SplitSRNN(srnn, this.mapping);
     }
 

@@ -70,7 +70,7 @@ public class HWSpec
 public class CoreSpec
 {
     public string Name { get; set; }
-    public int MaxNeurons { get; set; }
+    public int MaxNeurons { get; set; } = int.MaxValue;
 }
 
 public class CoreV1Spec : CoreSpec
