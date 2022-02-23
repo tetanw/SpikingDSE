@@ -15,7 +15,8 @@ public class MultiCoreV1Test
 
         var inputFile = new InputTraceFile($"res/shd/input_0.trace", 700, 100);
         var splittedSRNN = SplittedSRNN.SplitSRNN(srnn, mapping);
-        exp = new MultiCoreV1(inputFile, "res/multi-core/v1", inputFile.Correct, splittedSRNN, mapping, 100_000, 512);
+        exp = new MultiCoreV1(inputFile, "res/multi-core/v1", splittedSRNN, mapping, 100_000, 512);
+        Console.WriteLine($"Predicted: {exp.Predict()}, Truth: {inputFile.Correct}");
     }
 
     public void Run()

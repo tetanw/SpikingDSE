@@ -61,16 +61,12 @@ public class MultiCoreV1 : Experiment
     private Mapping mapping;
     private ISpikeSource source;
 
-    public int Prediction = -1;
-    public int Correct = -1;
-
-    public MultiCoreV1(ISpikeSource source, string resultsFolder, int correct, SplittedSRNN srnn, Mapping mapping, long interval, int bufferSize)
+    public MultiCoreV1(ISpikeSource source, string resultsFolder, SplittedSRNN srnn, Mapping mapping, long interval, int bufferSize)
     {
         this.srnn = srnn;
         this.source = source;
         this.Debug = resultsFolder != null;
         this.resultsFolder = resultsFolder;
-        this.Correct = correct;
         this.bufferSize = bufferSize;
         this.interval = interval;
         this.mapping = mapping;
@@ -272,7 +268,6 @@ public class MultiCoreV1 : Experiment
 
     public override void Cleanup()
     {
-        this.Prediction = srnn.Prediction();
         trace?.Finish();
         spikes?.Finish();
         mem?.Finish();
@@ -281,6 +276,7 @@ public class MultiCoreV1 : Experiment
         transfers?.Finish();
         coreStats?.Finish();
         if (spikes != null) PrintLn($"Nr spikes: {spikes.NrSpikes:n}");
-        PrintLn($"Predicted: {this.Prediction}, Truth: {this.Correct}");
     }
+
+    public int Predict() => srnn.Prediction();
 }

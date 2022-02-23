@@ -15,6 +15,7 @@ public class SimStopConditions
 
 public abstract class Experiment
 {
+    public object Context { get; set; }
     protected Simulator sim;
     protected SimStopConditions simStop;
     
