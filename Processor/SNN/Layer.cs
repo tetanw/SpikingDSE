@@ -11,19 +11,16 @@ public class Layer
 
 public class InputLayer : Layer
 {
-    public readonly ISpikeSource spikeSource;
-
-    public InputLayer(ISpikeSource spikeSource, string name = null)
+    public InputLayer(int size, string name = null)
     {
-        this.spikeSource = spikeSource;
         this.Name = name;
         this.InputSize = -1;
-        this.Size = spikeSource?.NrNeurons() ?? -1;
+        this.Size = size;
     }
 
-    public InputLayer Copy(ISpikeSource spikeSource)
+    public InputLayer Copy()
     {
-        return new InputLayer(spikeSource, name: this.Name);
+        return new InputLayer(this.Size, name: this.Name);
     }
 
     public override string ToString()

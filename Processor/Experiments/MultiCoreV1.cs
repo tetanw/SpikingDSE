@@ -59,13 +59,15 @@ public class MultiCoreV1 : Experiment
     private FileReporter coreStats;
     private FileReporter transfers;
     private Mapping mapping;
+    private ISpikeSource source;
 
     public int Prediction = -1;
     public int Correct = -1;
 
-    public MultiCoreV1(bool debug, string resultsFolder, int correct, SplittedSRNN srnn, Mapping mapping, long interval, int bufferSize)
+    public MultiCoreV1(bool debug, ISpikeSource source, string resultsFolder, int correct, SplittedSRNN srnn, Mapping mapping, long interval, int bufferSize)
     {
         this.srnn = srnn;
+        this.source = source;
         this.Debug = debug;
         this.resultsFolder = resultsFolder;
         this.Correct = correct;
@@ -82,7 +84,7 @@ public class MultiCoreV1 : Experiment
     private void AddController(InputLayer input, int x, int y)
     {
         var controllerCoord = new MeshCoord(x, y);
-        var controller = sim.AddActor(new ControllerV1(input, controllerCoord, 100, 0, interval, name: "controller"));
+        var controller = sim.AddActor(new ControllerV1(input, source, controllerCoord, 100, 0, interval, name: "controller"));
         this.controller = controller;
         var mergeSplit = MeshUtils.ConnectMergeSplit(sim, routers);
         sim.AddChannel(mergeSplit.ToController, controller.Input);

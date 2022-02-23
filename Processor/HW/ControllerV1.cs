@@ -15,14 +15,16 @@ public sealed class ControllerV1 : Actor, Core
 
     private object location;
     private InputLayer inputLayer;
+    private ISpikeSource source;
     private long startTime;
     private long interval;
     private Buffer<object> outBuffer;
     private MappingTable mapping;
 
-    public ControllerV1(InputLayer inputLayer, object location, int nrTimesteps, long startTime, long interval, string name = null)
+    public ControllerV1(InputLayer inputLayer, ISpikeSource source, object location, int nrTimesteps, long startTime, long interval, string name = null)
     {
         this.inputLayer = inputLayer;
+        this.source = source;
         this.location = location;
         this.startTime = startTime;
         this.interval = interval;
@@ -52,10 +54,10 @@ public sealed class ControllerV1 : Actor, Core
     {
         int TS = 0;
         var destLayers = mapping.GetDestLayers(inputLayer);
-        while (inputLayer.spikeSource.NextTimestep())
+        while (source.NextTimestep())
         {
             // Send spikes for input layer
-            var inputSpikes = inputLayer.spikeSource.NeuronSpikes();
+            var inputSpikes = source.NeuronSpikes();
             foreach (var neuron in inputSpikes)
             {
                 foreach (var destLayer in destLayers)
@@ -86,7 +88,7 @@ public sealed class ControllerV1 : Actor, Core
         yield return env.SleepUntil(startTime);
 
         int TS = 0;
-        while (TS < inputLayer.spikeSource.NrTimesteps())
+        while (TS < source.NrTimesteps())
         {
             yield return env.SleepUntil(startTime + interval * (TS + 1));
 

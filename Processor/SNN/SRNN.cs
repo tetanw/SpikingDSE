@@ -8,9 +8,9 @@ public class SRNN : SNN
     public ALIFLayer[] Hidden;
     public OutputLayer Output;
 
-    public static SRNN Load(string folderPath, ISpikeSource spikeSource, int nrLayers = 2)
+    public static SRNN Load(string folderPath, int inputSize, int nrLayers)
     {
-        var input = new InputLayer(spikeSource, name: "i");
+        var input = new InputLayer(inputSize, name: "i");
         var hidden = new ALIFLayer[nrLayers];
         hidden[0] = createALIFLayer(folderPath, "i", "h1");
         for (int i = 1; i < nrLayers; i++)
@@ -68,9 +68,9 @@ public class SRNN : SNN
         return output;
     }
 
-    public SRNN Copy(ISpikeSource spikeSource)
+    public SRNN Copy()
     {
-        var input = this.Input.Copy(spikeSource);
+        var input = this.Input.Copy();
         var hidden = new ALIFLayer[this.Hidden.Length];
         for (int i = 0; i < hidden.Length; i++)
         {
@@ -90,9 +90,9 @@ public class SplittedSRNN : SNN
     public List<List<ALIFLayer>> HiddenLayers;
     public OutputLayer Output;
 
-    public static SplittedSRNN SplitSRNN(SRNN srnn, Mapping mapping, ISpikeSource spikeSource)
+    public static SplittedSRNN SplitSRNN(SRNN srnn, Mapping mapping)
     {
-        var input = srnn.Input = new InputLayer(spikeSource, "i");
+        var input = srnn.Input.Copy();
         var output = srnn.Output.Copy();
 
         List<List<ALIFLayer>> hiddenLayers = new();
@@ -133,9 +133,9 @@ public class SplittedSRNN : SNN
         }
     }
 
-    public SplittedSRNN Copy(ISpikeSource spikeSource)
+    public SplittedSRNN Copy()
     {
-        var input = this.Input.Copy(spikeSource);
+        var input = this.Input.Copy();
         var output = this.Output.Copy();
         List<List<ALIFLayer>> hiddenLayers = new();
         foreach (var layer in this.HiddenLayers)

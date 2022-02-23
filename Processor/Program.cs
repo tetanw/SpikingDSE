@@ -90,14 +90,6 @@ namespace SpikingDSE
                     {
                         new SingleOdin().Run();
                     }
-                    else if (opts.Name.Equals("ProtoMultiCoreTest"))
-                    {
-                        new ProtoMultiCoreTest().Run();
-                    }
-                    else if (opts.Name.Equals("ProtoMultiCoreDSE"))
-                    {
-                        new ProtoMultiCoreDSE().Run();
-                    }
                     else if (opts.Name.Equals("MultiCoreV1Test"))
                     {
                         new MultiCoreV1Test().Run();
@@ -109,10 +101,6 @@ namespace SpikingDSE
                     else if (opts.Name.Equals("XYRouterTest"))
                     {
                         new XYRouterTest().Run();
-                    }
-                    else if (opts.Name.Equals("Validator"))
-                    {
-                        new Validator().Run();
                     }
                     else if (opts.Name.Equals("MapperTest"))
                     {

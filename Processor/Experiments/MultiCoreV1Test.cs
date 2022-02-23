@@ -9,13 +9,13 @@ public class MultiCoreV1Test
 
     public MultiCoreV1Test()
     {
-        var srnn = SRNN.Load("res/snn/best", null, 2);
+        var srnn = SRNN.Load("res/snn/best", 700, 2);
         var mapping = MultiCoreV1Mapping.CreateMapping(new FirstFitMapper(), srnn);
         mapping.PrintReport();
 
         var inputFile = new InputTraceFile($"res/shd/input_0.trace", 700, 100);
-        var splittedSRNN = SplittedSRNN.SplitSRNN(srnn, mapping, inputFile);
-        exp = new MultiCoreV1(true, "res/multi-core/v1", inputFile.Correct, splittedSRNN, mapping, 100_000, 512);
+        var splittedSRNN = SplittedSRNN.SplitSRNN(srnn, mapping);
+        exp = new MultiCoreV1(true, inputFile, "res/multi-core/v1", inputFile.Correct, splittedSRNN, mapping, 100_000, 512);
     }
 
     public void Run()
