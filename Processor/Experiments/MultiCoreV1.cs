@@ -82,10 +82,10 @@ public class MultiCoreV1 : Experiment
         sim.AddChannel(mergeSplit.ToMesh, Routers[0, 0].inWest);
     }
 
-    private void AddCore(V1DelayModel delayModel, int x, int y, string name)
+    private void AddCore(int x, int y, string name)
     {
         var coreCoord = new MeshCoord(x, y);
-        var core = sim.AddActor(new CoreV1(coreCoord, delayModel, name: name, feedbackBufferSize: BufferSize));
+        var core = sim.AddActor(new CoreV1(coreCoord, spec.FindByName(name) as CoreV1Spec));
         sim.AddChannel(core.output, Routers[x, y].inLocal);
         sim.AddChannel(Routers[x, y].outLocal, core.input);
         this.Cores.Add(core);
@@ -144,24 +144,12 @@ public class MultiCoreV1 : Experiment
     public override void Setup()
     {
         // Hardware
-        var delayModel = new V1DelayModel
-        {
-            InputTime = 7,
-            ComputeTime = 2,
-            OutputTime = 8
-        };
-        CreateRouters(5, 2, (x, y) => new XYRouter(x, y, 3, 5, 16, name: $"router({x},{y})"));
+        CreateRouters(2, 2, (x, y) => new XYRouter(x, y, 3, 5, 16, name: $"router({x},{y})"));
         AddController(srnn.Input, -1, 0);
-        AddCore(delayModel, 0, 0, "core1");
-        AddCore(delayModel, 0, 1, "core2");
-        AddCore(delayModel, 1, 0, "core3");
-        AddCore(delayModel, 1, 1, "core4");
-        AddCore(delayModel, 2, 0, "core5");
-        AddCore(delayModel, 2, 1, "core6");
-        AddCore(delayModel, 3, 0, "core7");
-        AddCore(delayModel, 3, 1, "core8");
-        AddCore(delayModel, 4, 0, "core9");
-        AddCore(delayModel, 4, 1, "core10");
+        AddCore(0, 0, "core1");
+        AddCore(0, 1, "core2");
+        AddCore(1, 0, "core3");
+        AddCore(1, 1, "core4");
 
         // Mapping
         ApplyMapping();

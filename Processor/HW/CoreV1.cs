@@ -37,17 +37,15 @@ public sealed class CoreV1 : Actor, Core
 
     private MeshCoord thisLoc;
     private MappingTable mapping;
-    private V1DelayModel delayModel;
-    private int bufferSize;
     private Buffer<CoreEvent> coreBuffer;
     private Buffer<CoreEvent> inputBuffer;
+    private CoreV1Spec spec;
 
-    public CoreV1(MeshCoord location, V1DelayModel delayModel, int feedbackBufferSize = int.MaxValue, string name = "")
+    public CoreV1(MeshCoord location, CoreV1Spec spec)
     {
         this.thisLoc = location;
-        this.Name = name;
-        this.bufferSize = feedbackBufferSize;
-        this.delayModel = delayModel;
+        this.spec = spec;
+        this.Name = spec.Name;
     }
 
     public bool AcceptsLayer(Layer layer) => throw new NotImplementedException();
@@ -64,7 +62,7 @@ public sealed class CoreV1 : Actor, Core
 
         while (true)
         {
-            var rcv = env.Receive(input, transferTime: delayModel.InputTime);
+            var rcv = env.Receive(input, transferTime: spec.InputDelay);
             yield return rcv;
             var packet = (MeshPacket)rcv.Message;
             var @event = packet.Message as CoreEvent;
@@ -120,8 +118,8 @@ public sealed class CoreV1 : Actor, Core
 
     public override IEnumerable<Event> Run(Simulator env)
     {
-        inputBuffer = new(env, bufferSize);
-        coreBuffer = new(env, bufferSize);
+        inputBuffer = new(env, spec.BufferSize);
+        coreBuffer = new(env, spec.BufferSize);
         env.Process(Receiver(env));
 
         while (true)
@@ -161,7 +159,7 @@ public sealed class CoreV1 : Actor, Core
         }
         nrSpikesConsumed++;
         nrSOPs += spike.Layer.Size;
-        yield return env.Delay(delayModel.ComputeTime * spike.Layer.Size);
+        yield return env.Delay(spec.ComputeDelay * spike.Layer.Size);
     }
 
     private IEnumerable<Event> Sync(Simulator env, SyncEvent sync)
@@ -185,7 +183,7 @@ public sealed class CoreV1 : Actor, Core
             {
                 // Delay accounting
                 var neuronsComputed = spikingNeuron - lastSpikingNeuron;
-                yield return env.Delay(delayModel.ComputeTime * neuronsComputed);
+                yield return env.Delay(spec.ComputeDelay * neuronsComputed);
                 long afterDelayTime = env.Now;
                 lastSpikingNeuron = spikingNeuron;
 
@@ -222,7 +220,7 @@ public sealed class CoreV1 : Actor, Core
                             Dest = siblingCoord,
                             Message = spikeEv
                         };
-                        yield return env.Delay(delayModel.OutputTime);
+                        yield return env.Delay(spec.OutputDelay);
                         yield return env.Send(output, flit);
                     }
 
@@ -254,13 +252,13 @@ public sealed class CoreV1 : Actor, Core
                             Dest = destCoord,
                             Message = spikeOut
                         };
-                        yield return env.Delay(delayModel.OutputTime);
+                        yield return env.Delay(spec.OutputDelay);
                         yield return env.Send(output, flit);
                     }
                     OnSpikeSent?.Invoke(env.Now, layer, spikingNeuron, spikeOut);
                 }
             }
-            yield return env.Delay((layer.Size - lastSpikingNeuron) * delayModel.ComputeTime);
+            yield return env.Delay((layer.Size - lastSpikingNeuron) * spec.ComputeDelay);
 
             OnSyncEnded?.Invoke(env.Now, sync.TS, layer);
         }
