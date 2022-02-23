@@ -5,6 +5,7 @@ namespace SpikingDSE;
 
 public class MultiCoreV1Test
 {
+    private int correct;
     private MultiCoreV1 exp;
 
     public MultiCoreV1Test()
@@ -14,13 +15,14 @@ public class MultiCoreV1Test
         mapping.PrintReport();
 
         var inputFile = new InputTraceFile($"res/shd/input_0.trace", 700, 100);
+        this.correct = inputFile.Correct;
         var splittedSRNN = SplittedSRNN.SplitSRNN(srnn, mapping);
-        exp = new MultiCoreV1(inputFile, "res/multi-core/v1", splittedSRNN, mapping, 100_000, 512);
-        Console.WriteLine($"Predicted: {exp.Predict()}, Truth: {inputFile.Correct}");
+        this.exp = new MultiCoreV1(inputFile, "res/multi-core/v1", splittedSRNN, mapping, 100_000, 512);
     }
 
     public void Run()
     {
         exp.Run();
+        Console.WriteLine($"Predicted: {exp.Predict()}, Truth: {correct}");
     }
 }
