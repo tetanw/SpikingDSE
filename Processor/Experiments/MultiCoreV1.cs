@@ -41,160 +41,64 @@ public class MultiCoreV1Mapping
 
 public class MultiCoreV1 : Experiment
 {
-    private SplittedSRNN srnn;
+    public Action SetupDone;
+    public SplittedSRNN srnn;
 
-    public MeshRouter[,] routers;
-    public ControllerV1 controller;
-    public List<Core> cores = new();
+    public MeshRouter[,] Routers;
+    public ControllerV1 Controller;
+    public List<Core> Cores = new();
 
-    private int bufferSize;
-    private long interval;
-    private string resultsFolder;
+    public int BufferSize { get; set; }
+    public long Interval { get; set; }
 
-    private TraceReporter trace;
-    private TensorReporter spikes;
-    private MemReporter mem;
-    private TimeDelayReporter spikeDelays;
-    private TimeDelayReporter computeDelays;
-    private FileReporter coreStats;
-    private FileReporter transfers;
+
     private Mapping mapping;
     private ISpikeSource source;
 
-    public MultiCoreV1(ISpikeSource source, string resultsFolder, SplittedSRNN srnn, Mapping mapping, long interval, int bufferSize)
+    public MultiCoreV1(ISpikeSource source, SplittedSRNN srnn, Mapping mapping, long interval, int bufferSize)
     {
         this.srnn = srnn;
         this.source = source;
-        this.Debug = resultsFolder != null;
-        this.resultsFolder = resultsFolder;
-        this.bufferSize = bufferSize;
-        this.interval = interval;
+        this.BufferSize = bufferSize;
+        this.Interval = interval;
         this.mapping = mapping;
     }
 
     private void CreateRouters(int width, int height, MeshUtils.ConstructRouter createRouters)
     {
-        routers = MeshUtils.CreateMesh(sim, width, height, createRouters);
+        Routers = MeshUtils.CreateMesh(sim, width, height, createRouters);
     }
 
     private void AddController(InputLayer input, int x, int y)
     {
         var controllerCoord = new MeshCoord(x, y);
-        var controller = sim.AddActor(new ControllerV1(input, source, controllerCoord, 100, 0, interval, name: "controller"));
-        this.controller = controller;
-        var mergeSplit = MeshUtils.ConnectMergeSplit(sim, routers);
+        var controller = sim.AddActor(new ControllerV1(input, source, controllerCoord, 100, 0, Interval, name: "controller"));
+        this.Controller = controller;
+        var mergeSplit = MeshUtils.ConnectMergeSplit(sim, Routers);
         sim.AddChannel(mergeSplit.ToController, controller.Input);
         sim.AddChannel(controller.Output, mergeSplit.FromController);
-        sim.AddChannel(mergeSplit.ToMesh, routers[0, 0].inWest);
+        sim.AddChannel(mergeSplit.ToMesh, Routers[0, 0].inWest);
     }
 
     private void AddCore(V1DelayModel delayModel, int x, int y, string name)
     {
         var coreCoord = new MeshCoord(x, y);
-        var core = sim.AddActor(new CoreV1(coreCoord, delayModel, name: name, feedbackBufferSize: bufferSize));
-        sim.AddChannel(core.output, routers[x, y].inLocal);
-        sim.AddChannel(routers[x, y].outLocal, core.input);
-        this.cores.Add(core);
+        var core = sim.AddActor(new CoreV1(coreCoord, delayModel, name: name, feedbackBufferSize: BufferSize));
+        sim.AddChannel(core.output, Routers[x, y].inLocal);
+        sim.AddChannel(Routers[x, y].outLocal, core.input);
+        this.Cores.Add(core);
     }
 
     private Core FindCore(string name)
     {
-        var core = cores.Find(c => c.Name() == name);
+        var core = Cores.Find(c => c.Name() == name);
         if (core != null)
             return core;
 
-        if (name == controller.Name)
-            return controller;
+        if (name == Controller.Name)
+            return Controller;
 
         return null;
-    }
-
-    private void AddReporters()
-    {
-        if (!Debug)
-            return;
-
-        Directory.CreateDirectory(resultsFolder);
-
-        transfers = new FileReporter($"{resultsFolder}/transfers.csv");
-        transfers.ReportLine($"hw-time,snn-time,router-x,router-y,from,to");
-        coreStats = new FileReporter($"{resultsFolder}/core-stats.csv");
-        coreStats.ReportLine("core_x,core_y,ts,util,spikes_prod,spikes_cons,sops");
-
-        trace = new TraceReporter($"{resultsFolder}/result.trace");
-
-        mem = new MemReporter(srnn, $"{resultsFolder}");
-        mem.RegisterSNN(srnn);
-
-        spikes = new TensorReporter(srnn, $"{resultsFolder}");
-        spikes.RegisterSNN(srnn);
-
-        spikeDelays = new TimeDelayReporter($"{resultsFolder}/spike-delays.csv");
-        computeDelays = new TimeDelayReporter($"{resultsFolder}/compute-delays.csv");
-
-        int myTS = 0;
-
-        controller.TimeAdvanced += (_, _, ts) => trace.AdvanceTimestep(ts);
-        controller.TimeAdvanced += (_, time, ts) =>
-        {
-            foreach (var c in cores)
-            {
-                var core = c as CoreV1;
-
-                long timeBusy;
-                if (core.lastSpike < time - interval)
-                {
-                    timeBusy = 0;
-                }
-                else
-                {
-                    timeBusy = core.lastSpike - (time - interval);
-                }
-                double util = (double)timeBusy / interval;
-                var coord = (MeshCoord)c.GetLocation();
-                coreStats.ReportLine($"{coord.x},{coord.y},{myTS},{util},{core.nrSpikesProduced},{core.nrSpikesConsumed},{core.nrSOPs}");
-            }
-
-            // Acounting to go to the next TS
-            spikes.AdvanceTimestep(ts);
-            myTS++;
-        };
-
-        foreach (var c in cores)
-        {
-            var core = c as CoreV1;
-
-            core.OnSyncEnded += (_, ts, layer) =>
-            {
-                float[] pots = (layer as ALIFLayer)?.Readout ?? (layer as OutputLayer)?.Readout;
-                mem.AdvanceLayer(layer, ts, pots);
-            };
-            core.OnSpikeReceived += (time, layer, neuron, feedback, spike, nrHops) =>
-            {
-                trace.InputSpike(neuron, time);
-                spikeDelays.ReportDelay(spike.CreatedAt, time, layer.Name, nrHops.ToString());
-            };
-            core.OnSpikeSent += (time, fromLayer, neuron, _) =>
-            {
-                trace.OutputSpike(neuron, time);
-                spikes.InformSpike(fromLayer, neuron);
-            };
-            core.OnSpikeComputed += (time, spike) =>
-            {
-                computeDelays.ReportDelay(spike.ReceivedAt, time, "");
-            };
-            core.OnSyncStarted += (time, _, _) => trace.TimeRef(time);
-        }
-
-        foreach (var r in routers)
-        {
-            var router = r as XYRouter;
-
-            router.OnTransfer += (time, from, to) =>
-            {
-                transfers.ReportLine($"{time},{myTS},{router.x},{router.y},{from},{to}");
-            };
-        }
     }
 
     private void ApplyMapping()
@@ -257,24 +161,13 @@ public class MultiCoreV1 : Experiment
         AddCore(delayModel, 4, 0, "core9");
         AddCore(delayModel, 4, 1, "core10");
 
-        // Reporters
-        AddReporters();
-
         // Mapping
         ApplyMapping();
+
+        SetupDone?.Invoke();
     }
 
-    public override void Cleanup()
-    {
-        trace?.Finish();
-        spikes?.Finish();
-        mem?.Finish();
-        spikeDelays?.Finish();
-        computeDelays?.Finish();
-        transfers?.Finish();
-        coreStats?.Finish();
-        if (spikes != null) PrintLn($"Nr spikes: {spikes.NrSpikes:n}");
-    }
+    public override void Cleanup() { }
 
     public int Predict() => srnn.Prediction();
 }

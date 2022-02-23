@@ -41,7 +41,8 @@ public class MultiCoreV1DSE : DSEExperiment<MultiCoreV1>
             var inputFile = new InputTraceFile($"res/shd/input_{i}.trace", 700, 100);
             var simulator = new Simulator();
             var copy = splittedSRNN.Copy();
-            var exp = new MultiCoreV1(inputFile, null, copy, this.mapping, 100_000_000, bufferSize);
+            var exp = new MultiCoreV1(inputFile, copy, this.mapping, 100_000_000, bufferSize);
+            exp.Debug = false;
             exp.Context = inputFile.Correct;
             yield return exp;
         }
