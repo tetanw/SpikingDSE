@@ -142,10 +142,16 @@ public class MultiCoreV1 : Experiment
         }
     }
 
+    private static MeshRouter CreateRouter(int x, int y, MeshSpec mesh)
+    {
+        return new XYRouter(x, y, mesh.ReswitchDelay, mesh.PacketRouteDelay, mesh.TransferDelay, inputBufferSize: mesh.InputSize, outputBufferSize: mesh.OutputSize, name: $"router({x},{y})");
+    }
+
     public override void Setup()
     {
         // Hardware
-        CreateRouters(3, 2, (x, y) => new XYRouter(x, y, 3, 5, 16, name: $"router({x},{y})"));
+        var mesh = spec.NoC as MeshSpec;
+        CreateRouters(mesh.Width, mesh.Height, (x, y) => CreateRouter(x, y, mesh));
         AddController(srnn.Input, -1, 0);
         foreach (var coreSpec in spec.Cores)
         {

@@ -58,7 +58,15 @@ public class HWSpec
 
         return new HWSpec()
         {
-            Cores = cores
+            Cores = cores,
+            NoC = new MeshSpec {
+                Width = hwFile.NoC["Width"].GetInt32(),
+                Height = hwFile.NoC["Height"].GetInt32(),
+                InputSize = hwFile.NoC["InputSize"].GetInt32(),
+                OutputSize = hwFile.NoC["OutputSize"].GetInt32(),
+                ReswitchDelay = hwFile.NoC["ReswitchDelay"].GetInt32(),
+                PacketRouteDelay = hwFile.NoC["PacketRouteDelay"].GetInt32(),
+            }
         };
     }
 
@@ -94,11 +102,15 @@ public class ControllerV1Spec : CoreSpec
 
 public class NoCSpec
 {
-    public string Name { get; set; }
 }
 
 public class MeshSpec : NoCSpec
 {
     public int Width { get; set; }
     public int Height { get; set; }
+    public int InputSize { get; set; }
+    public int OutputSize { get; set; }
+    public int TransferDelay { get; set; }
+    public int ReswitchDelay { get; set; }
+    public int PacketRouteDelay { get; set; }
 }
