@@ -27,7 +27,7 @@ public class MultiCoreV1Test
         var inputFile = new InputTraceFile($"res/shd/input_0.trace", 700, 100);
         this.correct = inputFile.Correct;
         var splittedSRNN = SplittedSRNN.SplitSRNN(srnn, mapping);
-        this.exp = new MultiCoreV1(inputFile, splittedSRNN, mapping, 100_000, 512, HWSpec.Load("./data/mesh-hw.json"));
+        this.exp = new MultiCoreV1(inputFile, splittedSRNN, mapping, HWSpec.Load("./data/mesh-hw.json"));
     }
 
     public void Run()
@@ -63,20 +63,21 @@ public class MultiCoreV1Test
         multi.Controller.TimeAdvanced += (_, _, ts) => trace.AdvanceTimestep(ts);
         multi.Controller.TimeAdvanced += (_, time, ts) =>
         {
+            long interval = multi.Controller.spec.Interval;
             foreach (var c in multi.Cores)
             {
                 var core = c as CoreV1;
 
                 long timeBusy;
-                if (core.lastSpike < time - multi.Interval)
+                if (core.lastSpike < time - interval)
                 {
                     timeBusy = 0;
                 }
                 else
                 {
-                    timeBusy = core.lastSpike - (time - multi.Interval);
+                    timeBusy = core.lastSpike - (time - interval);
                 }
-                double util = (double)timeBusy / multi.Interval;
+                double util = (double)timeBusy / interval;
                 var coord = (MeshCoord)c.GetLocation();
                 coreStats.ReportLine($"{coord.x},{coord.y},{myTS},{util},{core.nrSpikesProduced},{core.nrSpikesConsumed},{core.nrSOPs}");
             }

@@ -48,20 +48,14 @@ public class MultiCoreV1 : Experiment
     public ControllerV1 Controller;
     public List<Core> Cores = new();
 
-    public int BufferSize { get; set; }
-    public long Interval { get; set; }
-
-
     private Mapping mapping;
     private ISpikeSource source;
     private HWSpec spec;
 
-    public MultiCoreV1(ISpikeSource source, SplittedSRNN srnn, Mapping mapping, long interval, int bufferSize, HWSpec spec)
+    public MultiCoreV1(ISpikeSource source, SplittedSRNN srnn, Mapping mapping, HWSpec spec)
     {
         this.srnn = srnn;
         this.source = source;
-        this.BufferSize = bufferSize;
-        this.Interval = interval;
         this.mapping = mapping;
         this.spec = spec;
     }

@@ -18,7 +18,7 @@ public sealed class ControllerV1 : Actor, Core
     private ISpikeSource source;
     private Buffer<object> outBuffer;
     private MappingTable mapping;
-    private ControllerV1Spec spec;
+    public ControllerV1Spec spec;
 
     public ControllerV1(InputLayer inputLayer, ISpikeSource source, object location, ControllerV1Spec spec)
     {
