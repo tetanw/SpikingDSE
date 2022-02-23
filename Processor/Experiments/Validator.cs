@@ -14,7 +14,7 @@ public class Validator
         {
             var inputFile1 = new InputTraceFile($"res/shd/input_{i}.trace", 700, 100);
             var srnn1 = splittedSrnn.Copy(inputFile1);
-            var exp1 = new MultiCoreV1(new Simulator(), false, inputFile1.Correct, srnn1, mapping, 100_000_000, 16_384);
+            var exp1 = new MultiCoreV1(new Simulator(), false, null, inputFile1.Correct, srnn1, mapping, 100_000_000, 16_384);
             exp1.Run();
 
             var inputFile2 = new InputTraceFile($"res/shd/input_{i}.trace", 700, 100);

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 
 namespace SpikingDSE;
 
@@ -48,6 +49,7 @@ public class MultiCoreV1 : Experiment
 
     private int bufferSize;
     private long interval;
+    private string resultsFolder;
 
     private TraceReporter trace;
     private TensorReporter spikes;
@@ -61,10 +63,11 @@ public class MultiCoreV1 : Experiment
     public int Prediction = -1;
     public int Correct = -1;
 
-    public MultiCoreV1(Simulator simulator, bool debug, int correct, SplittedSRNN srnn, Mapping mapping, long interval, int bufferSize) : base(simulator)
+    public MultiCoreV1(Simulator simulator, bool debug, string resultsFolder, int correct, SplittedSRNN srnn, Mapping mapping, long interval, int bufferSize) : base(simulator)
     {
         this.srnn = srnn;
         this.Debug = debug;
+        this.resultsFolder = resultsFolder;
         this.Correct = correct;
         this.bufferSize = bufferSize;
         this.interval = interval;
@@ -113,20 +116,23 @@ public class MultiCoreV1 : Experiment
         if (!Debug)
             return;
 
-        transfers = new FileReporter("res/multi-core/v1/transfers.csv");
-        coreStats = new FileReporter("res/multi-core/v1/core-stats.csv");
+        Directory.CreateDirectory(resultsFolder);
+
+        transfers = new FileReporter($"{resultsFolder}/transfers.csv");
+        transfers.ReportLine($"hw-time,snn-time,router-x,router-y,from,to");
+        coreStats = new FileReporter($"{resultsFolder}/core-stats.csv");
         coreStats.ReportLine("core_x,core_y,ts,util,spikes_prod,spikes_cons,sops");
 
-        trace = new TraceReporter("res/multi-core/v1/result.trace");
+        trace = new TraceReporter($"{resultsFolder}/result.trace");
 
-        mem = new MemReporter(srnn, "res/multi-core/v1");
+        mem = new MemReporter(srnn, $"{resultsFolder}");
         mem.RegisterSNN(srnn);
 
-        spikes = new TensorReporter(srnn, "res/multi-core/v1");
+        spikes = new TensorReporter(srnn, $"{resultsFolder}");
         spikes.RegisterSNN(srnn);
 
-        spikeDelays = new TimeDelayReporter("res/multi-core/v1/spike-delays.csv");
-        computeDelays = new TimeDelayReporter("res/multi-core/v1/compute-delays.csv");
+        spikeDelays = new TimeDelayReporter($"{resultsFolder}/spike-delays.csv");
+        computeDelays = new TimeDelayReporter($"{resultsFolder}/compute-delays.csv");
 
         int myTS = 0;
 
@@ -182,7 +188,6 @@ public class MultiCoreV1 : Experiment
             core.OnSyncStarted += (time, _, _) => trace.TimeRef(time);
         }
 
-        transfers.ReportLine($"hw-time,snn-time,router-x,router-y,from,to");
         foreach (var r in routers)
         {
             var router = r as XYRouter;
