@@ -262,8 +262,6 @@ public class MultiCoreV1 : Experiment
 
         // Mapping
         ApplyMapping();
-
-        simStop.StopEvents = 10_000_000;
     }
 
     public override void Cleanup()
