@@ -22,7 +22,7 @@ public class ProtoMultiCore : Experiment
     public int prediction = -1;
     public int correct = -1;
 
-    public ProtoMultiCore(Simulator simulator, bool debug, int correct, SRNN srnn, long interval, int bufferSize) : base(simulator)
+    public ProtoMultiCore(bool debug, int correct, SRNN srnn, long interval, int bufferSize)
     {
         this.srnn = srnn;
         this.Debug = debug;

@@ -63,7 +63,7 @@ public class MultiCoreV1 : Experiment
     public int Prediction = -1;
     public int Correct = -1;
 
-    public MultiCoreV1(Simulator simulator, bool debug, string resultsFolder, int correct, SplittedSRNN srnn, Mapping mapping, long interval, int bufferSize) : base(simulator)
+    public MultiCoreV1(bool debug, string resultsFolder, int correct, SplittedSRNN srnn, Mapping mapping, long interval, int bufferSize)
     {
         this.srnn = srnn;
         this.Debug = debug;

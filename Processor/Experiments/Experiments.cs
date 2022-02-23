@@ -17,13 +17,7 @@ public abstract class Experiment
 {
     protected Simulator sim;
     protected SimStopConditions simStop;
-
-    public Experiment(Simulator sim)
-    {
-        this.sim = sim;
-        simStop = new SimStopConditions();
-    }
-
+    
     public Experiment()
     {
         this.sim = new Simulator();

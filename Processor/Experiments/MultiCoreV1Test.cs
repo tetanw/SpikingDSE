@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace SpikingDSE;
 
-public class MultiCoreV1Test : Experiment
+public class MultiCoreV1Test
 {
     private MultiCoreV1 exp;
 
@@ -15,16 +15,11 @@ public class MultiCoreV1Test : Experiment
 
         var inputFile = new InputTraceFile($"res/shd/input_0.trace", 700, 100);
         var splittedSRNN = SplittedSRNN.SplitSRNN(srnn, mapping, inputFile);
-        this.exp = new MultiCoreV1(sim, true, "res/multi-core/v1", inputFile.Correct, splittedSRNN, mapping, 100_000, 512);
+        exp = new MultiCoreV1(true, "res/multi-core/v1", inputFile.Correct, splittedSRNN, mapping, 100_000, 512);
     }
 
-    public override void Setup()
+    public void Run()
     {
-        exp.Setup();
-    }
-
-    public override void Cleanup()
-    {
-        exp.Cleanup();
+        exp.Run();
     }
 }

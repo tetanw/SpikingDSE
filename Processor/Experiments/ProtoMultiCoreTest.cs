@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace SpikingDSE;
 
-public class ProtoMultiCoreTest : Experiment
+public class ProtoMultiCoreTest
 {
     private ProtoMultiCore exp;
 
@@ -11,16 +11,11 @@ public class ProtoMultiCoreTest : Experiment
     {
         var inputFile = new InputTraceFile($"res/shd/input_0.trace", 700, 100);
         var srnn = SRNN.Load("res/snn/best", inputFile);
-        this.exp = new ProtoMultiCore(sim, true, inputFile.Correct, srnn, 100_000_000, int.MaxValue);
+        this.exp = new ProtoMultiCore(true, inputFile.Correct, srnn, 100_000_000, int.MaxValue);
     }
 
-    public override void Setup()
+    public void Run()
     {
-        exp.Setup();
-    }
-
-    public override void Cleanup()
-    {
-        exp.Cleanup();
+        exp.Run();
     }
 }
