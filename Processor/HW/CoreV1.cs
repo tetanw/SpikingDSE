@@ -168,7 +168,7 @@ public sealed class CoreV1 : Actor, Core
         nrSpikesConsumed = 0;
         nrSOPs = 0;
 
-        var mappedLayers = mapping[this];
+        var mappedLayers = mapping.LayersOf(this);
         foreach (var l in mappedLayers)
         {
             long startTime = env.Now;

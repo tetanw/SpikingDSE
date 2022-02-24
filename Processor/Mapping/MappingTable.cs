@@ -27,14 +27,9 @@ public class MappingTable
         this.layerToCore.Add(layer, core);
     }
 
-    public IEnumerable<Layer> this[Core core]
+    public IEnumerable<Layer> LayersOf(Core core)
     {
-        get => this.coreToLayer[core];
-    }
-
-    public Core this[Layer layer]
-    {
-        get => this.layerToCore[layer];
+        return this.coreToLayer[core];
     }
 
     public IEnumerable<Core> Cores

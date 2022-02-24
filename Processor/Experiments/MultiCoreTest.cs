@@ -22,7 +22,7 @@ public class MultiCoreTest
     {
         var srnn = SRNN.Load("res/snn/best", 700, 2);
         var hw =  HWSpec.Load("./data/mesh-hw.json");
-        var mapping = MultiCoreMapping.CreateMapping(new FirstFitMapper(), hw, srnn);
+        var mapping = Mapping.Load("./data/mapping.json");
         mapping.PrintReport();
 
         var inputFile = new InputTraceFile($"res/shd/input_0.trace", 700, 100);

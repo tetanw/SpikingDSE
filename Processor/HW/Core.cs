@@ -1,5 +1,11 @@
 namespace SpikingDSE;
 
+public interface Core
+{
+    public object GetLocation();
+    public string Name();
+}
+
 public class CoreEvent { }
 
 public class SyncEvent : CoreEvent

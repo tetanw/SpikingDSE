@@ -3,23 +3,24 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 
 namespace SpikingDSE;
 
 public class MapEntry
 {
-    public MapLayer Layer;
-    public MapCore Core;
-    public bool Partial;
-    public int Index;
-    public int Start;
-    public int End;
+    public string Layer { get; set; }
+    public string Core { get; set; }
+    public bool Partial { get; set; }
+    public int Index { get; set; }
+    public int Start { get; set; }
+    public int End { get; set; }
 }
 
 public class Mapping
 {
-    public List<MapEntry> Mapped = new();
-    public List<MapLayer> Unmapped = new();
+    public List<MapEntry> Mapped { get; set; } = new();
+    public List<MapLayer> Unmapped { get; set; } = new();
 
     public void PrintReport()
     {
@@ -28,11 +29,11 @@ public class Mapping
         {
             if (entry.Partial)
             {
-                Console.WriteLine($"  {entry.Layer.Name} from {entry.Start} to {entry.End} -> {entry.Core.Name}");
+                Console.WriteLine($"  {entry.Layer} from {entry.Start} to {entry.End} -> {entry.Core}");
             }
             else
             {
-                Console.WriteLine($"  {entry.Layer.Name} -> {entry.Core.Name}");
+                Console.WriteLine($"  {entry.Layer} -> {entry.Core}");
             }
         }
         Console.WriteLine("Unmapped:");
@@ -44,19 +45,19 @@ public class Mapping
 
     public IEnumerable<MapEntry> GetAllSplits(string name)
     {
-        return Mapped.FindAll((m) => m.Layer.Name == name);
+        return Mapped.FindAll((m) => m.Layer == name);
     }
 
     public void Save(string path)
     {
-        var sw = new StreamWriter(path);
+        using var fileStream = File.Create(path);
+        JsonSerializer.Serialize(fileStream, this, new JsonSerializerOptions { WriteIndented = true });
+    }
 
-        sw.WriteLine("layer,core,index,partial,start,end");
-        foreach (var mapping in Mapped)
-        {
-            sw.WriteLine($"{mapping.Layer.Name},{mapping.Core.Name},{mapping.Index},{mapping.Partial},{mapping.Start},{mapping.End}");
-        }
-        sw.Close();
+    public static Mapping Load(string path)
+    {
+        using var fileStream = File.Open(path, FileMode.Open);
+        return JsonSerializer.Deserialize<Mapping>(fileStream);
     }
 }
 
@@ -101,8 +102,8 @@ public class FirstFitMapper : Mapper
                 core.NrNeurons += layer.NrNeurons;
                 mapping.Mapped.Add(new MapEntry
                 {
-                    Layer = layer,
-                    Core = core,
+                    Layer = layer.Name,
+                    Core = core.Name,
                     Partial = false,
                     Start = -1,
                     End = -1,
@@ -155,8 +156,8 @@ public class FirstFitMapper : Mapper
                 int sliceSize = Math.Min(freeNeurons, neuronsToMap);
                 mapping.Mapped.Add(new MapEntry
                 {
-                    Layer = layer,
-                    Core = c,
+                    Layer = layer.Name,
+                    Core = c.Name,
                     Partial = true,
                     Start = neuronsMapped,
                     End = neuronsMapped + sliceSize,
@@ -191,11 +192,11 @@ public class MapCore
 
 public class MapLayer
 {
-    public object Value;
-    public string Name;
-    public int NrNeurons;
-    public bool Splittable;
-    public object Type;
+    public object Value { get; set; }
+    public string Name { get; set; }
+    public int NrNeurons { get; set; }
+    public bool Splittable { get; set; }
+    public object Type { get; set; }
 
     public void Build()
     {

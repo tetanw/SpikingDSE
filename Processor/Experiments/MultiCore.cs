@@ -109,16 +109,16 @@ public class MultiCore : Experiment
         var mappingTable = new MappingTable(srnn);
         foreach (var entry in mapping.Mapped)
         {
-            var core = FindCore(entry.Core.Name);
-            var layer = srnn.FindLayer(entry.Layer.Name);
+            var core = FindCore(entry.Core);
+            var layer = srnn.FindLayer(entry.Layer);
             if (layer == null)
             {
-                string name = $"{entry.Layer.Name}-{entry.Index}";
+                string name = $"{entry.Layer}-{entry.Index}";
                 layer = srnn.FindLayer(name);
             }
             if (layer == null)
             {
-                string name = $"{entry.Layer.Name}-1";
+                string name = $"{entry.Layer}-1";
                 layer = srnn.FindLayer(name);
             }
             mappingTable.Map(core, layer);
