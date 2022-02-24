@@ -7,7 +7,7 @@ namespace SpikingDSE;
 
 public class MultiCoreDSE : DSEExperiment<MultiCore>
 {
-    private int size = 2264;
+    private int DATASET_SIZE = 2264;
     private Mapping mapping;
     private HWSpec hw;
     private SNN snn;
@@ -17,8 +17,8 @@ public class MultiCoreDSE : DSEExperiment<MultiCore>
 
     public MultiCoreDSE()
     {
-        this.snn = SNN.Load("res/snn/best");
-        this.mapping = Mapping.Load("....");
+        this.snn = SNN.Load("data/best-snn.json");
+        this.mapping = Mapping.Load("data/mapping.json");
         this.splittedSnn = SNN.SplitSNN(snn, this.mapping);
         this.hw = HWSpec.Load("data/mesh-hw.json");
     }
@@ -38,7 +38,7 @@ public class MultiCoreDSE : DSEExperiment<MultiCore>
 
     public IEnumerable<MultiCore> WithBufferSize(int bufferSize)
     {
-        for (int i = 0; i < size; i++)
+        for (int i = 0; i < DATASET_SIZE; i++)
         {
             var inputFile = new InputTraceFile($"res/shd/input_{i}.trace", 700, 100);
             var simulator = new Simulator();
@@ -52,7 +52,7 @@ public class MultiCoreDSE : DSEExperiment<MultiCore>
 
     public override void OnConfigCompleted(TimeSpan runningTime)
     {
-        var acc = (float)nrCorrect / size;
+        var acc = (float)nrCorrect / DATASET_SIZE;
         Console.WriteLine($"{curBufferSize};{acc};{(int)runningTime.TotalMilliseconds}ms");
         nrCorrect = 0;
     }

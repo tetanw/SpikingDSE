@@ -43,6 +43,12 @@ public class SNN
             }
         }
 
+        for (int i = 1; i < layerParts.Count - 1; i++)
+        {
+            var layer = layerParts[i];
+            GroupSiblings(layer);
+        }
+
         input = layerParts.First().First() as InputLayer;
         output = layerParts.Last().First() as OutputLayer;
     }
