@@ -90,12 +90,17 @@ public class OutputLayer : HiddenLayer
         return Output.ToList().IndexOf(Output.Max());
     }
 
-    public OutputLayer Copy()
+    public override Layer Copy()
     {
         return new OutputLayer(
             this.Weights,
             this.Alpha,
             name: this.Name
         );
+    }
+
+    public override Layer Slice(int start, int end, int partNr)
+    {
+        throw new System.Exception("Can not slice output layer");
     }
 }

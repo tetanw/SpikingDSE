@@ -15,7 +15,7 @@ public class MapRunner
     public void Run()
     {
         var hw = HWSpec.Load(opts.HW);
-        var snn = SRNN.Load(opts.SNN, 700, 2);
+        var snn = SNN.Load(opts.SNN);
         Mapper mapper = null;
         if (opts.Mapper == "FirstFit")
         {

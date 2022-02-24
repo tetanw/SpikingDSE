@@ -75,4 +75,9 @@ public class RLIFLayer2 : HiddenLayer
             Pots[dst] = pot;
         }
     }
+
+    public override Layer Slice(int start, int end, int partNr)
+    {
+        throw new Exception("Can not slice RLIF layer");
+    }
 }

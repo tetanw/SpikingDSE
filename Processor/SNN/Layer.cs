@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace SpikingDSE;
@@ -7,6 +8,16 @@ public class Layer
     public int InputSize { get; protected set; }
     public int Size { get; protected set; }
     public string Name { get; protected set; }
+
+    public virtual Layer Slice(int start, int end, int partNr)
+    {
+        throw new NotImplementedException("Slice is not implemented by default");
+    }
+
+    public virtual Layer Copy()
+    {
+        throw new NotImplementedException("Copy is not implemented by default");
+    }
 }
 
 public class InputLayer : Layer
@@ -18,7 +29,7 @@ public class InputLayer : Layer
         this.Size = size;
     }
 
-    public InputLayer Copy()
+    public override Layer Copy()
     {
         return new InputLayer(this.Size, name: this.Name);
     }

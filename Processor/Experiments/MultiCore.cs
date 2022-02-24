@@ -6,7 +6,7 @@ namespace SpikingDSE;
 
 public class MultiCoreMapping
 {
-    public static Mapping CreateMapping(Mapper mapper, HWSpec spec, SRNN srnn)
+    public static Mapping CreateMapping(Mapper mapper, HWSpec spec, SNN snn)
     {
         foreach (var coreSpec in spec.Cores)
         {
@@ -27,7 +27,7 @@ public class MultiCoreMapping
             MaxNrNeurons = controllerSpec.MaxNeurons
         });
 
-        foreach (var layer in srnn.GetAllLayers())
+        foreach (var layer in snn.GetAllLayers())
         {
             mapper.AddLayer(new MapLayer
             {
@@ -45,7 +45,7 @@ public class MultiCoreMapping
 public class MultiCore : Experiment
 {
     public Action SetupDone;
-    public SplittedSRNN srnn;
+    public SNN snn;
 
     public MeshRouter[,] Routers;
     public ControllerV1 Controller;
@@ -55,9 +55,9 @@ public class MultiCore : Experiment
     private ISpikeSource source;
     private HWSpec spec;
 
-    public MultiCore(ISpikeSource source, SplittedSRNN srnn, Mapping mapping, HWSpec spec)
+    public MultiCore(ISpikeSource source, SNN snn, Mapping mapping, HWSpec spec)
     {
-        this.srnn = srnn;
+        this.snn = snn;
         this.source = source;
         this.mapping = mapping;
         this.spec = spec;
@@ -68,9 +68,10 @@ public class MultiCore : Experiment
         Routers = MeshUtils.CreateMesh(sim, width, height, createRouters);
     }
 
-    private void AddController(InputLayer input, int x, int y)
+    private void AddController(int x, int y)
     {
         var controllerCoord = new MeshCoord(x, y);
+        var input = snn.GetInputLayer();
         var controller = sim.AddActor(new ControllerV1(input, source, controllerCoord, spec.FindByType<ControllerV1Spec>()));
         this.Controller = controller;
         var mergeSplit = MeshUtils.ConnectMergeSplit(sim, Routers);
@@ -106,20 +107,20 @@ public class MultiCore : Experiment
 
     private void ApplyMapping()
     {
-        var mappingTable = new MappingTable(srnn);
+        var mappingTable = new MappingTable(snn);
         foreach (var entry in mapping.Mapped)
         {
             var core = FindCore(entry.Core);
-            var layer = srnn.FindLayer(entry.Layer);
+            var layer = snn.FindLayer(entry.Layer);
             if (layer == null)
             {
                 string name = $"{entry.Layer}-{entry.Index}";
-                layer = srnn.FindLayer(name);
+                layer = snn.FindLayer(name);
             }
             if (layer == null)
             {
                 string name = $"{entry.Layer}-1";
-                layer = srnn.FindLayer(name);
+                layer = snn.FindLayer(name);
             }
             mappingTable.Map(core, layer);
         }
@@ -152,7 +153,7 @@ public class MultiCore : Experiment
         // Hardware
         var mesh = spec.NoC as MeshSpec;
         CreateRouters(mesh.Width, mesh.Height, (x, y) => CreateRouter(x, y, mesh));
-        AddController(srnn.Input, -1, 0);
+        AddController(-1, 0);
         foreach (var coreSpec in spec.Cores)
         {
             if (coreSpec is not CoreV1Spec) continue;
@@ -168,5 +169,5 @@ public class MultiCore : Experiment
 
     public override void Cleanup() { }
 
-    public int Predict() => srnn.Prediction();
+    public int Predict() => snn.GetOutputLayer().Prediction();
 }

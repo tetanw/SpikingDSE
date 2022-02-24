@@ -99,12 +99,17 @@ public class ALIFLayer : HiddenLayer
         TS++;
     }
 
-    public ALIFLayer Copy()
+    public override string ToString()
+    {
+        return $"ALIF - \"{this.Name}\"";
+    }
+
+    public override Layer Copy()
     {
         return new ALIFLayer(this.InWeights, this.RecWeights, this.Bias, this.Alpha, this.Rho, this.VTh, this.Name, offset: this.Offset);
     }
 
-    public ALIFLayer Slice(int start, int end, int index)
+    public override Layer Slice(int start, int end, int partNr)
     {
         var sliceSize = end - start;
         var slice = new ALIFLayer(
@@ -114,15 +119,10 @@ public class ALIFLayer : HiddenLayer
             WeigthsUtil.Slice(this.Alpha, start, sliceSize),
             WeigthsUtil.Slice(this.Rho, start, sliceSize),
             0.01f,
-            $"{this.Name}-{index}",
+            $"{this.Name}-{partNr}",
             offset: start
         );
 
         return slice;
-    }
-
-    public override string ToString()
-    {
-        return $"ALIF - \"{this.Name}\"";
     }
 }

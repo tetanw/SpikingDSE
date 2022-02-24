@@ -16,19 +16,20 @@ public class MultiCoreTest
     private FileReporter transfers;
 
     private MultiCore exp;
+    private SNN splittedSNN;
     private int correct;
 
     public MultiCoreTest()
     {
-        var srnn = SRNN.Load("res/snn/best", 700, 2);
+        var snn = SNN.Load("data/best-snn.json");
         var hw =  HWSpec.Load("./data/mesh-hw.json");
         var mapping = Mapping.Load("./data/mapping.json");
         mapping.PrintReport();
 
+        splittedSNN = SNN.SplitSNN(snn, mapping);
         var inputFile = new InputTraceFile($"res/shd/input_0.trace", 700, 100);
         this.correct = inputFile.Correct;
-        var splittedSRNN = SplittedSRNN.SplitSRNN(srnn, mapping);
-        this.exp = new MultiCore(inputFile, splittedSRNN, mapping, hw);
+        this.exp = new MultiCore(inputFile, splittedSNN, mapping, hw);
     }
 
     public void Run()
@@ -50,11 +51,11 @@ public class MultiCoreTest
 
         trace = new TraceReporter($"{resultsFolder}/result.trace");
 
-        mem = new MemReporter(multi.srnn, $"{resultsFolder}");
-        mem.RegisterSNN(multi.srnn);
+        mem = new MemReporter(splittedSNN, $"{resultsFolder}");
+        mem.RegisterSNN(splittedSNN);
 
-        spikes = new TensorReporter(multi.srnn, $"{resultsFolder}");
-        spikes.RegisterSNN(multi.srnn);
+        spikes = new TensorReporter(splittedSNN, $"{resultsFolder}");
+        spikes.RegisterSNN(splittedSNN);
 
         spikeDelays = new TimeDelayReporter($"{resultsFolder}/spike-delays.csv");
         computeDelays = new TimeDelayReporter($"{resultsFolder}/compute-delays.csv");
