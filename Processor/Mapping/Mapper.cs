@@ -105,9 +105,9 @@ public class FirstFitMapper : Mapper
                     Layer = layer.Name,
                     Core = core.Name,
                     Partial = false,
-                    Start = -1,
-                    End = -1,
-                    Index = -1
+                    Start = 0,
+                    End = layer.NrNeurons,
+                    Index = 0
                 });
                 continue;
             }
