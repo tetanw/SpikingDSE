@@ -5,13 +5,6 @@ using System.Linq;
 
 namespace SpikingDSE;
 
-public struct V1DelayModel
-{
-    public int InputTime;
-    public int ComputeTime;
-    public int OutputTime;
-}
-
 public sealed class CoreV1 : Actor, Core
 {
     public delegate void SpikeReceived(long time, Layer layer, int neuron, bool feedback, SpikeEvent spike, int nrHopsTravelled);
