@@ -5,17 +5,27 @@ namespace SpikingDSE;
 
 public class MapRunner
 {
-    public MapRunner()
-    {
+    private MappingOptions opts;
 
+    public MapRunner(MappingOptions opts)
+    {
+        this.opts = opts;
     }
 
     public void Run()
     {
-        var mapper = new FirstFitMapper();
-        var hw = HWSpec.Load("./data/mesh-hw.json");
-        var snn = SRNN.Load("./res/snn/best", 700, 2);
+        var hw = HWSpec.Load(opts.HW);
+        var snn = SRNN.Load(opts.SNN, 700, 2);
+        Mapper mapper = null;
+        if (opts.Mapper == "FirstFit")
+        {
+            mapper = new FirstFitMapper();
+        }
+        else
+        {
+            throw new System.Exception($"Unknown mapper: {opts.Mapper}");
+        }
         var mapping = MultiCoreMapping.CreateMapping(mapper, hw, snn);
-        mapping.Save("./data/mapping.json");
+        mapping.Save(opts.Mapping);
     }
 }

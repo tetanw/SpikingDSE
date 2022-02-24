@@ -44,11 +44,27 @@ namespace SpikingDSE
 
     }
 
+    [Verb("mapping", HelpText = "Maps a SNN on HW")]
+    public class MappingOptions
+    {
+        [Option('s', "snn-path", Required = true, HelpText = "SNN specification")]
+        public string SNN { get; set; }
+
+        [Option('h', "hw-path", Required = true, HelpText = "HW specification")]
+        public string HW { get; set; }
+
+        [Option('m', "mapper", Required = true, HelpText = "Mapper to use")]
+        public string Mapper { get; set; }
+
+        [Option('o', "mapping", Required = true, HelpText = "File to save the mapping in")]
+        public string Mapping { get; set; }
+    }
+
     class Program
     {
         static int Main(string[] args)
         {
-            var result = Parser.Default.ParseArguments<SimOptions, VCDOptions, ToTensorOptions, TraceGeneratorOptions>(args);
+            var result = Parser.Default.ParseArguments<SimOptions, VCDOptions, ToTensorOptions, TraceGeneratorOptions, MappingOptions>(args);
             var ret = result.MapResult(
                 (VCDOptions opts) =>
                 {
@@ -110,10 +126,6 @@ namespace SpikingDSE
                     {
                         new XYRouterValidation().Run();
                     }
-                    else if (opts.Name.Equals("Mapping"))
-                    {
-                        new MapRunner().Run();
-                    }
                     else
                     {
                         throw new Exception($"Unknown simulation: {opts.Name}");
@@ -126,8 +138,14 @@ namespace SpikingDSE
                     converter.Run();
                     return 0;
                 },
-                (TraceGeneratorOptions opts) => {
+                (TraceGeneratorOptions opts) =>
+                {
                     new TraceGenerator().Run();
+                    return 0;
+                },
+                (MappingOptions opts) =>
+                {
+                    new MapRunner(opts).Run();
                     return 0;
                 },
                 _ => 1
