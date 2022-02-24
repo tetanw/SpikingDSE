@@ -8,6 +8,7 @@ namespace SpikingDSE;
 
 public class SNN
 {
+    private List<List<Layer>> layerParts;
     public Dictionary<Layer, HashSet<Layer>> outputs = new();
     public Dictionary<Layer, HashSet<Layer>> inputs = new();
     public Dictionary<Layer, List<Layer>> siblings = new();
@@ -51,6 +52,7 @@ public class SNN
 
         input = layerParts.First().First() as InputLayer;
         output = layerParts.Last().First() as OutputLayer;
+        this.layerParts = layerParts;
     }
 
     private static ALIFLayer createALIFLayer(string path, Dictionary<string, JsonElement> layer)
@@ -239,7 +241,23 @@ public class SNN
 
     public SNN Copy()
     {
-        throw new NotImplementedException();
+        if (layerParts == null)
+            throw new Exception("Can not copy");
+
+        var newLayers = new List<List<Layer>>();
+
+        // TODO: Layer parts is not viable in future
+        foreach (var layer in layerParts)
+        {
+            var newLayer = new List<Layer>();
+            foreach (var part in layer)
+            {
+                newLayer.Add(part.Copy());
+            }
+            newLayers.Add(newLayer);
+        }
+
+        return new SNN(newLayers);
     }
 }
 
