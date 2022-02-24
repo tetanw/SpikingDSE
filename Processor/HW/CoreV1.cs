@@ -41,11 +41,7 @@ public sealed class CoreV1 : Actor, Core
         this.Name = spec.Name;
     }
 
-    public bool AcceptsLayer(Layer layer) => throw new NotImplementedException();
-
     public object GetLocation() => thisLoc;
-
-    public void AddLayer(Layer layer) => throw new NotImplementedException();
 
     public void LoadMapping(MappingTable mapping) => this.mapping = mapping;
 
