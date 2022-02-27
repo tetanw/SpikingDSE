@@ -27,7 +27,9 @@ public class MultiCoreTest
         mapping.PrintReport();
 
         splittedSNN = SNN.SplitSNN(snn, mapping);
-        var inputFile = new InputTraceFile($"res/shd/input_0.trace", 700, 100);
+        var shd = new ZipDataset("res/shd-10.zip");
+        var inputFile = shd.ReadEntry("input_0.trace", 700);
+        shd.Dispose();
         this.correct = inputFile.Correct;
         this.exp = new MultiCore(inputFile, splittedSNN, mapping, hw);
     }

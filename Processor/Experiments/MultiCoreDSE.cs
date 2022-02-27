@@ -5,7 +5,7 @@ using System.Threading;
 
 namespace SpikingDSE;
 
-public class MultiCoreDSE : DSEExperiment<MultiCore>
+public class MultiCoreDSE : DSEExperiment<MultiCore>, IDisposable
 {
     private int DATASET_SIZE = 2264;
     private Mapping mapping;
@@ -14,6 +14,7 @@ public class MultiCoreDSE : DSEExperiment<MultiCore>
     private SNN splittedSnn;
     private int nrCorrect = 0;
     private int curBufferSize = -1;
+    private ZipDataset dataset;
 
     public MultiCoreDSE()
     {
@@ -21,6 +22,7 @@ public class MultiCoreDSE : DSEExperiment<MultiCore>
         this.mapping = Mapping.Load("data/mapping.json");
         this.splittedSnn = SNN.SplitSNN(snn, this.mapping);
         this.hw = HWSpec.Load("data/mesh-hw.json");
+        this.dataset = new ZipDataset("res/shd-10.zip");
     }
 
     public override IEnumerable<IEnumerable<MultiCore>> Configs()
@@ -40,7 +42,7 @@ public class MultiCoreDSE : DSEExperiment<MultiCore>
     {
         for (int i = 0; i < DATASET_SIZE; i++)
         {
-            var inputFile = new InputTraceFile($"res/shd/input_{i}.trace", 700, 100);
+            var inputFile = this.dataset.ReadEntry($"input_{i}.trace", 700);
             var simulator = new Simulator();
             var copy = splittedSnn.Copy();
             var exp = new MultiCore(inputFile, copy, this.mapping, hw);
@@ -64,5 +66,10 @@ public class MultiCoreDSE : DSEExperiment<MultiCore>
         {
             nrCorrect++;
         }
+    }
+
+    public void Dispose()
+    {
+        dataset.Dispose();
     }
 }
