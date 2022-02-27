@@ -145,7 +145,7 @@ public class MultiCore : Experiment
 
     private static MeshRouter CreateRouter(int x, int y, MeshSpec mesh)
     {
-        return new XYRouter(x, y, mesh.ReswitchDelay, mesh.PacketRouteDelay, mesh.TransferDelay, inputBufferSize: mesh.InputSize, outputBufferSize: mesh.OutputSize, name: $"router({x},{y})");
+        return new XYRouter(x, y, mesh);
     }
 
     public override void Setup()

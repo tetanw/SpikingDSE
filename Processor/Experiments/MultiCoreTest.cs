@@ -49,7 +49,7 @@ public class MultiCoreTest
         transfers = new FileReporter($"{resultsFolder}/transfers.csv");
         transfers.ReportLine($"hw-time,snn-time,router-x,router-y,from,to");
         coreStats = new FileReporter($"{resultsFolder}/core-stats.csv");
-        coreStats.ReportLine("core_x,core_y,ts,util,spikes_prod,spikes_cons,sops,core_spikes_dropped,input_spikes_dropped,late_spikes,energy_spent");
+        coreStats.ReportLine("core_x,core_y,ts,util,spikes_prod,spikes_cons,sops,core_spikes_dropped,input_spikes_dropped,late_spikes,core_energy_spent,router_energy_spent");
 
         trace = new TraceReporter($"{resultsFolder}/result.trace");
 
@@ -71,6 +71,8 @@ public class MultiCoreTest
             foreach (var c in multi.Cores)
             {
                 var core = c as CoreV1;
+                var (x, y) = (MeshCoord) core.GetLocation();
+                var router = multi.Routers[x, y] as XYRouter;
 
                 long timeBusy;
                 if (core.lastSpike < time - interval)
@@ -83,7 +85,7 @@ public class MultiCoreTest
                 }
                 double util = (double)timeBusy / interval;
                 var coord = (MeshCoord)c.GetLocation();
-                coreStats.ReportLine($"{coord.x},{coord.y},{myTS},{util},{core.nrSpikesProduced},{core.nrSpikesConsumed},{core.nrSOPs},{core.nrSpikesDroppedCore},{core.nrSpikesDroppedInput},{core.nrLateSpikes},{core.energySpent}");
+                coreStats.ReportLine($"{coord.x},{coord.y},{myTS},{util},{core.nrSpikesProduced},{core.nrSpikesConsumed},{core.nrSOPs},{core.nrSpikesDroppedCore},{core.nrSpikesDroppedInput},{core.nrLateSpikes},{core.energySpent},{router.energySpent}");
             }
 
             // Acounting to go to the next TS

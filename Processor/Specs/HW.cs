@@ -67,6 +67,8 @@ public class HWSpec
                 OutputSize = hwFile.NoC["OutputSize"].GetInt32(),
                 ReswitchDelay = hwFile.NoC["ReswitchDelay"].GetInt32(),
                 PacketRouteDelay = hwFile.NoC["PacketRouteDelay"].GetInt32(),
+                TransferDelay = hwFile.NoC["TransferDelay"].GetInt32(),
+                TransferEnergy = hwFile.NoC["TransferEnergy"].GetDouble()
             }
         };
     }
@@ -115,4 +117,5 @@ public class MeshSpec : NoCSpec
     public int TransferDelay { get; set; }
     public int ReswitchDelay { get; set; }
     public int PacketRouteDelay { get; set; }
+    public double TransferEnergy { get; set; }
 }

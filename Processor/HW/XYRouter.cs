@@ -11,25 +11,20 @@ public sealed class XYRouter : MeshRouter
     public Transfer OnTransfer;
     public Blocking OnBlocking;
 
-    private int inputBufferSize;
-    private int outputBufferSize;
-    private int reswitchDelay;
-    private int packetRouteDelay;
-    private int transferDelay;
+    private MeshSpec spec;
     private Buffer<MeshPacket>[] inBuffers;
     private Buffer<MeshPacket>[] outBuffers;
     private CondVar<int[]> condVar;
 
-    public XYRouter(int x, int y, int reswitchDelay, int packetRouteDelay, int transferDelay, string name = "", int inputBufferSize = 1, int outputBufferSize = 1)
+    // Stats
+    public double energySpent = 0.0;
+
+    public XYRouter(int x, int y, MeshSpec spec)
     {
         this.x = x;
         this.y = y;
-        this.reswitchDelay = reswitchDelay;
-        this.packetRouteDelay = packetRouteDelay;
-        this.transferDelay = transferDelay;
-        this.Name = name;
-        this.inputBufferSize = inputBufferSize;
-        this.outputBufferSize = outputBufferSize;
+        this.spec = spec;
+        this.Name = $"router({x},{y})";
     }
 
     public override IEnumerable<Event> Run(Simulator env)
@@ -43,14 +38,14 @@ public sealed class XYRouter : MeshRouter
             var inPort = GetInputPort(dir);
             if (inPort.IsBound)
             {
-                inBuffers[dir] = new Buffer<MeshPacket>(env, inputBufferSize);
+                inBuffers[dir] = new Buffer<MeshPacket>(env, spec.InputSize);
                 env.Process(InLink(env, dir));
             }
 
             var outPort = GetOutputPort(dir);
             if (outPort.IsBound)
             {
-                outBuffers[dir] = new Buffer<MeshPacket>(env, outputBufferSize);
+                outBuffers[dir] = new Buffer<MeshPacket>(env, spec.OutputSize);
                 env.Process(OutLink(env, dir));
             }
         }
@@ -117,13 +112,13 @@ public sealed class XYRouter : MeshRouter
 
             if (routeFound)
             {
-                yield return env.Delay(packetRouteDelay);
+                yield return env.Delay(spec.PacketRouteDelay);
                 outBuffers[to].Push(inBuffers[from].Pop());
             }
             else
             {
                 OnBlocking?.Invoke(env.Now);
-                yield return env.Delay(reswitchDelay);
+                yield return env.Delay(spec.ReswitchDelay);
             }
         }
     }
@@ -194,10 +189,11 @@ public sealed class XYRouter : MeshRouter
         {
             yield return buffer.RequestWrite();
             // This symbolises the amount of time for the transfer to take place
-            var rcv = env.Receive(inPort, transferTime: transferDelay);
+            var rcv = env.Receive(inPort, transferTime: spec.TransferDelay);
             yield return rcv;
             var packet = (MeshPacket)rcv.Message;
             packet.NrHops++;
+            energySpent += spec.TransferEnergy;
             buffer.Write(packet);
             buffer.ReleaseWrite();
 

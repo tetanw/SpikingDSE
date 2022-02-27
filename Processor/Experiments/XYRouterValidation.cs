@@ -13,7 +13,14 @@ public class XYRouterValidation : Experiment
         int j = 0;
         var northProd = sim.AddActor(new Producer(10, () => new MeshPacket { Src = new MeshCoord(-1, -1), Dest = new MeshCoord(1, 1), Message = ("North", j++) }, "North"));
 
-        var router = sim.AddActor(new XYRouter(0, 1, 3, 5, 8, name: "Router"));
+        var spec = new MeshSpec {
+            ReswitchDelay = 3,
+            PacketRouteDelay = 5,
+            InputSize = 1,
+            OutputSize = 1,
+            TransferDelay = 3 
+        };
+        var router = sim.AddActor(new XYRouter(0, 1, spec));
 
         var consumer = sim.AddActor(new Consumer(interval: 3, name: "Consumer"));
         consumer.Consumed += (_, time, flit) =>
