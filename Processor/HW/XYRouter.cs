@@ -17,7 +17,7 @@ public sealed class XYRouter : MeshRouter
     private CondVar<int[]> condVar;
 
     // Stats
-    public double energySpent = 0.0;
+    private double dynamicEnergy = 0.0;
 
     public XYRouter(int x, int y, MeshSpec spec)
     {
@@ -25,6 +25,13 @@ public sealed class XYRouter : MeshRouter
         this.y = y;
         this.spec = spec;
         this.Name = $"router({x},{y})";
+    }
+
+    public double Energy(long now)
+    {
+        double staticEnergy = spec.StaticEnergy * (now / spec.Frequency);
+        double energy = dynamicEnergy + staticEnergy;
+        return energy;
     }
 
     public override IEnumerable<Event> Run(Simulator env)
@@ -193,7 +200,7 @@ public sealed class XYRouter : MeshRouter
             yield return rcv;
             var packet = (MeshPacket)rcv.Message;
             packet.NrHops++;
-            energySpent += spec.TransferEnergy;
+            dynamicEnergy += spec.TransferEnergy;
             buffer.Write(packet);
             buffer.ReleaseWrite();
 

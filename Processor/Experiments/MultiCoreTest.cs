@@ -85,7 +85,7 @@ public class MultiCoreTest
                 }
                 double util = (double)timeBusy / interval;
                 var coord = (MeshCoord)c.GetLocation();
-                coreStats.ReportLine($"{coord.x},{coord.y},{myTS},{util},{core.nrSpikesProduced},{core.nrSpikesConsumed},{core.nrSOPs},{core.nrSpikesDroppedCore},{core.nrSpikesDroppedInput},{core.nrLateSpikes},{core.energySpent},{router.energySpent}");
+                coreStats.ReportLine($"{coord.x},{coord.y},{myTS},{util},{core.nrSpikesProduced},{core.nrSpikesConsumed},{core.nrSOPs},{core.nrSpikesDroppedCore},{core.nrSpikesDroppedInput},{core.nrLateSpikes},{core.energySpent},{router.Energy(time)}");
             }
 
             // Acounting to go to the next TS
