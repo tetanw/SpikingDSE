@@ -41,7 +41,8 @@ public class HWSpec
                 InputDelay = instance["InputDelay"].GetInt32(),
                 OutputDelay = instance["OutputDelay"].GetInt32(),
                 ConnectsTo = instance["ConnectsTo"].GetString(),
-                MaxNeurons = instance["MaxNeurons"].GetInt32()
+                MaxNeurons = instance["MaxNeurons"].GetInt32(),
+                ComputeEnergy = instance["ComputeEnergy"].GetDouble()
             };
         }
         else
@@ -92,6 +93,7 @@ public class CoreV1Spec : CoreSpec
     public int InputDelay { get; set; }
     public int OutputDelay { get; set; }
     public int ComputeDelay { get; set; }
+    public double ComputeEnergy { get; set; }
 }
 
 public class ControllerV1Spec : CoreSpec

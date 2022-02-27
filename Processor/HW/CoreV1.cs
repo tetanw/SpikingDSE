@@ -13,6 +13,7 @@ public sealed class CoreV1 : Actor, Core
     public delegate void SyncEnded(long time, int ts, HiddenLayer layer);
     public delegate void SpikeComputed(long time, SpikeEvent spike);
 
+    // Stats
     public long lastSpike = 0;
     public long lastSync = 0;
     public int nrSpikesProduced = 0;
@@ -21,6 +22,7 @@ public sealed class CoreV1 : Actor, Core
     public int nrSpikesDroppedCore = 0;
     public int nrSpikesDroppedInput = 0;
     public int nrLateSpikes = 0;
+    public double energySpent = 0.0;
 
     public SpikeReceived OnSpikeReceived;
     public SpikeSent OnSpikeSent;
@@ -156,6 +158,7 @@ public sealed class CoreV1 : Actor, Core
         }
         nrSpikesConsumed++;
         nrSOPs += spike.Layer.Size;
+        energySpent += spec.ComputeEnergy;
         yield return env.Delay(spec.ComputeDelay * spike.Layer.Size);
     }
 
