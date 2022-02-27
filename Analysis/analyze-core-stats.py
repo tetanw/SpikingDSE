@@ -4,10 +4,11 @@ import matplotlib.pyplot as plt
 stats = pd.read_csv(
     "C:/Users/stefan/Documents/Projects/Master thesis/SpikingDSE/Processor/res/multi-core/v1/core-stats.csv")
 
-def plot_core_stats(x, y, stat, name, ax):
-    u = stats.query(f"core_x == {x} and core_y == {y}")
+def plot_core_stats(x, y, columns, name, ax):
     ax.set_title(name)
-    ax.plot(u["ts"], u[stat])
+    u = stats.query(f"core_x == {x} and core_y == {y}")
+    for column in columns:
+        ax.plot(u["ts"], u[column], label=column)
 
 # utils
 fig, ax = plt.subplots(5, 2)
@@ -63,4 +64,20 @@ plot_core_stats(3, 0, "spikes_prod", "core7", ax[3][0])
 plot_core_stats(3, 1, "spikes_prod", "core8", ax[3][1])
 plot_core_stats(4, 0, "spikes_prod", "core9", ax[4][0])
 plot_core_stats(4, 1, "spikes_prod", "core10", ax[4][1])
+plt.show()
+
+# Spikes produced
+fig, ax = plt.subplots(3, 2)
+columns = ["late_spikes", "input_spikes_dropped", "core_spikes_dropped"]
+plot_core_stats(0, 0, columns, "core1", ax[0][0])
+plot_core_stats(0, 1, columns, "core2", ax[0][1])
+plot_core_stats(1, 0, columns, "core3", ax[1][0])
+plot_core_stats(1, 1, columns, "core4", ax[1][1])
+plot_core_stats(2, 0, columns, "core5", ax[2][0])
+plot_core_stats(2, 1, columns, "core6", ax[2][1])
+# plot_core_stats(3, 0, stats, "core7", ax[3][0])
+# plot_core_stats(3, 1, stats, "core8", ax[3][1])
+# plot_core_stats(4, 0, stats, "core9", ax[4][0])
+# plot_core_stats(4, 1, stats, "core10", ax[4][1])
+fig.legend()
 plt.show()

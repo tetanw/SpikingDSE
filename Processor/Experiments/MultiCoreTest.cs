@@ -34,7 +34,7 @@ public class MultiCoreTest
 
     public void Run()
     {
-        exp.SetupDone += () => SetupReporters(exp, "res/multi-core/v1");
+        exp.SetupDone += () => SetupReporters(exp, "res/results/v1");
         exp.Run();
         Console.WriteLine($"Predicted: {exp.Predict()}, Truth: {correct}");
         CleanupReporters();
@@ -47,7 +47,7 @@ public class MultiCoreTest
         transfers = new FileReporter($"{resultsFolder}/transfers.csv");
         transfers.ReportLine($"hw-time,snn-time,router-x,router-y,from,to");
         coreStats = new FileReporter($"{resultsFolder}/core-stats.csv");
-        coreStats.ReportLine("core_x,core_y,ts,util,spikes_prod,spikes_cons,sops");
+        coreStats.ReportLine("core_x,core_y,ts,util,spikes_prod,spikes_cons,sops,core_spikes_dropped,input_spikes_dropped,late_spikes");
 
         trace = new TraceReporter($"{resultsFolder}/result.trace");
 
@@ -81,7 +81,7 @@ public class MultiCoreTest
                 }
                 double util = (double)timeBusy / interval;
                 var coord = (MeshCoord)c.GetLocation();
-                coreStats.ReportLine($"{coord.x},{coord.y},{myTS},{util},{core.nrSpikesProduced},{core.nrSpikesConsumed},{core.nrSOPs}");
+                coreStats.ReportLine($"{coord.x},{coord.y},{myTS},{util},{core.nrSpikesProduced},{core.nrSpikesConsumed},{core.nrSOPs},{core.nrSpikesDroppedCore},{core.nrSpikesDroppedInput},{core.nrLateSpikes}");
             }
 
             // Acounting to go to the next TS

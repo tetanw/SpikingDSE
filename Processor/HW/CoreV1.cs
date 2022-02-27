@@ -18,6 +18,9 @@ public sealed class CoreV1 : Actor, Core
     public int nrSpikesProduced = 0;
     public int nrSpikesConsumed = 0;
     public int nrSOPs = 0;
+    public int nrSpikesDroppedCore = 0;
+    public int nrSpikesDroppedInput = 0;
+    public int nrLateSpikes = 0;
 
     public SpikeReceived OnSpikeReceived;
     public SpikeSent OnSpikeSent;
@@ -73,6 +76,8 @@ public sealed class CoreV1 : Actor, Core
 
                         if (!coreBuffer.IsFull)
                             coreBuffer.Push(spike);
+                        else
+                            nrSpikesDroppedCore++;
                     }
 
                     TS = sync.TS + 1;
@@ -85,16 +90,19 @@ public sealed class CoreV1 : Actor, Core
                     {
                         if (!inputBuffer.IsFull)
                             inputBuffer.Push(spike);
+                        else
+                            nrSpikesDroppedInput++;
                     }
                     else if (spike.TS == TS)
                     {
                         if (!coreBuffer.IsFull)
                             coreBuffer.Push(spike);
+                        else
+                            nrSpikesDroppedCore++;
                     }
                     else
                     {
-                        // Else drop spike
-                        throw new Exception("Weird spike typing");
+                        nrLateSpikes++;
                     }
                     break;
                 default:
@@ -232,6 +240,8 @@ public sealed class CoreV1 : Actor, Core
                         spikeOut.ReceivedAt = env.Now;
                         if (!coreBuffer.IsFull)
                             coreBuffer.Push(spikeOut);
+                        else
+                            nrSpikesDroppedCore++;
                     }
                     else
                     {
