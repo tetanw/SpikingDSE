@@ -2,24 +2,12 @@ using System.Collections.Generic;
 
 namespace SpikingDSE;
 
-public interface JoinReporter
-{
-
-}
-
 public sealed class Join : Actor
 {
     public InPort in1 = new();
     public InPort in2 = new();
     public InPort in3 = new();
     public OutPort output = new();
-
-    private JoinReporter reporter;
-
-    public Join(JoinReporter reporter = null)
-    {
-        this.reporter = reporter;
-    }
 
     public override IEnumerable<Event> Run(Simulator env)
     {

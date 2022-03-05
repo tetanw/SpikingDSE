@@ -9,9 +9,9 @@ public sealed class Consumer : Actor
 {
     public Consumed Consumed;
 
-    public InPort In = new InPort();
+    public InPort In = new();
 
-    private int interval;
+    private readonly int interval;
 
     public Consumer(string name = "", int interval = 0)
     {

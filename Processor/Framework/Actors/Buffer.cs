@@ -3,10 +3,10 @@ using System.Collections.Generic;
 namespace SpikingDSE;
 public sealed class BufferActor : Actor
 {
-    public InPort input = new InPort();
-    public OutPort output = new OutPort();
+    public InPort input = new();
+    public OutPort output = new();
 
-    private int depth;
+    private readonly int depth;
     private Buffer<object> fifo;
 
     public BufferActor(int depth)
