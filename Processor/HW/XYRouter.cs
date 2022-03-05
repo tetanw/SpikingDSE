@@ -12,8 +12,8 @@ public sealed class XYRouter : MeshRouter
     public Blocking OnBlocking;
 
     private MeshSpec spec;
-    private Buffer<MeshPacket>[] inBuffers;
-    private Buffer<MeshPacket>[] outBuffers;
+    private Buffer<Packet>[] inBuffers;
+    private Buffer<Packet>[] outBuffers;
     private CondVar<int[]> condVar;
 
     // Stats
@@ -36,8 +36,8 @@ public sealed class XYRouter : MeshRouter
 
     public override IEnumerable<Event> Run(Simulator env)
     {
-        inBuffers = new Buffer<MeshPacket>[5];
-        outBuffers = new Buffer<MeshPacket>[5];
+        inBuffers = new Buffer<Packet>[5];
+        outBuffers = new Buffer<Packet>[5];
         condVar = new(env, new int[10]);
 
         for (int dir = 0; dir < 5; dir++)
@@ -45,14 +45,14 @@ public sealed class XYRouter : MeshRouter
             var inPort = GetInputPort(dir);
             if (inPort.IsBound)
             {
-                inBuffers[dir] = new Buffer<MeshPacket>(env, spec.InputSize);
+                inBuffers[dir] = new Buffer<Packet>(env, spec.InputSize);
                 env.Process(InLink(env, dir));
             }
 
             var outPort = GetOutputPort(dir);
             if (outPort.IsBound)
             {
-                outBuffers[dir] = new Buffer<MeshPacket>(env, spec.OutputSize);
+                outBuffers[dir] = new Buffer<Packet>(env, spec.OutputSize);
                 env.Process(OutLink(env, dir));
             }
         }
@@ -198,7 +198,7 @@ public sealed class XYRouter : MeshRouter
             // This symbolises the amount of time for the transfer to take place
             var rcv = env.Receive(inPort, transferTime: spec.TransferDelay);
             yield return rcv;
-            var packet = (MeshPacket)rcv.Message;
+            var packet = (Packet)rcv.Message;
             packet.NrHops++;
             dynamicEnergy += spec.TransferEnergy;
             buffer.Write(packet);
@@ -209,10 +209,11 @@ public sealed class XYRouter : MeshRouter
         }
     }
 
-    private int DetermineOutput(MeshPacket flit)
+    private int DetermineOutput(Packet packet)
     {
-        int DX = flit.Dest.x - x;
-        int DY = flit.Dest.y - y;
+        var destCoord = (MeshCoord) packet.Dest;
+        int DX = destCoord.x - x;
+        int DY = destCoord.y - y;
         if (DX > 0)
         {
             // East

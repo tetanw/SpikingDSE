@@ -5,17 +5,12 @@ namespace SpikingDSE;
 
 public record struct MeshCoord(int x, int y);
 
-public sealed class MeshPacket
+public sealed class Packet
 {
-    public MeshCoord Src;
-    public MeshCoord Dest;
-    public object Message;
-    public int NrHops = 0;
-
-    public override string ToString()
-    {
-        return $"MeshFlit {{ Route: ({Src.x}, {Src.y}) -> ({Dest.x}, {Dest.y}), Message: {Message} }}";
-    }
+    public object Src { get; set;}
+    public object Dest { get; set; }
+    public object Message { get; set; }
+    public int NrHops { get; set; } = 0;
 }
 
 public sealed class MeshDir
@@ -107,5 +102,11 @@ public sealed class MeshUtils
                 }
             }
         }
+    }
+
+    public static bool InMesh(int width, int height, MeshCoord coord)
+    {
+        var (x, y) = coord;
+        return x >= 0 && x < width && y >= 0 && y < height;
     }
 }

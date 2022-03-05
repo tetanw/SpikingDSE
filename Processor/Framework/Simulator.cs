@@ -109,6 +109,7 @@ public sealed class Simulator
                     }
                     port.Name = $"{actorName}.{field.Name}";
                 }
+                // TODO: Output port array and input port array working
             }
         }
 
@@ -153,51 +154,24 @@ public sealed class Simulator
                 {
                     var channel = channels[send.Port.ChannelHandle];
                     if (channel.SendEvent != null)
-                    {
                         throw new Exception("Channel is already occupied");
-                    }
 
                     channel.SendEvent = send;
                     channel.SendProcess = CurrentProcess;
                     if (channel.ReceiveEvent != null)
-                    {
                         DoChannelTransfer(channel);
-                    }
                     break;
                 }
             case ReceiveEvent recv:
                 {
                     var channel = channels[recv.Port.ChannelHandle];
                     if (channel.ReceiveEvent != null)
-                    {
                         throw new Exception("Channel is already occupied");
-                    }
 
                     channel.ReceiveEvent = recv;
                     channel.ReceiveProcess = CurrentProcess;
                     if (channel.SendEvent != null)
-                    {
                         DoChannelTransfer(channel);
-                    }
-                    break;
-                }
-            case SelectEvent select:
-                {
-                    for (int i = 0; i < select.Ports.Length; i++)
-                    {
-                        var port = select.Ports[i];
-                        var channel = channels[port.ChannelHandle];
-                        if (port.IsBound == false)
-                            continue;
-                        channel.ReceiveEvent = select;
-                        channel.ReceiveProcess = CurrentProcess;
-                        if (channel.SendEvent != null)
-                        {
-                            DoChannelTransfer(channel);
-                            break;
-                        }
-                    }
-
                     break;
                 }
             case MutexReqEvent resWait:
@@ -250,40 +224,12 @@ public sealed class Simulator
     }
 
     private void DoChannelTransfer(Channel channel)
-    {
-        if (channel.ReceiveEvent is ReceiveEvent)
-        {
-            var rcv = channel.ReceiveEvent as ReceiveEvent;
-            rcv.Message = channel.SendEvent.Message;
-            long newTime = Math.Max(channel.SendEvent.Time, rcv.Time) + rcv.TransferTime;
-            QueueThreads(channel, newTime);
-            CleanChannel(channel);
-        }
-        else if (channel.ReceiveEvent is SelectEvent)
-        {
-            var select = channel.ReceiveEvent as SelectEvent;
-            select.Message = channel.SendEvent.Message;
-            select.Port = channel.InPort;
-            long newTime = Math.Max(channel.SendEvent.Time, select.Time);
-            QueueThreads(channel, newTime);
-
-            for (int i = 0; i < select.Ports.Length; i++)
-            {
-                var port = select.Ports[i];
-                if (port.IsBound == false)
-                    continue;
-                var aChannel = channels[port.ChannelHandle];
-                CleanChannel(aChannel);
-            }
-        }
-        else
-        {
-            throw new Exception("Unknown receive command");
-        }
-    }
-
-    private void CleanChannel(Channel channel)
-    {
+    {        
+        var rcv = channel.ReceiveEvent;
+        var snd = channel.SendEvent;
+        rcv.Message = channel.SendEvent.Message;
+        long newTime = Math.Max(snd.Time, rcv.Time) + Math.Max(rcv.TransferTime, snd.TransferTime);
+        QueueThreads(channel, newTime);
         channel.SendEvent = null;
         channel.SendProcess = null;
         channel.ReceiveEvent = null;
@@ -331,36 +277,28 @@ public sealed class Simulator
         return new SleepEvent { Time = newTime - Now };
     }
 
-    public SendEvent Send(OutPort port, object message)
+    public SendEvent Send(OutPort port, object message, int transferTime = 0)
     {
         if (!port.IsBound)
-        {
             throw new Exception("Port is not bound!");
-        }
-        return new SendEvent { Port = port, Message = message, Time = Now };
+
+        return new SendEvent { Port = port, Message = message, Time = Now, TransferTime = transferTime };
     }
 
     public SendEvent SendAt(OutPort port, object message, long time)
     {
         if (!port.IsBound)
-        {
             throw new Exception("Port is not bound!");
-        }
+
         return new SendEvent { Port = port, Message = message, Time = time };
     }
 
     public ReceiveEvent Receive(InPort port, long transferTime = 0)
     {
         if (!port.IsBound)
-        {
             throw new Exception("Port is not bound!");
-        }
-        return new ReceiveEvent { Port = port, Time = Now, TransferTime = transferTime };
-    }
 
-    public SelectEvent Select(params InPort[] ports)
-    {
-        return new SelectEvent { Ports = ports, Time = Now };
+        return new ReceiveEvent { Port = port, Time = Now, TransferTime = transferTime };
     }
 
     public ProcessWaitEvent Process(IEnumerable<Event> runnable)

@@ -5,6 +5,7 @@ public class SendEvent : Event
     // To scheduler
     public OutPort Port;
     public object Message;
+    public int TransferTime;
 
     // Result
     public long Time;
@@ -21,17 +22,6 @@ public class ReceiveEvent : Event
     public object Message;
 }
 
-public class SelectEvent : Event
-{
-    // To scheduler
-    public InPort[] Ports;
-    public long Time;
-
-    // Result
-    public InPort Port;
-    public object Message;
-}
-
 public sealed class Channel
 {
     public string Name;
@@ -41,7 +31,7 @@ public sealed class Channel
     public Process SendProcess;
     public SendEvent SendEvent;
     public Process ReceiveProcess;
-    public Event ReceiveEvent;
+    public ReceiveEvent ReceiveEvent;
 
     public override string ToString()
     {

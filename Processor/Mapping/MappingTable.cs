@@ -47,9 +47,9 @@ public class MappingTable
         get => this.layerToCore;
     }
 
-    public MeshCoord CoordOf(Layer layer)
+    public object CoordOf(Layer layer)
     {
-        return (MeshCoord)this.layerToCore[layer].GetLocation();
+        return this.layerToCore[layer].GetLocation();
     }
 
     public Layer GetDestLayer(Layer layer)

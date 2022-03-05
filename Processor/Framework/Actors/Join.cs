@@ -9,10 +9,10 @@ public interface JoinReporter
 
 public sealed class Join : Actor
 {
-    public InPort in1 = new InPort();
-    public InPort in2 = new InPort();
-    public InPort in3 = new InPort();
-    public OutPort output = new OutPort();
+    public InPort in1 = new();
+    public InPort in2 = new();
+    public InPort in3 = new();
+    public OutPort output = new();
 
     private JoinReporter reporter;
 
@@ -23,13 +23,14 @@ public sealed class Join : Actor
 
     public override IEnumerable<Event> Run(Simulator env)
     {
-        List<object> bundle = new List<object>();
+        List<object> bundle = new();
+        var anyInput = Any.AnyOf<object>(env, in1, in2, in3);
 
         while (true)
         {
-            var select = env.Select(in1, in2, in3);
-            yield return select;
-            var message = select.Message;
+            yield return anyInput.RequestRead();
+            var message = anyInput.Read().Message;
+            anyInput.ReleaseRead();
 
             bundle.Add(message);
             if (bundle.Count == 3)

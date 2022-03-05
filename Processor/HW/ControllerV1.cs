@@ -13,7 +13,7 @@ public sealed class ControllerV1 : Actor, Core
     public InPort Input = new();
     public OutPort Output = new();
 
-    private object location;
+    private object thisLoc;
     private InputLayer inputLayer;
     private ISpikeSource source;
     private Buffer<object> outBuffer;
@@ -24,14 +24,14 @@ public sealed class ControllerV1 : Actor, Core
     {
         this.inputLayer = inputLayer;
         this.source = source;
-        this.location = location;
+        this.thisLoc = location;
         this.spec = spec;
         this.Name = spec.Name;
     }
 
     public void LoadMapping(MappingTable mapping) => this.mapping = mapping;
 
-    public object GetLocation() => location;
+    public object GetLocation() => thisLoc;
 
     public override IEnumerable<Event> Run(Simulator env)
     {
@@ -109,8 +109,9 @@ public sealed class ControllerV1 : Actor, Core
         while (true)
         {
             yield return outBuffer.RequestRead();
-            var flit = outBuffer.Read();
-            yield return env.Process(SendEvent(env, flit));
+            var packet = outBuffer.Read();
+            foreach (var ev in SendEvent(env, packet))
+                yield return ev;
             outBuffer.ReleaseRead();
         }
     }
@@ -123,9 +124,9 @@ public sealed class ControllerV1 : Actor, Core
             yield return rcv;
             var ev = rcv.Message;
 
-            if (ev is MeshPacket)
+            if (ev is Packet)
             {
-                var spike = (ev as MeshPacket).Message as SpikeEvent;
+                var spike = (ev as Packet).Message as SpikeEvent;
                 SpikeReceived?.Invoke(this, env.Now, spike);
             }
             else
@@ -142,9 +143,9 @@ public sealed class ControllerV1 : Actor, Core
             var spikeEv = message as SpikeEvent;
             // Get the right desitination layer for the spike and also the coord to send it to
             var dest = mapping.CoordOf(spikeEv.Layer);
-            var flit = new MeshPacket
+            var flit = new Packet
             {
-                Src = (MeshCoord)location,
+                Src = thisLoc,
                 Dest = dest,
                 Message = spikeEv
             };
@@ -158,11 +159,10 @@ public sealed class ControllerV1 : Actor, Core
                 if (core is ControllerV1)
                     continue;
 
-                var coord = (MeshCoord)core.GetLocation();
-                var flit = new MeshPacket
+                var flit = new Packet
                 {
-                    Src = (MeshCoord)(location),
-                    Dest = coord,
+                    Src = thisLoc,
+                    Dest = core.GetLocation(),
                     Message = timeEvent
                 };
                 yield return env.Send(Output, flit);
@@ -179,4 +179,8 @@ public sealed class ControllerV1 : Actor, Core
     public void AddLayer(Layer layer) { }
 
     string Core.Name() => this.Name;
+
+    OutPort Core.Output() => Output;
+
+    InPort Core.Input() => Input;
 }

@@ -51,27 +51,55 @@ public class HWSpec
         }
     }
 
+    private static MeshSpec BuildMesh(Dictionary<string, JsonElement> NoC)
+    {
+        return new MeshSpec
+        {
+            Width = NoC["Width"].GetInt32(),
+            Height = NoC["Height"].GetInt32(),
+            InputSize = NoC["InputSize"].GetInt32(),
+            OutputSize = NoC["OutputSize"].GetInt32(),
+            ReswitchDelay = NoC["ReswitchDelay"].GetInt32(),
+            PacketRouteDelay = NoC["PacketRouteDelay"].GetInt32(),
+            TransferDelay = NoC["TransferDelay"].GetInt32(),
+            TransferEnergy = NoC["TransferEnergy"].GetDouble(),
+            StaticEnergy = NoC["StaticEnergy"].GetDouble(),
+            Frequency = NoC["Frequency"].GetDouble()
+        };
+    }
+
+    private static BusSpec BuildBus(Dictionary<string, JsonElement> NoC)
+    {
+        return new BusSpec {
+            Ports = NoC["Ports"].GetInt32()
+        };
+    }
+
     public static HWSpec Load(string path)
     {
         var hwFile = JsonSerializer.Deserialize<HWFile>(File.ReadAllText(path));
 
         var cores = hwFile.Cores.Select(c => CreateCoreSpec(hwFile, c)).ToList();
 
+        var type = hwFile.NoC["Type"].GetString();
+        NoCSpec noc;
+        if (type == "Mesh")
+        {
+            noc = BuildMesh(hwFile.NoC);
+        }
+        else if (type == "Bus")
+        {
+            noc = BuildBus(hwFile.NoC);
+        }
+        else
+        {
+            throw new Exception($"Unknown NoC type: {type}");
+        }
+
         return new HWSpec()
         {
             Cores = cores,
-            NoC = new MeshSpec {
-                Width = hwFile.NoC["Width"].GetInt32(),
-                Height = hwFile.NoC["Height"].GetInt32(),
-                InputSize = hwFile.NoC["InputSize"].GetInt32(),
-                OutputSize = hwFile.NoC["OutputSize"].GetInt32(),
-                ReswitchDelay = hwFile.NoC["ReswitchDelay"].GetInt32(),
-                PacketRouteDelay = hwFile.NoC["PacketRouteDelay"].GetInt32(),
-                TransferDelay = hwFile.NoC["TransferDelay"].GetInt32(),
-                TransferEnergy = hwFile.NoC["TransferEnergy"].GetDouble(),
-                StaticEnergy = hwFile.NoC["StaticEnergy"].GetDouble(),
-                Frequency = hwFile.NoC["Frequency"].GetDouble()
-            }
+            NoC = noc
         };
     }
 
@@ -122,4 +150,9 @@ public class MeshSpec : NoCSpec
     public double TransferEnergy { get; set; }
     public double StaticEnergy { get; set; }
     public double Frequency { get; set; }
+}
+
+public class BusSpec : NoCSpec
+{
+    public int Ports { get; set; }
 }

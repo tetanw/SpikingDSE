@@ -23,6 +23,7 @@ public sealed class CoreV1 : Actor, Core
     public int nrSpikesDroppedInput = 0;
     public int nrLateSpikes = 0;
     public double energySpent = 0.0;
+    public int nrSpikesReceived = 0;
 
     public SpikeReceived OnSpikeReceived;
     public SpikeSent OnSpikeSent;
@@ -33,20 +34,20 @@ public sealed class CoreV1 : Actor, Core
     public InPort input = new InPort();
     public OutPort output = new OutPort();
 
-    private MeshCoord thisLoc;
+    private object loc;
     private MappingTable mapping;
     private Buffer<CoreEvent> coreBuffer;
     private Buffer<CoreEvent> inputBuffer;
     private CoreV1Spec spec;
 
-    public CoreV1(MeshCoord location, CoreV1Spec spec)
+    public CoreV1(object location, CoreV1Spec spec)
     {
-        this.thisLoc = location;
+        this.loc = location;
         this.spec = spec;
         this.Name = spec.Name;
     }
 
-    public object GetLocation() => thisLoc;
+    public object GetLocation() => loc;
 
     public void LoadMapping(MappingTable mapping) => this.mapping = mapping;
 
@@ -58,7 +59,7 @@ public sealed class CoreV1 : Actor, Core
         {
             var rcv = env.Receive(input, transferTime: spec.InputDelay);
             yield return rcv;
-            var packet = (MeshPacket)rcv.Message;
+            var packet = (Packet)rcv.Message;
             var @event = packet.Message as CoreEvent;
 
             switch (@event)
@@ -86,6 +87,7 @@ public sealed class CoreV1 : Actor, Core
                     break;
                 case SpikeEvent spike:
                     spike.ReceivedAt = env.Now;
+                    nrSpikesReceived++;
                     OnSpikeReceived?.Invoke(env.Now, spike.Layer, spike.Neuron, spike.Feedback, spike, packet.NrHops);
 
                     if (spike.TS > TS)
@@ -136,7 +138,7 @@ public sealed class CoreV1 : Actor, Core
                     break;
                 case SpikeEvent spike:
                     foreach (var ev in Compute(env, spike))
-                        yield return env.Process(Compute(env, spike));
+                        yield return ev;
                     lastSpike = env.Now;
                     break;
                 default:
@@ -203,7 +205,7 @@ public sealed class CoreV1 : Actor, Core
                         CreatedAt = env.Now
                     };
                     var siblingCoord = mapping.CoordOf(sibling);
-                    if (siblingCoord == thisLoc)
+                    if (siblingCoord == loc)
                     {
                         if (layer is ALIFLayer && !coreBuffer.IsFull)
                         {
@@ -214,14 +216,13 @@ public sealed class CoreV1 : Actor, Core
                     else
                     {
                         // Send recurrent spikes to other core
-                        var flit = new MeshPacket
+                        var flit = new Packet
                         {
-                            Src = thisLoc,
+                            Src = loc,
                             Dest = siblingCoord,
                             Message = spikeEv
                         };
-                        yield return env.Delay(spec.OutputDelay);
-                        yield return env.Send(output, flit);
+                        yield return env.Send(output, flit, transferTime: spec.OutputDelay);
                     }
 
                 }
@@ -238,7 +239,7 @@ public sealed class CoreV1 : Actor, Core
                         CreatedAt = env.Now
                     };
                     var destCoord = mapping.CoordOf(destLayer);
-                    if (destCoord == thisLoc)
+                    if (destCoord == loc)
                     {
                         spikeOut.ReceivedAt = env.Now;
                         if (!coreBuffer.IsFull)
@@ -248,14 +249,13 @@ public sealed class CoreV1 : Actor, Core
                     }
                     else
                     {
-                        var flit = new MeshPacket
+                        var flit = new Packet
                         {
-                            Src = thisLoc,
+                            Src = loc,
                             Dest = destCoord,
                             Message = spikeOut
                         };
-                        yield return env.Delay(spec.OutputDelay);
-                        yield return env.Send(output, flit);
+                        yield return env.Send(output, flit, transferTime: spec.OutputDelay);
                     }
                     OnSpikeSent?.Invoke(env.Now, layer, spikingNeuron, spikeOut);
                 }
@@ -272,4 +272,8 @@ public sealed class CoreV1 : Actor, Core
     }
 
     string Core.Name() => this.Name;
+
+    public OutPort Output() => output;
+
+    public InPort Input() => input;
 }

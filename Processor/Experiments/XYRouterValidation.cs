@@ -8,10 +8,10 @@ public class XYRouterValidation : Experiment
     public override void Setup()
     {
         int i = 0;
-        var southProd = sim.AddActor(new Producer(5, () => new MeshPacket { Src = new MeshCoord(-1, -1), Dest = new MeshCoord(1, 1), Message = ("South", i++) }, "South"));
+        var southProd = sim.AddActor(new Producer(5, () => new Packet { Src = new MeshCoord(-1, -1), Dest = new MeshCoord(1, 1), Message = ("South", i++) }, "South"));
 
         int j = 0;
-        var northProd = sim.AddActor(new Producer(10, () => new MeshPacket { Src = new MeshCoord(-1, -1), Dest = new MeshCoord(1, 1), Message = ("North", j++) }, "North"));
+        var northProd = sim.AddActor(new Producer(10, () => new Packet { Src = new MeshCoord(-1, -1), Dest = new MeshCoord(1, 1), Message = ("North", j++) }, "North"));
 
         var spec = new MeshSpec {
             ReswitchDelay = 3,
@@ -25,7 +25,7 @@ public class XYRouterValidation : Experiment
         var consumer = sim.AddActor(new Consumer(interval: 3, name: "Consumer"));
         consumer.Consumed += (_, time, flit) =>
         {
-            var message = ((MeshPacket)flit).Message;
+            var message = ((Packet)flit).Message;
             Console.WriteLine($"[{time}] {message}");
         };
 

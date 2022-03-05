@@ -4,6 +4,8 @@ public interface Core
 {
     public object GetLocation();
     public string Name();
+    public OutPort Output();
+    public InPort Input();
 }
 
 public class CoreEvent { }

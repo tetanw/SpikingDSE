@@ -152,6 +152,10 @@ public sealed class OdinCore : Actor, Core
     }
 
     string Core.Name() => this.Name;
+
+    public OutPort Output() => output;
+
+    public InPort Input() => input;
 }
 
 

@@ -20,11 +20,14 @@ public class MergeSplit : Actor
 
     public override IEnumerable<Event> Run(Simulator env)
     {
-        var allInports = FromMesh.Concat(new InPort[] { FromController });
+        var allInputPorts = FromMesh.Concat(new InPort[] { FromController });
+        var anyInputPort = Any.AnyOf<object>(env, allInputPorts);
+
         while (true)
         {
-            var sel = env.Select(allInports);
-            yield return sel;
+            yield return anyInputPort.RequestRead();
+            var sel = anyInputPort.Read();
+            anyInputPort.ReleaseRead();
 
             if (sel.Port == FromController)
             {

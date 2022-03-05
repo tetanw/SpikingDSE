@@ -17,19 +17,22 @@ public sealed class SimpleXYRouter : MeshRouter
 
     public override IEnumerable<Event> Run(Simulator env)
     {
+        var inputSelect = Any.AnyOf<Packet>(env, inNorth, inEast, inSouth, inWest, inLocal);
+
         while (true)
         {
             // 1. Monitor the inputs for any packet
-            var select = env.Select(inNorth, inEast, inSouth, inWest, inLocal);
-            yield return select;
-            MeshPacket flit = (MeshPacket)select.Message;
+            yield return inputSelect.RequestRead();
+            var packet = inputSelect.Read().Message;
+            inputSelect.ReleaseRead();
 
             // 2. Add a delay to simulate processing
             yield return env.Delay(processingDelay);
 
             // 3. Determine into which output port it goes
-            int DX = flit.Dest.x - x;
-            int DY = flit.Dest.y - y;
+            var destCoord = (MeshCoord) packet.Dest;
+            int DX = destCoord.x - x;
+            int DY = destCoord.y - y;
             OutPort outPort;
             if (DX > 0)
             {
@@ -57,7 +60,7 @@ public sealed class SimpleXYRouter : MeshRouter
             }
 
             // 4. Send to right port
-            yield return env.Send(outPort, flit);
+            yield return env.Send(outPort, packet);
         }
     }
 }
