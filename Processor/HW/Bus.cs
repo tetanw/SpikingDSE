@@ -6,6 +6,9 @@ namespace SpikingDSE;
 
 public class Bus : Actor
 {
+    public delegate void Transfer(long time, int from, int to);
+    public Transfer OnTransfer;
+
     public InPort[] Inputs;
     public OutPort[] Outputs;
 
@@ -29,11 +32,13 @@ public class Bus : Actor
         while (true)
         {
             yield return anyInput.RequestRead();
-            var packet = anyInput.Read().Message;
+            var sel = anyInput.Read();
             anyInput.ReleaseRead();
 
+            var packet = sel.Message;
             int dest = (int)packet.Dest;
             yield return env.Send(Outputs[dest], packet);
+            OnTransfer?.Invoke(env.Now, sel.PortNr, dest);
         }
     }
 }

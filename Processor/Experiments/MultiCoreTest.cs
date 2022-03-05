@@ -21,7 +21,7 @@ public class MultiCoreTest
     public MultiCoreTest()
     {
         var snn = SNN.Load("data/best-snn.json");
-        var hw =  HWSpec.Load("./data/bus-hw.json");
+        var hw = HWSpec.Load("./data/bus-hw.json");
         var mapping = Mapping.Load("./data/mapping.json");
         mapping.PrintReport();
 
@@ -46,9 +46,7 @@ public class MultiCoreTest
         Directory.CreateDirectory(resultsFolder);
 
         transfers = new FileReporter($"{resultsFolder}/transfers.csv");
-        transfers.ReportLine($"hw-time,snn-time,router-x,router-y,from,to");
         coreStats = new FileReporter($"{resultsFolder}/core-stats.csv");
-        coreStats.ReportLine("coord,ts,util,spikes_prod,spikes_cons,spikes_received,sops,core_spikes_dropped,input_spikes_dropped,late_spikes,core_energy_spent");
 
         mem = new MemReporter(splittedSNN, $"{resultsFolder}");
         mem.RegisterSNN(splittedSNN);
@@ -61,62 +59,33 @@ public class MultiCoreTest
 
         int myTS = 0;
 
-        // multi.Controller.TimeAdvanced += (_, _, ts) => trace.AdvanceTimestep(ts);
-        // multi.Controller.TimeAdvanced += (_, time, ts) =>
-        // {
-        //     long interval = multi.Controller.spec.Interval;
-        //     foreach (var c in multi.Cores)
-        //     {
-        //         if (c is not CoreV1) continue;
-        //         var core = c as CoreV1;
-        //         var (x, y) = (MeshCoord) core.GetLocation();
-        //         var router = multi.Routers[x, y] as XYRouter;
 
-        //         long timeBusy;
-        //         if (core.lastSpike < time - interval)
-        //         {
-        //             timeBusy = 0;
-        //         }
-        //         else
-        //         {
-        //             timeBusy = core.lastSpike - (time - interval);
-        //         }
-        //         double util = (double)timeBusy / interval;
-        //         var coord = (MeshCoord)c.GetLocation();
-        //         coreStats.ReportLine($"{coord.x},{coord.y},{myTS},{util},{core.nrSpikesProduced},{core.nrSpikesConsumed},{core.nrSOPs},{core.nrSpikesDroppedCore},{core.nrSpikesDroppedInput},{core.nrLateSpikes},{core.energySpent},{router.Energy(time)}");
-        //     }
+        coreStats.ReportLine("name,ts,util,spikes_prod,spikes_cons,spikes_received,sops,core_spikes_dropped,input_spikes_dropped,late_spikes,core_energy_spent");
+        multi.Controller.TimeAdvanced += (_, time, ts) =>
+        {
+            long interval = multi.Controller.spec.Interval;
+            foreach (var c in multi.Cores)
+            {
+                if (c is not CoreV1) continue;
+                var core = c as CoreV1;
 
-        //     // Acounting to go to the next TS
-        //     spikes.AdvanceTimestep(ts);
-        //     myTS++;
-        // };
+                long timeBusy;
+                if (core.lastSpike < time - interval)
+                {
+                    timeBusy = 0;
+                }
+                else
+                {
+                    timeBusy = core.lastSpike - (time - interval);
+                }
+                double util = (double)timeBusy / interval;
+                coreStats.ReportLine($"{c.Name()},{myTS},{util},{core.nrSpikesProduced},{core.nrSpikesConsumed},{core.nrSpikesReceived},{core.nrSOPs},{core.nrSpikesDroppedCore},{core.nrSpikesDroppedInput},{core.nrLateSpikes},{core.energySpent}");
+            }
 
-        // multi.Controller.TimeAdvanced += (_, time, ts) =>
-        // {
-        //     long interval = multi.Controller.spec.Interval;
-        //     foreach (var c in multi.Cores)
-        //     {
-        //         if (c is not CoreV1) continue;
-        //         var core = c as CoreV1;
-        //         var coord = (int) core.GetLocation();
-
-        //         long timeBusy;
-        //         if (core.lastSpike < time - interval)
-        //         {
-        //             timeBusy = 0;
-        //         }
-        //         else
-        //         {
-        //             timeBusy = core.lastSpike - (time - interval);
-        //         }
-        //         double util = (double)timeBusy / interval;
-        //         coreStats.ReportLine($"{coord},{myTS},{util},{core.nrSpikesProduced},{core.nrSpikesConsumed},{core.nrSpikesReceived},{core.nrSOPs},{core.nrSpikesDroppedCore},{core.nrSpikesDroppedInput},{core.nrLateSpikes},{core.energySpent}");
-        //     }
-
-        //     // Acounting to go to the next TS
-        //     spikes.AdvanceTimestep(ts);
-        //     myTS++;
-        // };
+            // Acounting to go to the next TS
+            spikes.AdvanceTimestep(ts);
+            myTS++;
+        };
 
         foreach (var c in multi.Cores)
         {
@@ -142,15 +111,27 @@ public class MultiCoreTest
             };
         }
 
-        // foreach (var r in multi.Routers)
-        // {
-        //     var router = r as XYRouter;
+        if (multi.Routers != null)
+        {
+            transfers.ReportLine($"hw-time,snn-time,router-x,router-y,from,to");
+            foreach (var r in multi.Routers)
+            {
+                var router = r as XYRouter;
 
-        //     router.OnTransfer += (time, from, to) =>
-        //     {
-        //         transfers.ReportLine($"{time},{myTS},{router.x},{router.y},{from},{to}");
-        //     };
-        // }
+                router.OnTransfer += (time, from, to) =>
+                {
+                    transfers.ReportLine($"{time},{myTS},{router.x},{router.y},{from},{to}");
+                };
+            }
+        }
+        else if (multi.Bus != null)
+        {
+            transfers.ReportLine($"hw-time,snn-time,from,to");
+            multi.Bus.OnTransfer += (time, from, to) =>
+            {
+                transfers.ReportLine($"{time},{myTS},{from},{to}");
+            };
+        }
     }
 
 
