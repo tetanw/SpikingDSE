@@ -6,7 +6,7 @@ public class SendEvent : Event
     public OutPort Port;
     public object Message;
     public int TransferTime;
-
+    
     // Result
     public long Time;
 }
@@ -17,6 +17,7 @@ public class ReceiveEvent : Event
     public InPort Port;
     public long Time;
     public long TransferTime;
+    public bool Ack;
 
     // Result
     public object Message;

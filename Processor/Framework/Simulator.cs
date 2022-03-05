@@ -158,7 +158,7 @@ public sealed class Simulator
 
                     channel.SendEvent = send;
                     channel.SendProcess = CurrentProcess;
-                    if (channel.ReceiveEvent != null)
+                    if (channel.SendEvent != null && channel.ReceiveEvent != null)
                         DoChannelTransfer(channel);
                     break;
                 }
@@ -170,7 +170,7 @@ public sealed class Simulator
 
                     channel.ReceiveEvent = recv;
                     channel.ReceiveProcess = CurrentProcess;
-                    if (channel.SendEvent != null)
+                    if (channel.SendEvent != null && channel.ReceiveEvent != null)
                         DoChannelTransfer(channel);
                     break;
                 }
@@ -224,24 +224,29 @@ public sealed class Simulator
     }
 
     private void DoChannelTransfer(Channel channel)
-    {        
+    {
         var rcv = channel.ReceiveEvent;
         var snd = channel.SendEvent;
         rcv.Message = channel.SendEvent.Message;
-        long newTime = Math.Max(snd.Time, rcv.Time) + Math.Max(rcv.TransferTime, snd.TransferTime);
-        QueueThreads(channel, newTime);
-        channel.SendEvent = null;
-        channel.SendProcess = null;
-        channel.ReceiveEvent = null;
-        channel.ReceiveProcess = null;
-    }
 
-    private void QueueThreads(Channel channel, long newTime)
-    {
+        // Queue threads
+        if (rcv.TransferTime > 0 && snd.TransferTime > 0)
+            throw new Exception("Transfer time can only be configured from one side");
+        long newTime = Math.Max(snd.Time, rcv.Time) + Math.Max(rcv.TransferTime, snd.TransferTime);
+
+        // Send is always acknowledged
         channel.ReceiveProcess.Time = newTime;
         ready.Enqueue(channel.ReceiveProcess);
-        channel.SendProcess.Time = newTime;
-        ready.Enqueue(channel.SendProcess);
+        channel.ReceiveEvent = null;
+        channel.ReceiveProcess = null;
+
+        if (rcv.Ack)
+        {
+            channel.SendProcess.Time = newTime;
+            ready.Enqueue(channel.SendProcess);
+            channel.SendEvent = null;
+            channel.SendProcess = null;
+        }
     }
 
     public void PrintDeadlockReport()
@@ -259,6 +264,18 @@ public sealed class Simulator
                 Console.WriteLine($"  Waiting to send \"{channel.SendEvent.Message}\" on \"{channel.Name}\" at time {channel.SendEvent.Time}");
             }
         }
+    }
+
+    public void RcvAck(InPort port)
+    {
+        if (!port.IsBound)
+            throw new Exception("Port is not bound!");
+
+        var channel = channels[port.ChannelHandle];
+        channel.SendProcess.Time = Now;
+        ready.Enqueue(channel.SendProcess);
+        channel.SendEvent = null;
+        channel.SendProcess = null;
     }
 
     public SleepEvent Delay(long time)
@@ -293,12 +310,12 @@ public sealed class Simulator
         return new SendEvent { Port = port, Message = message, Time = time };
     }
 
-    public ReceiveEvent Receive(InPort port, long transferTime = 0)
+    public ReceiveEvent Receive(InPort port, long transferTime = 0, bool ack = true)
     {
         if (!port.IsBound)
             throw new Exception("Port is not bound!");
 
-        return new ReceiveEvent { Port = port, Time = Now, TransferTime = transferTime };
+        return new ReceiveEvent { Port = port, Time = Now, TransferTime = transferTime, Ack = ack };
     }
 
     public ProcessWaitEvent Process(IEnumerable<Event> runnable)

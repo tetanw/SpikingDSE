@@ -29,11 +29,12 @@ public class Any
     {
         while (true)
         {
-            var rcv = env.Receive(port);
+            var rcv = env.Receive(port, ack: false);
             yield return rcv;
             yield return buffer.RequestWrite();
             buffer.Write(new Receival<T> { Message = (T)rcv.Message, Port = port, PortNr = portNr });
             buffer.ReleaseWrite();
+            env.RcvAck(port);
         }
     }
 }

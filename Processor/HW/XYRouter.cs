@@ -46,7 +46,8 @@ public sealed class XYRouter : MeshRouter
             if (inPort.IsBound)
             {
                 inBuffers[dir] = new Buffer<Packet>(env, spec.InputSize);
-                env.Process(InLink(env, dir));
+                long transferDelay = dir == MeshDir.Local ? 0 : spec.TransferDelay;
+                env.Process(InLink(env, dir, transferDelay));
             }
 
             var outPort = GetOutputPort(dir);
@@ -187,7 +188,7 @@ public sealed class XYRouter : MeshRouter
         }
     }
 
-    private IEnumerable<Event> InLink(Simulator env, int dir)
+    private IEnumerable<Event> InLink(Simulator env, int dir, long transferDelay)
     {
         var inPort = GetInputPort(dir);
         var buffer = inBuffers[dir];
@@ -196,7 +197,7 @@ public sealed class XYRouter : MeshRouter
         {
             yield return buffer.RequestWrite();
             // This symbolises the amount of time for the transfer to take place
-            var rcv = env.Receive(inPort, transferTime: spec.TransferDelay);
+            var rcv = env.Receive(inPort, transferTime: transferDelay);
             yield return rcv;
             var packet = (Packet)rcv.Message;
             packet.NrHops++;

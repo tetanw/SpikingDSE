@@ -21,7 +21,7 @@ public class MultiCoreTest
     public MultiCoreTest()
     {
         var snn = SNN.Load("data/best-snn.json");
-        var hw =  HWSpec.Load("./data/bus-hw.json");
+        var hw =  HWSpec.Load("./data/mesh-hw.json");
         var mapping = Mapping.Load("./data/mapping.json");
         mapping.PrintReport();
 
