@@ -53,9 +53,9 @@ public class MultiCore : Experiment
     public ControllerV1 Controller;
     public List<Core> Cores = new();
 
-    private Mapping mapping;
-    private ISpikeSource source;
-    private HWSpec spec;
+    private readonly Mapping mapping;
+    private readonly ISpikeSource source;
+    private readonly HWSpec spec;
 
     public MultiCore(ISpikeSource source, SNN snn, Mapping mapping, HWSpec spec)
     {
@@ -70,7 +70,7 @@ public class MultiCore : Experiment
         Routers = MeshUtils.CreateMesh(sim, width, height, createRouters);
     }
 
-    private object ToCoord(string connectsTo)
+    private static object ToCoord(string connectsTo)
     {
         var parts = connectsTo.Split(",");
         var type = parts[0];
@@ -95,15 +95,15 @@ public class MultiCore : Experiment
     {
         var loc = ToCoord(spec.ConnectsTo);
         var input = snn.GetInputLayer();
-        this.Controller = sim.AddActor(new ControllerV1(input, source, loc, spec));
-        this.Cores.Add(this.Controller);
+        Controller = sim.AddActor(new ControllerV1(input, source, loc, spec));
+        Cores.Add(Controller);
     }
 
     private void AddCore(CoreV1Spec coreSpec)
     {
         var loc = ToCoord(coreSpec.ConnectsTo);
         var core = sim.AddActor(new CoreV1(loc, coreSpec));
-        this.Cores.Add(core);
+        Cores.Add(core);
     }
 
     private Core FindCore(string name)
@@ -168,7 +168,7 @@ public class MultiCore : Experiment
     {
         if (Routers != null)
         {
-            this.mergeSplit = MeshUtils.ConnectMergeSplit(sim, Routers);
+            mergeSplit = MeshUtils.ConnectMergeSplit(sim, Routers);
             var meshSpec = spec.NoC as MeshSpec;
             foreach (var core in Cores)
             {
@@ -193,7 +193,6 @@ public class MultiCore : Experiment
         }
         else if (Bus != null)
         {
-            var busSpec = spec.NoC as BusSpec;
             foreach (var core in Cores)
             {
                 var busLoc = (int)core.GetLocation();

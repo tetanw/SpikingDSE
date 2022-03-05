@@ -11,7 +11,7 @@ public sealed class XYRouter : MeshRouter
     public Transfer OnTransfer;
     public Blocking OnBlocking;
 
-    private MeshSpec spec;
+    private readonly MeshSpec spec;
     private Buffer<Packet>[] inBuffers;
     private Buffer<Packet>[] outBuffers;
     private CondVar<int[]> condVar;

@@ -7,9 +7,9 @@ namespace SpikingDSE;
 
 public sealed class Simulator
 {
-    private PriorityQueue<Process> ready = new PriorityQueue<Process>();
-    private List<Channel> channels = new List<Channel>();
-    private List<Actor> actors = new List<Actor>();
+    private readonly PriorityQueue<Process> ready = new();
+    private readonly List<Channel> channels = new();
+    private readonly List<Actor> actors = new();
 
     public long NrEventsProcessed { get; private set; }
     public Process CurrentProcess { get; private set; }
