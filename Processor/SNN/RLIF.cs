@@ -80,4 +80,8 @@ public class RLIFLayer2 : HiddenLayer
     {
         throw new Exception("Can not slice RLIF layer");
     }
+
+    public override bool IsRecurrent() => true;
+
+    public override int Offset() => 0;
 }

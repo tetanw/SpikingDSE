@@ -193,38 +193,39 @@ public sealed class CoreV1 : Actor, Core
                 nrSpikesProduced++;
 
                 // Feedback spikes
-                int offset = (layer as ALIFLayer).Offset;
-                foreach (var sibling in mapping.GetSiblings(layer))
+                if (layer.IsRecurrent())
                 {
-                    var spikeEv = new SpikeEvent()
+                    foreach (var sibling in mapping.GetSiblings(layer))
                     {
-                        Layer = sibling,
-                        Neuron = spikingNeuron + offset,
-                        Feedback = true,
-                        TS = sync.TS + 1,
-                        CreatedAt = env.Now
-                    };
-                    var siblingCoord = mapping.CoordOf(sibling);
-                    if (siblingCoord == loc)
-                    {
-                        if (layer is ALIFLayer && !coreBuffer.IsFull)
+                        var spikeEv = new SpikeEvent()
                         {
-                            spikeEv.ReceivedAt = env.Now;
-                            coreBuffer.Push(spikeEv);
+                            Layer = sibling,
+                            Neuron = spikingNeuron + layer.Offset(),
+                            Feedback = true,
+                            TS = sync.TS + 1,
+                            CreatedAt = env.Now
+                        };
+                        var siblingCoord = mapping.CoordOf(sibling);
+                        if (siblingCoord == loc)
+                        {
+                            if (!coreBuffer.IsFull)
+                            {
+                                spikeEv.ReceivedAt = env.Now;
+                                coreBuffer.Push(spikeEv);
+                            }
+                        }
+                        else
+                        {
+                            // Send recurrent spikes to other core
+                            var flit = new Packet
+                            {
+                                Src = loc,
+                                Dest = siblingCoord,
+                                Message = spikeEv
+                            };
+                            yield return env.Send(output, flit, transferTime: spec.OutputDelay);
                         }
                     }
-                    else
-                    {
-                        // Send recurrent spikes to other core
-                        var flit = new Packet
-                        {
-                            Src = loc,
-                            Dest = siblingCoord,
-                            Message = spikeEv
-                        };
-                        yield return env.Send(output, flit, transferTime: spec.OutputDelay);
-                    }
-
                 }
 
                 // Forward spikes
@@ -233,7 +234,7 @@ public sealed class CoreV1 : Actor, Core
                     var spikeOut = new SpikeEvent()
                     {
                         Layer = destLayer,
-                        Neuron = spikingNeuron + offset,
+                        Neuron = spikingNeuron + layer.Offset(),
                         Feedback = false,
                         TS = sync.TS + 1,
                         CreatedAt = env.Now

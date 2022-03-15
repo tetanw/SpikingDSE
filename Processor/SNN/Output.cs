@@ -103,4 +103,8 @@ public class OutputLayer : HiddenLayer
     {
         throw new System.Exception("Can not slice output layer");
     }
+
+    public override bool IsRecurrent() => false;
+
+    public override int Offset() => 0;
 }

@@ -61,4 +61,6 @@ public abstract class HiddenLayer : Layer
 {
     public abstract void Forward(int neuron);
     public abstract IEnumerable<int> Sync();
+    public abstract bool IsRecurrent();
+    public abstract int Offset();
 }

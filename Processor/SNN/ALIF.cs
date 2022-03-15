@@ -17,7 +17,7 @@ public class ALIFLayer : HiddenLayer
     public float[] Alpha;
     public float[] Rho;
     private int TS;
-    public int Offset;
+    private int offset;
 
     public ALIFLayer(float[,] inWeights, float[,] recWeights, float[] bias, float[] alpha, float[] rho, float VTh, string name, int offset = 0)
     {
@@ -36,7 +36,7 @@ public class ALIFLayer : HiddenLayer
         this.Rho = rho;
         this.VTh = VTh;
         this.Beta = 1.8f;
-        this.Offset = offset;
+        this.offset= offset;
     }
 
     public override void Forward(int neuron)
@@ -106,7 +106,7 @@ public class ALIFLayer : HiddenLayer
 
     public override Layer Copy()
     {
-        return new ALIFLayer(this.InWeights, this.RecWeights, this.Bias, this.Alpha, this.Rho, this.VTh, this.Name, offset: this.Offset);
+        return new ALIFLayer(this.InWeights, this.RecWeights, this.Bias, this.Alpha, this.Rho, this.VTh, this.Name, offset: this.offset);
     }
 
     public override Layer Slice(int start, int end, int partNr)
@@ -125,4 +125,8 @@ public class ALIFLayer : HiddenLayer
 
         return slice;
     }
+
+    public override bool IsRecurrent() => true;
+
+    public override int Offset() => this.offset;
 }
