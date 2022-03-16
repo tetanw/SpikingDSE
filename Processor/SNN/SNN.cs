@@ -220,22 +220,19 @@ public class SNN
 
     public IEnumerable<Layer> GetDestLayers(Layer layer)
     {
-        HashSet<Layer> outVal = null;
-        outputs.TryGetValue(layer, out outVal);
+        outputs.TryGetValue(layer, out HashSet<Layer> outVal);
         return outVal;
     }
 
     public IEnumerable<Layer> GetSourceLayers(Layer layer)
     {
-        HashSet<Layer> outVal = null;
-        inputs.TryGetValue(layer, out outVal);
+        inputs.TryGetValue(layer, out HashSet<Layer> outVal);
         return outVal;
     }
 
     public IEnumerable<Layer> GetSiblingLayers(Layer layer)
     {
-        List<Layer> outVal = null;
-        siblings.TryGetValue(layer, out outVal);
+        siblings.TryGetValue(layer, out List<Layer> outVal);
         return outVal ?? Enumerable.Empty<Layer>();
     }
 

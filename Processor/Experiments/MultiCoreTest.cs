@@ -20,13 +20,13 @@ public class MultiCoreTest
 
     public MultiCoreTest()
     {
-        var snn = SNN.Load("data/best-snn.json");
-        var hw = HWSpec.Load("./data/bus-hw.json");
-        var mapping = Mapping.Load("./data/mapping.json");
+        var snn = SNN.Load("data/ssc-snn.json");
+        var hw = HWSpec.Load("./data/mesh-hw-big.json");
+        var mapping = Mapping.Load("./data/mapping-ssc.json");
         mapping.PrintReport();
 
         splittedSNN = SNN.SplitSNN(snn, mapping);
-        var shd = new ZipDataset("res/shd-10.zip");
+        var shd = new ZipDataset("res/ssc-4.zip");
         var inputFile = shd.ReadEntry("input_0.trace", 700);
         shd.Dispose();
         correct = inputFile.Correct;

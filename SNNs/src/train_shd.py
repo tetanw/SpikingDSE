@@ -5,6 +5,7 @@ from torch.optim.lr_scheduler import StepLR
 from torch.utils import data
 import os
 from models import *
+import sys
 
 torch.manual_seed(0)
 
@@ -67,6 +68,8 @@ def train(model, model_name, num_epochs=150):
             # Forward pass to get output/logits
             outputs = model(images)
             # Calculate Loss: softmax --> cross entropy loss
+            print(outputs, labels)
+            sys.exit(0)
             loss = criterion(outputs, labels)
             # Getting gradients w.r.t. parameters
             loss.backward()

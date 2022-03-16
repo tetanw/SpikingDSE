@@ -18,11 +18,11 @@ public class MultiCoreDSE : DSEExperiment<MultiCore>, IDisposable
 
     public MultiCoreDSE()
     {
-        this.snn = SNN.Load("data/best-snn.json");
-        this.mapping = Mapping.Load("data/mapping.json");
-        this.splittedSnn = SNN.SplitSNN(snn, this.mapping);
-        this.hw = HWSpec.Load("data/mesh-hw.json");
-        this.dataset = new ZipDataset("res/shd-10.zip");
+        snn = SNN.Load("data/ssc-snn.json");
+        mapping = Mapping.Load("data/mapping-ssc.json");
+        splittedSnn = SNN.SplitSNN(snn, mapping);
+        hw = HWSpec.Load("data/mesh-hw-big.json");
+        dataset = new ZipDataset("res/ssc-4.zip");
     }
 
     public override IEnumerable<IEnumerable<MultiCore>> Configs()
@@ -42,10 +42,9 @@ public class MultiCoreDSE : DSEExperiment<MultiCore>, IDisposable
     {
         for (int i = 0; i < DATASET_SIZE; i++)
         {
-            var inputFile = this.dataset.ReadEntry($"input_{i}.trace", 700);
-            var simulator = new Simulator();
+            var inputFile = dataset.ReadEntry($"input_{i}.trace", 700);
             var copy = splittedSnn.Copy();
-            var exp = new MultiCore(inputFile, copy, this.mapping, hw);
+            var exp = new MultiCore(inputFile, copy, mapping, hw);
             exp.Debug = false;
             exp.Context = inputFile.Correct;
             yield return exp;

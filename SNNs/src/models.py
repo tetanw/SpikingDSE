@@ -1,7 +1,8 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
+import numpy as np
+import pandas as pd
 
 class ActFun(torch.autograd.Function):
     @staticmethod
@@ -58,7 +59,8 @@ class ALIFLayer(nn.Module):
         B = self.thr0 + beta * thr
 
         # new potential
-        inputs = torch.matmul(prev_spikes, self.rec) + torch.matmul(spikes, self.input)
+        inputs = torch.matmul(prev_spikes, self.rec) + \
+            torch.matmul(spikes, self.input)
         mem = mem * alpha + (1 - alpha) * inputs - B * prev_spikes * self.dt
 
         # spike
@@ -105,13 +107,17 @@ class SRNN(nn.Module):
         batch_size, seq_num, _ = input.shape
 
         # hidden layers
-        spikes = [torch.zeros(batch_size, size).cuda() for size in self.hidden_size]
-        mem = [torch.zeros(batch_size, size).cuda() for size in self.hidden_size]
+        spikes = [torch.zeros(batch_size, size).cuda()
+                  for size in self.hidden_size]
+        mem = [torch.zeros(batch_size, size).cuda()
+               for size in self.hidden_size]
         thr = [self.thr0 for _ in self.hidden_size]
 
         # output
         mem_output = torch.zeros(batch_size, self.output_size).cuda()
         sum_output = torch.zeros(batch_size, self.output_size).cuda()
+
+        self.mem_trace = []
 
         for ts in range(seq_num):
             # output
@@ -122,8 +128,14 @@ class SRNN(nn.Module):
             # hidden layers
             for i in reversed(range(0, len(self.hidden_size))):
                 # hidden 2
-                forward_spikes = spikes[i - 1] if i >0 else input[:, ts, :]
+                forward_spikes = spikes[i - 1] if i > 0 else input[:, ts, :]
                 mem[i], thr[i], spikes[i] = self.hidden[i](
                     mem[i], thr[i], spikes[i], forward_spikes)
+
+            # save trace
+            self.mem_trace.append(mem[0][0].data.cpu().numpy())
+
+        self.mem_trace = np.array(self.mem_trace).tolist()
+        pd.DataFrame(self.mem_trace).to_csv('mem_h0.csv')
 
         return sum_output

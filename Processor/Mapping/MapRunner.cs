@@ -5,7 +5,7 @@ namespace SpikingDSE;
 
 public class MapRunner
 {
-    private MappingOptions opts;
+    private readonly MappingOptions opts;
 
     public MapRunner(MappingOptions opts)
     {
@@ -16,7 +16,7 @@ public class MapRunner
     {
         var hw = HWSpec.Load(opts.HW);
         var snn = SNN.Load(opts.SNN);
-        Mapper mapper = null;
+        Mapper mapper;
         if (opts.Mapper == "FirstFit")
         {
             mapper = new FirstFitMapper();
@@ -26,6 +26,8 @@ public class MapRunner
             throw new System.Exception($"Unknown mapper: {opts.Mapper}");
         }
         var mapping = MultiCoreMapping.CreateMapping(mapper, hw, snn);
+        if (mapping.Unmapped.Count > 0)
+            throw new System.Exception("Could not map");    
         mapping.Save(opts.Mapping);
     }
 }

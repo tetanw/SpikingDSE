@@ -86,8 +86,7 @@ public sealed class ControllerV1 : Actor, Core
         yield return env.SleepUntil(spec.StartTime);
 
         int TS = 0;
-        // TODO: Dataset needs to be generated over, +1 is a temp fix
-        while (TS < source.NrTimesteps() + 1)
+        while (TS < source.NrTimesteps())
         {
             yield return env.SleepUntil(spec.StartTime + spec.Interval * (TS + 1));
 

@@ -18,10 +18,12 @@ public class ZipDataset : IDisposable
 {
     private ZipArchive archive;
     private Dictionary<string, ZipArchiveEntry> entries = new();
+    private int extraTimesteps;
 
-    public ZipDataset(string zipPath)
+    public ZipDataset(string zipPath, int extraTimesteps = 0)
     {
-        this.archive = ZipFile.OpenRead(zipPath);
+        archive = ZipFile.OpenRead(zipPath);
+        this.extraTimesteps = extraTimesteps;
 
         foreach (ZipArchiveEntry entry in archive.Entries)
         {
@@ -38,7 +40,7 @@ public class ZipDataset : IDisposable
     {
         var entry = entries[name];
 
-        return InputTraceFile.ReadFromStream(entry.Open(), nrNeurons);
+        return InputTraceFile.ReadFromStream(entry.Open(), nrNeurons, extraTimesteps);
     }
 }
 
@@ -49,16 +51,17 @@ public class InputTraceFile : ISpikeSource
     private int currentTS;
     private int nrNeurons;
     private int nrTimesteps;
+    private int extraTimesteps;
 
-    public static InputTraceFile ReadFromPath(string path, int nrNeurons)
+    public static InputTraceFile ReadFromPath(string path, int nrNeurons, int extraTimesteps)
     {
         var stream = File.OpenRead(path);
-        var file = ReadFromStream(stream, nrNeurons);
+        var file = ReadFromStream(stream, nrNeurons, extraTimesteps);
         stream.Dispose();
         return file;
     }
 
-    public static InputTraceFile ReadFromStream(Stream stream, int nrNeurons)
+    public static InputTraceFile ReadFromStream(Stream stream, int nrNeurons, int extraTimesteps)
     {
         var file = new InputTraceFile();
         file.allSpikes = new();
@@ -73,6 +76,10 @@ public class InputTraceFile : ISpikeSource
                 List<int> spikes = parts.Skip(1).Select(v => int.Parse(v)).ToList();
                 file.allSpikes.Add(spikes);
             }
+        }
+        for (int i = 0; i < extraTimesteps; i++)
+        {
+            file.allSpikes.Add(new());
         }
         file.currentTS = 0;
         file.nrNeurons = nrNeurons;
