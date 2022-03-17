@@ -142,57 +142,51 @@ public sealed class Simulator
 
     private void HandleEvent(Event ev)
     {
-        switch (ev)
+
+        if (ev is SleepEvent sleep)
         {
-            case SleepEvent sleep:
-                {
-                    CurrentProcess.Time += sleep.Time;
-                    ready.Enqueue(CurrentProcess);
-                    break;
-                }
-            case SendEvent send:
-                {
-                    var channel = channels[send.Port.ChannelHandle];
-                    if (channel.SendEvent != null)
-                        throw new Exception("Channel is already occupied");
+            CurrentProcess.Time += sleep.Time;
+            ready.Enqueue(CurrentProcess);
+        }
+        else if (ev is SendEvent send)
+        {
+            var channel = channels[send.Port.ChannelHandle];
+            if (channel.SendEvent != null)
+                throw new Exception("Channel is already occupied");
 
-                    channel.SendEvent = send;
-                    channel.SendProcess = CurrentProcess;
-                    if (channel.SendEvent != null && channel.ReceiveEvent != null)
-                        DoChannelTransfer(channel);
-                    break;
-                }
-            case ReceiveEvent recv:
-                {
-                    var channel = channels[recv.Port.ChannelHandle];
-                    if (channel.ReceiveEvent != null)
-                        throw new Exception("Channel is already occupied");
+            channel.SendEvent = send;
+            channel.SendProcess = CurrentProcess;
+            if (channel.SendEvent != null && channel.ReceiveEvent != null)
+                DoChannelTransfer(channel);
+        }
+        else if (ev is ReceiveEvent recv)
+        {
+            var channel = channels[recv.Port.ChannelHandle];
+            if (channel.ReceiveEvent != null)
+                throw new Exception("Channel is already occupied");
 
-                    channel.ReceiveEvent = recv;
-                    channel.ReceiveProcess = CurrentProcess;
-                    if (channel.SendEvent != null && channel.ReceiveEvent != null)
-                        DoChannelTransfer(channel);
-                    break;
-                }
-            case MutexReqEvent resWait:
-                {
-                    var res = resWait.Mutex;
-                    res.Waiting.Add(resWait);
-                    CheckBlocking(res);
-                    break;
-                }
-            case ProcessWaitEvent processWait:
-                {
-                    processWait.Process.Waiting.Add(CurrentProcess);
-                    break;
-                }
-            case SignalWaitEvent signalWait:
-                {
-                    signalWait.Signal.Waiting.Add(signalWait);
-                    break;
-                }
-            default:
-                throw new Exception("Unknown event: " + ev);
+            channel.ReceiveEvent = recv;
+            channel.ReceiveProcess = CurrentProcess;
+            if (channel.SendEvent != null && channel.ReceiveEvent != null)
+                DoChannelTransfer(channel);
+        }
+        else if (ev is MutexReqEvent resWait)
+        {
+            var res = resWait.Mutex;
+            res.Waiting.Add(resWait);
+            CheckBlocking(res);
+        }
+        else if (ev is ProcessWaitEvent processWait)
+        {
+            processWait.Process.Waiting.Add(CurrentProcess);
+        }
+        else if (ev is SignalWaitEvent signalWait)
+        {
+            signalWait.Signal.Waiting.Add(signalWait);
+        }
+        else
+        {
+            throw new Exception("Unknown event: " + ev);
         }
     }
 
