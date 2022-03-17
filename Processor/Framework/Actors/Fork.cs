@@ -7,10 +7,10 @@ public sealed class Fork : Actor
     public delegate void MessageSent(OutPort @out, object message);
     public MessageSent OnMessageSent;
 
-    public InPort input = new InPort();
-    public OutPort out1 = new OutPort();
-    public OutPort out2 = new OutPort();
-    public OutPort out3 = new OutPort();
+    public InPort input = new();
+    public OutPort out1 = new();
+    public OutPort out2 = new();
+    public OutPort out3 = new();
 
     public override IEnumerable<Event> Run(Simulator env)
     {

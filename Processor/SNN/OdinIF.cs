@@ -10,7 +10,7 @@ public class OdinIFLayer : OdinHiddenLayer
     public float Thr;
     public float leakage;
     public bool[] spiked;
-    private bool refractory;
+    private readonly bool refractory;
     public ResetMode ResetMode;
 
     public OdinIFLayer(float[,] weights, float threshold = 30, float leakage = 0, bool refractory = true, ResetMode resetMode = ResetMode.Zero, string name = "")

@@ -35,7 +35,7 @@ namespace SpikingDSE
                 try
                 {
 
-                    if (!value.Contains("x") && value.Length < 64)
+                    if (!value.Contains('x') && value.Length < 64)
                     {
                         OnValueChange(id, Convert.ToInt64(value, 2));
                     }
@@ -48,7 +48,7 @@ namespace SpikingDSE
             }
         }
 
-        private bool isScalar(string c)
+        private static bool IsScalar(string c)
         {
             // 01xXzZ
             return
@@ -60,7 +60,7 @@ namespace SpikingDSE
                 c.Equals("Z");
         }
 
-        private bool isVector(string c)
+        private static bool IsVector(string c)
         {
             // bBrR
             return
@@ -72,18 +72,18 @@ namespace SpikingDSE
 
         private void ParseValueChangeLine(string line)
         {
-            string c = line.Substring(0, 1);
-            string rest = line.Substring(1);
-            if (isScalar(c))
+            string c = line[..1];
+            string rest = line[1..];
+            if (IsScalar(c))
             {
                 ParseScalar(id: rest, value: c);
             }
-            else if (isVector(c))
+            else if (IsVector(c))
             {
                 string[] parts = line.Split(" ");
                 string id = parts[1];
-                string format = parts[0].Substring(0, 1);
-                string value = parts[0].Substring(1);
+                string format = parts[0][..1];
+                string value = parts[0][1..];
                 ParseVector(format, id, value);
             }
         }
@@ -141,9 +141,9 @@ namespace SpikingDSE
 
     class TraceNeuronVCD : VCDProcessor, IDisposable
     {
-        private StreamWriter sw;
-        private FullSpike spike;
-        private List<long> spikeBuffer;
+        private readonly StreamWriter sw;
+        private readonly FullSpike spike;
+        private readonly List<long> spikeBuffer;
 
         public TraceNeuronVCD(string input, string output) : base (input)
         {

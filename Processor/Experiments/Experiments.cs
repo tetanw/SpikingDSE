@@ -37,7 +37,7 @@ public abstract class Experiment
         Setup();
         sim.Compile();
         PrintLn("Simulation starting");
-        Stopwatch stopwatch = new Stopwatch();
+        var stopwatch = new Stopwatch();
         stopwatch.Start();
         sim.RunUntil(simStop.StopTime, simStop.StopEvents);
         stopwatch.Stop();
@@ -69,7 +69,7 @@ public abstract class DSEExperiment<T>
 
         foreach (var config in Configs())
         {
-            Stopwatch sw = new Stopwatch();
+            var sw = new Stopwatch();
             sw.Start();
 
             Parallel.ForEach(config, (exp, _, j) =>

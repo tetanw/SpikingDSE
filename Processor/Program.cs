@@ -120,7 +120,7 @@ namespace SpikingDSE
                     }
                     else if (opts.Name.Equals("MapperTest"))
                     {
-                        new MapperTest().Run();
+                        MapperTest.Run();
                     }
                     else if (opts.Name.Equals("XYRouterValidation"))
                     {
@@ -140,7 +140,7 @@ namespace SpikingDSE
                 },
                 (TraceGeneratorOptions opts) =>
                 {
-                    new TraceGenerator().Run();
+                    TraceGenerator.Run();
                     return 0;
                 },
                 (MappingOptions opts) =>

@@ -3,11 +3,11 @@ using System.Collections.Generic;
 namespace SpikingDSE;
 public sealed class Buffer<T>
 {
-    private Simulator env;
-    private Queue<T> items;
-    private int size;
-    private Mutex itemsFilled;
-    private Mutex itemsEmpty;
+    private readonly Simulator env;
+    private readonly Queue<T> items;
+    private readonly int size;
+    private readonly Mutex itemsFilled;
+    private readonly Mutex itemsEmpty;
 
     public Buffer(Simulator env, int size)
     {

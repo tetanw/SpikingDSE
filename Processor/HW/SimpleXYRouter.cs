@@ -31,8 +31,8 @@ public sealed class SimpleXYRouter : MeshRouter
 
             // 3. Determine into which output port it goes
             var destCoord = (MeshCoord) packet.Dest;
-            int DX = destCoord.x - x;
-            int DY = destCoord.y - y;
+            int DX = destCoord.X - x;
+            int DY = destCoord.Y - y;
             OutPort outPort;
             if (DX > 0)
             {

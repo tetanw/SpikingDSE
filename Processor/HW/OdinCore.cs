@@ -12,7 +12,7 @@ public struct ODINDelayModel
     public int TimeRefTime;
 }
 
-public sealed class OdinCore : Actor, Core
+public sealed class OdinCore : Actor, ICore
 {
     public delegate void SpikeReceived(OdinCore core, long time, SpikeEvent spike);
     public delegate void SpikeSent(OdinCore core, long time, SpikeEvent spike);
@@ -22,25 +22,23 @@ public sealed class OdinCore : Actor, Core
     public SpikeSent OnSpikeSent;
     public TimeReceived OnTimeReceived;
 
-    public InPort input = new InPort();
-    public OutPort output = new OutPort();
+    public InPort input = new();
+    public OutPort output = new();
 
-    private Object location;
+    private readonly object location;
     private CoreEvent received = null;
     private OdinIFLayer layer;
     private ODINDelayModel delayModel;
-    private int nrNeurons;
-    private bool enableRefractory;
-    private int totalOutputSpikes = 0;
-    private int totalInputSpikes = 0;
+    private readonly int nrNeurons;
+    public int totalOutputSpikes = 0;
+    public int totalInputSpikes = 0;
 
-    public OdinCore(object location, int nrNeurons, ODINDelayModel delayModel, string name = "", bool enableRefractory = false)
+    public OdinCore(object location, int nrNeurons, ODINDelayModel delayModel, string name = "")
     {
         this.location = location;
         this.Name = name;
         this.nrNeurons = nrNeurons;
         this.delayModel = delayModel;
-        this.enableRefractory = enableRefractory;
     }
 
     public bool AcceptsLayer(Layer layer)
@@ -117,7 +115,7 @@ public sealed class OdinCore : Actor, Core
 
         OdinIFLayer lif = (layer as OdinIFLayer);
         lif.Integrate(inputSpike.Neuron);
-        long syncTime = -1;
+        long syncTime;
         long start = env.Now;
         int nrOutputSpikes = 0;
         foreach (var outputSpike in lif.Threshold())
@@ -151,7 +149,7 @@ public sealed class OdinCore : Actor, Core
         yield return env.Delay(nrNeurons * delayModel.TimeRefTime);
     }
 
-    string Core.Name() => this.Name;
+    string ICore.Name() => this.Name;
 
     public OutPort Output() => output;
 

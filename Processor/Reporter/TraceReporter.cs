@@ -1,13 +1,15 @@
 using System.IO;
 
+namespace SpikingDSE;
+
 public class TraceReporter
 {
     private int TS;
-    private StreamWriter sw;
+    private readonly StreamWriter sw;
 
     public TraceReporter(string reportPath)
     {
-        this.sw = new StreamWriter(reportPath);
+        sw = new StreamWriter(reportPath);
     }
 
     public void InputSpike(int neuron, long time)

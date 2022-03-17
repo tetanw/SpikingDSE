@@ -10,7 +10,7 @@ public class SignalWaitEvent : Event
 
 public sealed class Signal
 {
-    private Simulator env;
+    private readonly Simulator env;
 
     public List<SignalWaitEvent> Waiting = new();
 

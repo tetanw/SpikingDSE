@@ -16,26 +16,26 @@ public class ALIFLayer : HiddenLayer
     public float[] AdaptThr;
     public float[] Alpha;
     public float[] Rho;
-    private int TS;
-    private int offset;
+    private readonly int offset;
+    public int TS { get; private set; }
 
     public ALIFLayer(float[,] inWeights, float[,] recWeights, float[] bias, float[] alpha, float[] rho, float VTh, string name, int offset = 0)
     {
-        this.InputSize = inWeights.GetLength(0);
-        this.Size = inWeights.GetLength(1);
-        this.Pots = new float[Size];
-        this.Readout = new float[Size];
-        this.Spiked = new bool[Size];
-        this.InWeights = inWeights;
-        this.RecWeights = recWeights;
-        this.Name = name;
-        this.AdaptThr = new float[Size];
+        InputSize = inWeights.GetLength(0);
+        Size = inWeights.GetLength(1);
+        Pots = new float[Size];
+        Readout = new float[Size];
+        Spiked = new bool[Size];
+        InWeights = inWeights;
+        RecWeights = recWeights;
+        Name = name;
+        AdaptThr = new float[Size];
         Array.Fill(AdaptThr, VTh);
-        this.Bias = bias;
-        this.Alpha = alpha;
-        this.Rho = rho;
+        Bias = bias;
+        Alpha = alpha;
+        Rho = rho;
         this.VTh = VTh;
-        this.Beta = 1.8f;
+        Beta = 1.8f;
         this.offset= offset;
     }
 

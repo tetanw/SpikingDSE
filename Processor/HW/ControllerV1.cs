@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace SpikingDSE;
 
 
-public sealed class ControllerV1 : Actor, Core
+public sealed class ControllerV1 : Actor, ICore
 {
     public Action<Actor, long, SpikeEvent> SpikeSent;
     public Action<Actor, long, SpikeEvent> SpikeReceived;
@@ -13,9 +13,9 @@ public sealed class ControllerV1 : Actor, Core
     public InPort Input = new();
     public OutPort Output = new();
 
-    private object thisLoc;
-    private InputLayer inputLayer;
-    private ISpikeSource source;
+    private readonly object thisLoc;
+    private readonly InputLayer inputLayer;
+    private readonly ISpikeSource source;
     private Buffer<object> outBuffer;
     private MappingTable mapping;
     public ControllerV1Spec spec;
@@ -174,13 +174,9 @@ public sealed class ControllerV1 : Actor, Core
         }
     }
 
-    public bool AcceptsLayer(Layer layer) => false;
+    string ICore.Name() => this.Name;
 
-    public void AddLayer(Layer layer) { }
+    OutPort ICore.Output() => Output;
 
-    string Core.Name() => this.Name;
-
-    OutPort Core.Output() => Output;
-
-    InPort Core.Input() => Input;
+    InPort ICore.Input() => Input;
 }

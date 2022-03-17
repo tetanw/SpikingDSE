@@ -55,7 +55,7 @@ public static class WeigthsUtil
         return array2d;
     }
 
-    public static float[] Read1DFloat(string path, bool headers = false, Func<float, int, float> transform = null)
+    public static float[] Read1DFloat(string path, bool headers = false)
     {
         var array2D = Read2DFloat(path, headers);
         var array1D = Flatten(array2D);
@@ -112,9 +112,7 @@ public static class WeigthsUtil
     private static void Swap<T>(int c, int x, int y, T[,] array)
     {
         // swap index x and y
-        var buffer = array[c, x];
-        array[c, x] = array[c, y];
-        array[c, y] = buffer;
+        (array[c, y], array[c, x]) = (array[c, x], array[c, y]);
     }
 
     private static void CorrectWeights<T>(T[,] weights)
@@ -136,7 +134,7 @@ public static class WeigthsUtil
 
     public static void ToCSV<T>(string path, T[,] weights)
     {
-        StreamWriter sw = new StreamWriter(path);
+        var sw = new StreamWriter(path);
         int width = weights.GetLength(0);
         int height = weights.GetLength(1);
 
@@ -155,7 +153,7 @@ public static class WeigthsUtil
         sw.Close();
     }
 
-    public static float Exp(int index, float value)
+    public static float Exp(int _, float value)
     {
         return (float)Math.Exp(-1.0f / value);
     }
@@ -167,8 +165,8 @@ public static class WeigthsUtil
 
     public static float[,] Slice(float[,] parent, int sX, int sY, int sWidth, int sHeight)
     {
-        int width = parent.GetLength(0);
-        int height = parent.GetLength(1);
+        // int width = parent.GetLength(0);
+        // int height = parent.GetLength(1);
         var slice = new float[sHeight, sWidth];
         for (int yy = 0; yy < sHeight; yy++)
         {
@@ -182,7 +180,7 @@ public static class WeigthsUtil
 
     public static float[] Slice(float[] parent, int sOffset, int sLength)
     {
-        int length = parent.GetLength(0);
+        // int length = parent.GetLength(0);
         var slice = new float[sLength];
         for (int i = 0; i < sLength; i++)
         {

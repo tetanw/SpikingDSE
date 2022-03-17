@@ -61,17 +61,17 @@ public class Mapping
     }
 }
 
-public interface Mapper
+public interface IMapper
 {
     public Mapping Run();
     public void AddCore(MapCore core);
     public void AddLayer(MapLayer layer);
 }
 
-public class FirstFitMapper : Mapper
+public class FirstFitMapper : IMapper
 {
-    private List<MapCore> cores = new();
-    private List<MapLayer> layers = new();
+    private readonly List<MapCore> cores = new();
+    private readonly List<MapLayer> layers = new();
 
 
     public void AddCore(MapCore core)
@@ -183,11 +183,6 @@ public class MapCore
 
     // Variables
     public int NrNeurons = 0;
-
-    public void Build()
-    {
-
-    }
 }
 
 public class MapLayer
@@ -197,9 +192,4 @@ public class MapLayer
     public int NrNeurons { get; set; }
     public bool Splittable { get; set; }
     public object Type { get; set; }
-
-    public void Build()
-    {
-
-    }
 }

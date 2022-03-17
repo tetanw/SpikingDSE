@@ -5,7 +5,7 @@ namespace SpikingDSE;
 
 public class MapperTest
 {
-    public void Run()
+    public static void Run()
     {
         var mapper = new FirstFitMapper();
 
@@ -98,6 +98,6 @@ public class MapperTest
         };
         mapper.AddLayer(output);
 
-        var mapping = mapper.Run();
+        mapper.Run();
     }
 }

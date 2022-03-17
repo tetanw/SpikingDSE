@@ -4,52 +4,51 @@ namespace SpikingDSE;
 
 public class MappingTable
 {
-    private Dictionary<Core, List<Layer>> coreToLayer = new();
-    private Dictionary<Layer, Core> layerToCore = new();
-    private SNN snn;
+    private readonly Dictionary<ICore, List<Layer>> coreToLayer = new();
+    private readonly Dictionary<Layer, ICore> layerToCore = new();
+    private readonly SNN snn;
 
     public MappingTable(SNN snn)
     {
         this.snn = snn;
     }
 
-    public void Map(Core core, Layer layer)
+    public void Map(ICore core, Layer layer)
     {
-        List<Layer> layers;
-        if (this.coreToLayer.TryGetValue(core, out layers))
+        if (coreToLayer.TryGetValue(core, out List<Layer> layers))
         {
             layers.Add(layer);
         }
         else
         {
-            this.coreToLayer.Add(core, new List<Layer>() { layer });
+            coreToLayer.Add(core, new List<Layer>() { layer });
         }
-        this.layerToCore.Add(layer, core);
+        layerToCore.Add(layer, core);
     }
 
-    public IEnumerable<Layer> LayersOf(Core core)
+    public IEnumerable<Layer> LayersOf(ICore core)
     {
-        return this.coreToLayer[core];
+        return coreToLayer[core];
     }
 
-    public IEnumerable<Core> Cores
+    public IEnumerable<ICore> Cores
     {
-        get => this.coreToLayer.Keys;
+        get => coreToLayer.Keys;
     }
 
     public IEnumerable<Layer> Layers
     {
-        get => this.layerToCore.Keys;
+        get => layerToCore.Keys;
     }
 
-    public IEnumerable<KeyValuePair<Layer, Core>> Pairs
+    public IEnumerable<KeyValuePair<Layer, ICore>> Pairs
     {
-        get => this.layerToCore;
+        get => layerToCore;
     }
 
     public object CoordOf(Layer layer)
     {
-        return this.layerToCore[layer].GetLocation();
+        return layerToCore[layer].GetLocation();
     }
 
     public Layer GetDestLayer(Layer layer)
@@ -67,7 +66,7 @@ public class MappingTable
         return snn.GetSiblingLayers(layer);
     }
 
-    public List<Layer> GetAllLayers(Core core)
+    public List<Layer> GetAllLayers(ICore core)
     {
         return coreToLayer[core];
     }

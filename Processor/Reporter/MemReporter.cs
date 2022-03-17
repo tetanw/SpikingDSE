@@ -4,23 +4,22 @@ using System.IO;
 using System.Linq;
 using SpikingDSE;
 
+namespace SpikingDSE;
+
 public class MemReporter
 {
-    private SNN snn;
-    private Dictionary<Layer, StreamWriter> memFiles;
-    private string folderPath;
+    private readonly Dictionary<Layer, StreamWriter> memFiles;
+    private readonly string folderPath;
 
-    public MemReporter(SNN snn, string folderPath)
+    public MemReporter(string folderPath)
     {
-        this.snn = snn;
         this.folderPath = folderPath;
-        this.memFiles = new();
+        memFiles = new();
     }
 
     public void RegisterLayer(Layer layer)
     {
-        bool[] layerSpikes = new bool[layer.Size];
-        StreamWriter sw = new StreamWriter(folderPath + "/mem_" + layer.Name + ".csv");
+        var sw = new StreamWriter(folderPath + "/mem_" + layer.Name + ".csv");
         sw.WriteLine("," + string.Join(",", Enumerable.Range(0, layer.Size)));
         memFiles[layer] = sw;
     }
@@ -36,7 +35,6 @@ public class MemReporter
         var file = memFiles[layer];
         file.WriteLine($"{ts},{string.Join(",", pots)}");
         file.Flush();
-        ts++;
     }
 
     public void Finish()

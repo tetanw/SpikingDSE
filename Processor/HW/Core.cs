@@ -1,6 +1,6 @@
 namespace SpikingDSE;
 
-public interface Core
+public interface ICore
 {
     public object GetLocation();
     public string Name();

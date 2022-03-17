@@ -5,8 +5,8 @@ namespace SpikingDSE;
 
 public sealed class ProtoXYRouter : MeshRouter
 {
-    private int inputBufferSize;
-    private int outputBufferSize;
+    private readonly int inputBufferSize;
+    private readonly int outputBufferSize;
 
     public ProtoXYRouter(int x, int y, string name = "", int inputBufferSize = 1, int outputBufferSize = 1)
     {
@@ -40,7 +40,7 @@ public sealed class ProtoXYRouter : MeshRouter
             }
         }
 
-        env.Process(Switch(env, inBuffers, outBuffers, signal));
+        env.Process(Switch(inBuffers, outBuffers, signal));
 
         yield break;
     }
@@ -65,7 +65,7 @@ public sealed class ProtoXYRouter : MeshRouter
         else throw new Exception("Unknown direction");
     }
 
-    private IEnumerable<Event> Switch(Simulator env, Buffer<Packet>[] inBuffers, Buffer<Packet>[] outBuffers, Signal signal)
+    private IEnumerable<Event> Switch(Buffer<Packet>[] inBuffers, Buffer<Packet>[] outBuffers, Signal signal)
     {
         while (true)
         {
@@ -110,7 +110,7 @@ public sealed class ProtoXYRouter : MeshRouter
     }
 
 
-    private IEnumerable<Event> OutLink(Simulator env, OutPort outPort, Buffer<Packet> buffer, Signal signal)
+    private static IEnumerable<Event> OutLink(Simulator env, OutPort outPort, Buffer<Packet> buffer, Signal signal)
     {
         while (true)
         {
@@ -122,7 +122,7 @@ public sealed class ProtoXYRouter : MeshRouter
         }
     }
 
-    private IEnumerable<Event> InLink(Simulator env, InPort inPort, Buffer<Packet> buffer, Signal signal)
+    private static IEnumerable<Event> InLink(Simulator env, InPort inPort, Buffer<Packet> buffer, Signal signal)
     {
         while (true)
         {
@@ -138,8 +138,8 @@ public sealed class ProtoXYRouter : MeshRouter
     private int DetermineOutput(Packet packet)
     {
         var destCoord = (MeshCoord) packet.Dest;
-        int DX = destCoord.x - x;
-        int DY = destCoord.y - y;
+        int DX = destCoord.X - x;
+        int DY = destCoord.Y - y;
         if (DX > 0)
         {
             // East

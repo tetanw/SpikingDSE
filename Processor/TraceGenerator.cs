@@ -7,7 +7,7 @@ namespace SpikingDSE;
 
 public class TraceGenerator
 {
-    public void Run()
+    public static void Run()
     {
         // TODO: Temporarily disabled
         // int nrLayers = 2;

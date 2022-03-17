@@ -5,15 +5,15 @@ namespace SpikingDSE
 {
     public class ToTensor
     {
-        private TensorFile tensor;
-        private EventTraceReader events;
-        private StreamWriter sw;
+        private readonly TensorFile tensor;
+        private readonly EventTraceReader events;
+        private readonly StreamWriter sw;
 
         public ToTensor(string inputTensorPath, string inputEventPath, string outputTensorPath)
         {
-            this.tensor = new TensorFile(inputTensorPath, -1);
-            this.events = new EventTraceReader(inputEventPath);
-            this.sw = new StreamWriter(File.OpenWrite(outputTensorPath));
+            tensor = new TensorFile(inputTensorPath, -1);
+            events = new EventTraceReader(inputEventPath);
+            sw = new StreamWriter(File.OpenWrite(outputTensorPath));
 
             sw.Write(",");
             for (int i = 0; i < tensor.NrNeurons() - 1; i++)

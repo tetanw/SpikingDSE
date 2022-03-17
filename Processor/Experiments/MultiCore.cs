@@ -6,7 +6,7 @@ namespace SpikingDSE;
 
 public class MultiCoreMapping
 {
-    public static Mapping CreateMapping(Mapper mapper, HWSpec spec, SNN snn)
+    public static Mapping CreateMapping(IMapper mapper, HWSpec spec, SNN snn)
     {
         foreach (var coreSpec in spec.Cores)
         {
@@ -51,7 +51,7 @@ public class MultiCore : Experiment
     private MergeSplit mergeSplit;
     public Bus Bus;
     public ControllerV1 Controller;
-    public List<Core> Cores = new();
+    public List<ICore> Cores = new();
 
     private readonly Mapping mapping;
     private readonly ISpikeSource source;
@@ -106,7 +106,7 @@ public class MultiCore : Experiment
         Cores.Add(core);
     }
 
-    private Core FindCore(string name)
+    private ICore FindCore(string name)
     {
         var core = Cores.Find(c => c.Name() == name);
         return core;

@@ -32,37 +32,20 @@ namespace SpikingDSE
 
         private static string GetPrefix(int rank)
         {
-            switch (rank)
+            return rank switch
             {
-                case 0:
-                    return "";
-                case -1:
-                    return "m";
-                case -2:
-                    return "µ";
-                case -3:
-                    return "n";
-                case 1:
-                    return "K";
-                case 2:
-                    return "M";
-                case 3:
-                    return "G";
-                default:
-                    throw new Exception($"Rank ({rank}) not supported");
-            }
+                0 => "",
+                -1 => "m",
+                -2 => "µ",
+                -3 => "n",
+                1 => "K",
+                2 => "M",
+                3 => "G",
+                _ => throw new Exception($"Rank ({rank}) not supported"),
+            };
         }
 
-        private static double TruncateToSignificantDigits(double d, int digits)
-        {
-            if (d == 0)
-                return 0;
-
-            double scale = Math.Pow(10, Math.Floor(Math.Log10(Math.Abs(d))) + 1 - digits);
-            return scale * Math.Truncate(d / scale);
-        }
-
-        public static string GetPrefix(double number, int digits = 3)
+        public static string GetPrefix(double number)
         {
             var (rank, b) = GetRank(number);
             string prefix = GetPrefix(rank);
@@ -71,9 +54,9 @@ namespace SpikingDSE
             return $"{b:#,0.000} {prefix}";
         }
 
-        public static string FormatSI(double number, string unit, int digits = 3)
+        public static string FormatSI(double number, string unit)
         {
-            return $"{GetPrefix(number, digits)}{unit}";
+            return $"{GetPrefix(number)}{unit}";
         }
     }
 
@@ -81,8 +64,8 @@ namespace SpikingDSE
     {
         public static T[] Concat<T>(this T[] x, T[] y)
         {
-            if (x == null) throw new ArgumentNullException("x");
-            if (y == null) throw new ArgumentNullException("y");
+            if (x == null) throw new ArgumentNullException(nameof(x));
+            if (y == null) throw new ArgumentNullException(nameof(y));
             int oldLen = x.Length;
             Array.Resize<T>(ref x, x.Length + y.Length);
             Array.Copy(y, 0, x, oldLen, y.Length);
@@ -91,7 +74,7 @@ namespace SpikingDSE
 
         public static bool Any<T>(this T[] array, Predicate<T> when)
         {
-            if (array == null) throw new ArgumentNullException("array");
+            if (array == null) throw new ArgumentNullException(nameof(array));
             foreach (var item in array)
             {
                 if (when(item))

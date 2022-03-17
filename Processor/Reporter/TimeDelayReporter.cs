@@ -5,12 +5,12 @@ namespace SpikingDSE;
 public class TimeDelayReporter
 {
     public readonly string FilePath;
-    private StreamWriter sw;
+    private readonly StreamWriter sw;
 
     public TimeDelayReporter(string filePath)
     {
-        this.sw = new StreamWriter(filePath);
-        this.FilePath = filePath;
+        sw = new StreamWriter(filePath);
+        FilePath = filePath;
         sw.WriteLine("start,end,layer,hops");
     }
 

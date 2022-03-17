@@ -7,10 +7,10 @@ public sealed class SpikeSourceTrace : Actor
 {
     public Action<SpikeSourceTrace, long, int> SpikeSent;
 
-    public OutPort output = new OutPort();
+    public OutPort output = new();
 
-    private long startTime;
-    private IEnumerable<int> spikeTrace;
+    private readonly long startTime;
+    private readonly IEnumerable<int> spikeTrace;
 
     public SpikeSourceTrace(IEnumerable<int> spikeTrace, long startTime = 0, string name = null)
     {

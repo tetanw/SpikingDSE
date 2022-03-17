@@ -8,11 +8,11 @@ namespace SpikingDSE;
 
 public class FileReporter
 {
-    private StreamWriter sw;
+    private readonly StreamWriter sw;
 
     public FileReporter(string filePath)
     {
-        this.sw = new StreamWriter(filePath);
+        sw = new StreamWriter(filePath);
     }
 
     public void ReportLine(string line)

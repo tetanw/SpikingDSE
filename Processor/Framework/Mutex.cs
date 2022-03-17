@@ -12,7 +12,7 @@ public class MutexReqEvent : Event
 
 public sealed class Mutex
 {
-    private Simulator env;
+    private readonly Simulator env;
     public List<MutexReqEvent> Waiting = new();
     public int Amount;
 

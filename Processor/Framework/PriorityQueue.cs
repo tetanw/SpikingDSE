@@ -8,7 +8,7 @@ namespace SpikingDSE;
 [DebuggerStepThrough]
 public sealed class PriorityQueue<T> where T : IComparable<T>
 {
-    private List<T> list;
+    private readonly List<T> list;
     public int Count { get { return list.Count; } }
     public readonly bool IsDescending;
 

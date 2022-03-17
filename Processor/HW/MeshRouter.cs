@@ -7,15 +7,15 @@ public abstract class MeshRouter : Actor
 {
     public int x, y;
 
-    public InPort inNorth = new InPort();
-    public InPort inSouth = new InPort();
-    public InPort inEast = new InPort();
-    public InPort inWest = new InPort();
-    public InPort inLocal = new InPort();
-    public OutPort outNorth = new OutPort();
-    public OutPort outSouth = new OutPort();
-    public OutPort outEast = new OutPort();
-    public OutPort outWest = new OutPort();
-    public OutPort outLocal = new OutPort();
+    public InPort inNorth = new();
+    public InPort inSouth = new();
+    public InPort inEast = new();
+    public InPort inWest = new();
+    public InPort inLocal = new();
+    public OutPort outNorth = new();
+    public OutPort outSouth = new();
+    public OutPort outEast = new();
+    public OutPort outWest = new();
+    public OutPort outLocal = new();
 }
 

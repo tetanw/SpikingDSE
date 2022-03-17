@@ -48,7 +48,7 @@ public class MultiCoreTest
         transfers = new FileReporter($"{resultsFolder}/transfers.csv");
         coreStats = new FileReporter($"{resultsFolder}/core-stats.csv");
 
-        mem = new MemReporter(splittedSNN, $"{resultsFolder}");
+        mem = new MemReporter($"{resultsFolder}");
         mem.RegisterSNN(splittedSNN);
 
         spikes = new TensorReporter(splittedSNN, $"{resultsFolder}");

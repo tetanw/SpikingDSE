@@ -180,7 +180,6 @@ public sealed class XYRouter : MeshRouter
             yield return buffer.RequestRead();
             var flit = buffer.Read();
             yield return env.Send(outPort, flit);
-            var after = env.Now;
             buffer.ReleaseRead();
 
             condVar.Value[dir + 5]++;
@@ -213,8 +212,8 @@ public sealed class XYRouter : MeshRouter
     private int DetermineOutput(Packet packet)
     {
         var destCoord = (MeshCoord) packet.Dest;
-        int DX = destCoord.x - x;
-        int DY = destCoord.y - y;
+        int DX = destCoord.X - x;
+        int DY = destCoord.Y - y;
         if (DX > 0)
         {
             // East

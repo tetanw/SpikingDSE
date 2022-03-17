@@ -18,7 +18,7 @@ public class HWSpec
     public List<CoreSpec> Cores { get; set; }
     public NoCSpec NoC { get; set; }
 
-    private static CoreSpec CreateCoreSpec(HWFile file, Dictionary<string, JsonElement> instance)
+    private static CoreSpec CreateCoreSpec(Dictionary<string, JsonElement> instance)
     {
         string type = instance["Type"].GetString();
         if (type == "controller-v1")
@@ -79,7 +79,7 @@ public class HWSpec
     {
         var hwFile = JsonSerializer.Deserialize<HWFile>(File.ReadAllText(path));
 
-        var cores = hwFile.Cores.Select(c => CreateCoreSpec(hwFile, c)).ToList();
+        var cores = hwFile.Cores.Select(c => CreateCoreSpec(c)).ToList();
 
         var type = hwFile.NoC["Type"].GetString();
         NoCSpec noc;

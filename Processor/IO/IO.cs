@@ -16,9 +16,9 @@ public interface ISpikeSource
 
 public class ZipDataset : IDisposable
 {
-    private ZipArchive archive;
-    private Dictionary<string, ZipArchiveEntry> entries = new();
-    private int extraTimesteps;
+    private readonly ZipArchive archive;
+    private readonly Dictionary<string, ZipArchiveEntry> entries = new();
+    private readonly int extraTimesteps;
 
     public ZipDataset(string zipPath, int extraTimesteps = 0)
     {
@@ -34,6 +34,7 @@ public class ZipDataset : IDisposable
     public void Dispose()
     {
         archive.Dispose();
+        GC.SuppressFinalize(this);
     }
 
     public InputTraceFile ReadEntry(string name, int nrNeurons)
@@ -51,7 +52,6 @@ public class InputTraceFile : ISpikeSource
     private int currentTS;
     private int nrNeurons;
     private int nrTimesteps;
-    private int extraTimesteps;
 
     public static InputTraceFile ReadFromPath(string path, int nrNeurons, int extraTimesteps)
     {
@@ -63,9 +63,11 @@ public class InputTraceFile : ISpikeSource
 
     public static InputTraceFile ReadFromStream(Stream stream, int nrNeurons, int extraTimesteps)
     {
-        var file = new InputTraceFile();
-        file.allSpikes = new();
-        using (StreamReader sr = new StreamReader(stream))
+        var file = new InputTraceFile
+        {
+            allSpikes = new()
+        };
+        using (StreamReader sr = new(stream))
         {
             string line = null;
             file.Correct = int.Parse(sr.ReadLine());
@@ -113,11 +115,11 @@ public class InputTraceFile : ISpikeSource
 
 public class TensorFile : ISpikeSource
 {
-    private StreamReader input;
-    private int baseID;
-    private List<int> inputSpikes = new List<int>();
-    private int nrNeurons;
-    private int nrTimesteps;
+    private readonly StreamReader input;
+    private readonly int baseID;
+    private readonly List<int> inputSpikes = new();
+    private readonly int nrNeurons;
+    private readonly int nrTimesteps;
 
     public TensorFile(string inputPath, int nrTimesteps, int baseID = 0)
     {
@@ -166,7 +168,7 @@ public class TensorFile : ISpikeSource
 
 public class TensorFileGroup : ISpikeSource
 {
-    private TensorFile[] tensorFiles;
+    private readonly TensorFile[] tensorFiles;
     private bool isAnyFileDone;
 
     public TensorFileGroup(string[] inputFiles)
@@ -182,7 +184,7 @@ public class TensorFileGroup : ISpikeSource
 
     public List<int> NeuronSpikes()
     {
-        List<int> allSpikes = new List<int>();
+        List<int> allSpikes = new();
         for (int i = 0; i < tensorFiles.Length; i++)
         {
             allSpikes.AddRange(tensorFiles[i].NeuronSpikes());
@@ -243,14 +245,14 @@ public class EventTraceReader
         }
     }
 
-    private StreamReader file;
+    private readonly StreamReader file;
     private string line;
-    private long clkPeriod;
+    private readonly long clkPeriod;
 
     public EventTraceReader(string filePath, int frequency = int.MaxValue)
     {
-        this.file = new StreamReader(File.OpenRead(filePath));
-        this.clkPeriod = 1_000_000_000_000 / frequency;
+        file = new StreamReader(File.OpenRead(filePath));
+        clkPeriod = 1_000_000_000_000 / frequency;
     }
 
     public bool NextEvent()

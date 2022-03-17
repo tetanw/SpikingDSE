@@ -8,13 +8,13 @@ namespace SpikingDSE;
 
 public class SNN
 {
-    private List<List<Layer>> layerParts;
+    private readonly List<List<Layer>> layerParts;
     public Dictionary<Layer, HashSet<Layer>> outputs = new();
     public Dictionary<Layer, HashSet<Layer>> inputs = new();
     public Dictionary<Layer, List<Layer>> siblings = new();
     public HashSet<Layer> layers = new();
-    private InputLayer input;
-    private OutputLayer output;
+    private readonly InputLayer input;
+    private readonly OutputLayer output;
 
     public SNN(List<Layer> layers)
     {
@@ -55,7 +55,7 @@ public class SNN
         this.layerParts = layerParts;
     }
 
-    private static ALIFLayer createALIFLayer(string path, Dictionary<string, JsonElement> layer)
+    private static ALIFLayer CreateALIFLayer(string path, Dictionary<string, JsonElement> layer)
     {
         string tauMPath = path + layer["TauM"].GetString();
         string tauAdpPath = path + layer["TauAdp"].GetString();
@@ -80,7 +80,7 @@ public class SNN
         return hidden;
     }
 
-    private static OutputLayer createOutputLayer(string path, Dictionary<string, JsonElement> layer)
+    private static OutputLayer CreateOutputLayer(string path, Dictionary<string, JsonElement> layer)
     {
         string tauMPath = path + layer["TauM"].GetString();
         string inWeightsPath = path + layer["InWeights"].GetString();
@@ -112,11 +112,11 @@ public class SNN
             }
             else if (type == "ALIF")
             {
-                layers.Add(createALIFLayer(snnFile.BasePath, layer));
+                layers.Add(CreateALIFLayer(snnFile.BasePath, layer));
             }
             else if (type == "output")
             {
-                layers.Add(createOutputLayer(snnFile.BasePath, layer));
+                layers.Add(CreateOutputLayer(snnFile.BasePath, layer));
             }
         }
 
@@ -171,8 +171,7 @@ public class SNN
 
     public void AddForward(Layer from, Layer to)
     {
-        HashSet<Layer> l;
-        if (outputs.TryGetValue(from, out l))
+        if (outputs.TryGetValue(from, out HashSet<Layer> l))
         {
             l.Add(to);
         }

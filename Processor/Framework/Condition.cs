@@ -6,12 +6,12 @@ namespace SpikingDSE;
 public class CondVar<T>
 {
     public T Value { get; set; }
-    private Signal onChange;
+    private readonly Signal onChange;
 
     public CondVar(Simulator env, T initial)
     {
         onChange = new Signal(env);
-        this.Value = initial;
+        Value = initial;
     }
 
     public IEnumerable<Event> BlockUntil(Predicate<T> when)

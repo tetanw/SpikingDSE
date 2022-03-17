@@ -7,14 +7,14 @@ namespace SpikingDSE;
 
 public class MultiCoreDSE : DSEExperiment<MultiCore>, IDisposable
 {
-    private int DATASET_SIZE = 2264;
-    private Mapping mapping;
-    private HWSpec hw;
-    private SNN snn;
-    private SNN splittedSnn;
+    private readonly int DATASET_SIZE = 2264;
+    private readonly Mapping mapping;
+    private readonly HWSpec hw;
+    private readonly SNN snn;
+    private readonly SNN splittedSnn;
+    private readonly ZipDataset dataset;
     private int nrCorrect = 0;
     private int curBufferSize = -1;
-    private ZipDataset dataset;
 
     public MultiCoreDSE()
     {
@@ -44,9 +44,11 @@ public class MultiCoreDSE : DSEExperiment<MultiCore>, IDisposable
         {
             var inputFile = dataset.ReadEntry($"input_{i}.trace", 700);
             var copy = splittedSnn.Copy();
-            var exp = new MultiCore(inputFile, copy, mapping, hw);
-            exp.Debug = false;
-            exp.Context = inputFile.Correct;
+            var exp = new MultiCore(inputFile, copy, mapping, hw)
+            {
+                Debug = false,
+                Context = inputFile.Correct
+            };
             yield return exp;
         }
     }
@@ -60,7 +62,7 @@ public class MultiCoreDSE : DSEExperiment<MultiCore>, IDisposable
 
     public override void OnExpCompleted(MultiCore exp)
     {
-        int correct = (int) exp.Context;
+        int correct = (int)exp.Context;
         if (exp.Predict() == correct)
         {
             nrCorrect++;
@@ -70,5 +72,6 @@ public class MultiCoreDSE : DSEExperiment<MultiCore>, IDisposable
     public void Dispose()
     {
         dataset.Dispose();
+        GC.SuppressFinalize(this);
     }
 }

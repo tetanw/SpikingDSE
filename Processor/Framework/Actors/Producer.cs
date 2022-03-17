@@ -9,10 +9,10 @@ public sealed class Producer : Actor
     public delegate void Produced(Producer producer, long time, object message);
     public Produced WhenProduced;
 
-    public OutPort output = new OutPort();
+    public OutPort output = new();
 
-    private int interval;
-    private Func<object> create;
+    private readonly int interval;
+    private readonly Func<object> create;
 
     public Producer(int interval, Func<object> create, string name = "")
     {

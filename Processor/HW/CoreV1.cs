@@ -5,7 +5,7 @@ using System.Linq;
 
 namespace SpikingDSE;
 
-public sealed class CoreV1 : Actor, Core
+public sealed class CoreV1 : Actor, ICore
 {
     public delegate void SpikeReceived(long time, Layer layer, int neuron, bool feedback, SpikeEvent spike, int nrHopsTravelled);
     public delegate void SpikeSent(long time, Layer from, int neuron, SpikeEvent spike);
@@ -31,14 +31,14 @@ public sealed class CoreV1 : Actor, Core
     public SyncEnded OnSyncEnded;
     public SpikeComputed OnSpikeComputed;
 
-    public InPort input = new InPort();
-    public OutPort output = new OutPort();
+    public InPort input = new();
+    public OutPort output = new();
 
-    private object loc;
+    private readonly CoreV1Spec spec;
+    private readonly object loc;
     private MappingTable mapping;
     private Buffer<CoreEvent> coreBuffer;
     private Buffer<CoreEvent> inputBuffer;
-    private CoreV1Spec spec;
 
     public CoreV1(object location, CoreV1Spec spec)
     {
@@ -272,7 +272,7 @@ public sealed class CoreV1 : Actor, Core
         return $"{this.Name}";
     }
 
-    string Core.Name() => this.Name;
+    string ICore.Name() => this.Name;
 
     public OutPort Output() => output;
 
