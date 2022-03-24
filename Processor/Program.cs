@@ -60,11 +60,46 @@ namespace SpikingDSE
         public string Mapping { get; set; }
     }
 
+    [Verb("test", HelpText = "Test a single input trace on HW")]
+    public class SimTestOptions
+    {
+        [Option('s', "snn-path", Required = true, HelpText = "SNN specification")]
+        public string SNN { get; set; }
+
+        [Option('h', "hw-path", Required = true, HelpText = "HW specification")]
+        public string HW { get; set; }
+
+        [Option('m', "mapping", Required = true, HelpText = "File to read the mapping from")]
+        public string Mapping { get; set; }
+
+        [Option('t', "trace", Required = true, HelpText = "Trace to extract from")]
+        public string Trace { get; set; }
+
+        [Option('o', "output", Required = true, HelpText = "Folder to save the results in")]
+        public string Output { get; set; }
+    }
+
+    [Verb("dse", HelpText = "Test a whole dataset on HW")]
+    public class SimDSEOptions
+    {
+        [Option('s', "snn-path", Required = true, HelpText = "SNN specification")]
+        public string SNN { get; set; }
+
+        [Option('h', "hw-path", Required = true, HelpText = "HW specification")]
+        public string HW { get; set; }
+
+        [Option('m', "mapping", Required = true, HelpText = "File to save the mapping in")]
+        public string Mapping { get; set; }
+
+        [Option('d', "dataset", Required = true, HelpText = "The dataset to run")]
+        public string Dataset { get; set; }
+    }
+
     class Program
     {
         static int Main(string[] args)
         {
-            var result = Parser.Default.ParseArguments<SimOptions, VCDOptions, ToTensorOptions, TraceGeneratorOptions, MappingOptions>(args);
+            var result = Parser.Default.ParseArguments<SimOptions, SimTestOptions, SimDSEOptions, VCDOptions, ToTensorOptions, TraceGeneratorOptions, MappingOptions>(args);
             var ret = result.MapResult(
                 (VCDOptions opts) =>
                 {
@@ -106,14 +141,6 @@ namespace SpikingDSE
                     {
                         new SingleOdin().Run();
                     }
-                    else if (opts.Name.Equals("MultiCoreTest"))
-                    {
-                        new MultiCoreTest().Run();
-                    }
-                    else if (opts.Name.Equals("MultiCoreDSE"))
-                    {
-                        new MultiCoreDSE().Run();
-                    }
                     else if (opts.Name.Equals("XYRouterTest"))
                     {
                         new XYRouterTest().Run();
@@ -130,6 +157,19 @@ namespace SpikingDSE
                     {
                         throw new Exception($"Unknown simulation: {opts.Name}");
                     }
+                    return 0;
+                },
+                (SimTestOptions opts) =>
+                {
+                    var split = opts.Trace.Split(";");
+                    var datasetPath = split[0];
+                    var traceName = split[1];
+                    new MultiCoreTest(opts.SNN, opts.HW, opts.Mapping, datasetPath, traceName, opts.Output).Run();
+                    return 0;
+                },
+                (SimDSEOptions opts) =>
+                {
+                    new MultiCoreDSE(opts.SNN, opts.HW, opts.Mapping, opts.Dataset).Run();
                     return 0;
                 },
                 (ToTensorOptions opts) =>

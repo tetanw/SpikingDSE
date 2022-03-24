@@ -18,16 +18,16 @@ public class MultiCoreTest
     private readonly SNN splittedSNN;
     private readonly int correct;
 
-    public MultiCoreTest()
+    public MultiCoreTest(string snnPath, string hwPath, string mappingPath, string datasetPath, string traceName, string outputPath)
     {
-        var snn = SNN.Load("data/ssc-snn.json");
-        var hw = HWSpec.Load("./data/mesh-hw-big.json");
-        var mapping = Mapping.Load("./data/mapping-ssc.json");
+        var snn = SNN.Load(snnPath);
+        var hw = HWSpec.Load(hwPath);
+        var mapping = Mapping.Load(mappingPath);
         mapping.PrintReport();
 
         splittedSNN = SNN.SplitSNN(snn, mapping);
-        var shd = new ZipDataset("res/ssc-4.zip");
-        var inputFile = shd.ReadEntry("input_0.trace", 700);
+        var shd = new ZipDataset(datasetPath);
+        var inputFile = shd.ReadEntry(traceName, 700); // TODO: Harcoded input size
         shd.Dispose();
         correct = inputFile.Correct;
         exp = new MultiCore(inputFile, splittedSNN, mapping, hw);

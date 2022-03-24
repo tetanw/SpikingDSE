@@ -16,13 +16,13 @@ public class MultiCoreDSE : DSEExperiment<MultiCore>, IDisposable
     private int nrCorrect = 0;
     private int curBufferSize = -1;
 
-    public MultiCoreDSE()
+    public MultiCoreDSE(string snnPath, string hwPath, string mappingPath, string datasetPath)
     {
-        snn = SNN.Load("data/ssc-snn.json");
-        mapping = Mapping.Load("data/mapping-ssc.json");
+        snn = SNN.Load(snnPath);
+        mapping = Mapping.Load(mappingPath);
         splittedSnn = SNN.SplitSNN(snn, mapping);
-        hw = HWSpec.Load("data/mesh-hw-big.json");
-        dataset = new ZipDataset("res/ssc-4.zip");
+        hw = HWSpec.Load(hwPath);
+        dataset = new ZipDataset(datasetPath);
     }
 
     public override IEnumerable<IEnumerable<MultiCore>> Configs()
@@ -42,7 +42,7 @@ public class MultiCoreDSE : DSEExperiment<MultiCore>, IDisposable
     {
         for (int i = 0; i < DATASET_SIZE; i++)
         {
-            var inputFile = dataset.ReadEntry($"input_{i}.trace", 700);
+            var inputFile = dataset.ReadEntry($"input_{i}.trace", 700); // TODO: Harcoded input dataset size
             var copy = splittedSnn.Copy();
             var exp = new MultiCore(inputFile, copy, mapping, hw)
             {
