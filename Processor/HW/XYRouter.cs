@@ -140,9 +140,8 @@ public sealed class XYRouter : MeshRouter
         if (!outBuffer.IsFull)
         {
             lastDir = dir;
-            outBuffer.Push(inBuffer.Pop());
             OnTransfer?.Invoke(env.Now, dir, outDir);
-            return (false, dir, outDir);
+            return (true, dir, outDir);
         }
         else
         {

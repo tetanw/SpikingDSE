@@ -16,7 +16,6 @@ public sealed class ControllerV1 : Actor, ICore
     private readonly object thisLoc;
     private readonly InputLayer inputLayer;
     private readonly ISpikeSource source;
-    private Buffer<object> outBuffer;
     private MappingTable mapping;
     public ControllerV1Spec spec;
 
@@ -35,26 +34,21 @@ public sealed class ControllerV1 : Actor, ICore
 
     public override IEnumerable<Event> Run(Simulator env)
     {
-        outBuffer = new(env, 1);
-
-        var timesteps = new Mutex(env, 0);
-
-        env.Process(SpikeSender(env, timesteps));
-        env.Process(SyncSender(env, timesteps));
-
         env.Process(Sender(env));
         env.Process(Receiver(env));
 
         yield break;
     }
 
-    private IEnumerable<Event> SpikeSender(Simulator env, Mutex timesteps)
+    private IEnumerable<Event> Sender(Simulator env)
     {
         int TS = 0;
         var destLayers = mapping.GetDestLayers(inputLayer);
+
+        yield return env.SleepUntil(spec.StartTime);
         while (source.NextTimestep())
         {
-            // Send spikes for input layer
+            // Do spike sending
             var inputSpikes = source.NeuronSpikes();
             foreach (var neuron in inputSpikes)
             {
@@ -68,51 +62,43 @@ public sealed class ControllerV1 : Actor, ICore
                         TS = TS,
                         CreatedAt = env.Now
                     };
-                    yield return outBuffer.RequestWrite();
-                    outBuffer.Write(spike);
-                    outBuffer.ReleaseWrite();
+                    var dest = mapping.CoordOf(spike.Layer);
+                    var packet = new Packet
+                    {
+                        Src = thisLoc,
+                        Dest = dest,
+                        Message = spike
+                    };
+                    yield return env.Send(Output, packet);
                     SpikeSent?.Invoke(this, env.Now, spike);
                 }
             }
 
-            // Wait until until the sync sender goes to next timestep
-            yield return timesteps.Wait(1);
-            TS++;
-        }
-    }
+            // Wait until sync
+            var nextSync = spec.StartTime + spec.Interval * (TS + 1);
+            yield return env.SleepUntil(Math.Max(nextSync, env.Now));
 
-    private IEnumerable<Event> SyncSender(Simulator env, Mutex timesteps)
-    {
-        yield return env.SleepUntil(spec.StartTime);
-
-        int TS = 0;
-        while (TS < source.NrTimesteps())
-        {
-            yield return env.SleepUntil(spec.StartTime + spec.Interval * (TS + 1));
-
-            yield return outBuffer.RequestWrite();
-            outBuffer.Write(new SyncEvent()
+            var sync = new SyncEvent()
             {
                 TS = TS,
                 CreatedAt = env.Now
-            });
-            outBuffer.ReleaseWrite();
+            };
+            foreach (var core in mapping.Cores)
+            {
+                if (core is ControllerV1)
+                    continue;
+
+                var flit = new Packet
+                {
+                    Src = thisLoc,
+                    Dest = core.GetLocation(),
+                    Message = sync
+                };
+                yield return env.Send(Output, flit);
+            }
             TimeAdvanced?.Invoke(this, env.Now, TS);
-
-            env.Increase(timesteps, 1);
+            
             TS++;
-        }
-    }
-
-    private IEnumerable<Event> Sender(Simulator env)
-    {
-        while (true)
-        {
-            yield return outBuffer.RequestRead();
-            var packet = outBuffer.Read();
-            foreach (var ev in SendEvent(env, packet))
-                yield return ev;
-            outBuffer.ReleaseRead();
         }
     }
 
@@ -133,44 +119,6 @@ public sealed class ControllerV1 : Actor, ICore
             {
                 throw new Exception("Receiver received unknown message!");
             }
-        }
-    }
-
-    private IEnumerable<Event> SendEvent(Simulator env, object message)
-    {
-        if (message is SpikeEvent)
-        {
-            var spikeEv = message as SpikeEvent;
-            // Get the right desitination layer for the spike and also the coord to send it to
-            var dest = mapping.CoordOf(spikeEv.Layer);
-            var flit = new Packet
-            {
-                Src = thisLoc,
-                Dest = dest,
-                Message = spikeEv
-            };
-            yield return env.Send(Output, flit);
-        }
-        else if (message is SyncEvent)
-        {
-            var timeEvent = message as SyncEvent;
-            foreach (var core in mapping.Cores)
-            {
-                if (core is ControllerV1)
-                    continue;
-
-                var flit = new Packet
-                {
-                    Src = thisLoc,
-                    Dest = core.GetLocation(),
-                    Message = timeEvent
-                };
-                yield return env.Send(Output, flit);
-            }
-        }
-        else
-        {
-            throw new Exception($"Unknown message: {message}");
         }
     }
 
