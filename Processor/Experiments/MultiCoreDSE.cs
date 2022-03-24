@@ -1,46 +1,39 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace SpikingDSE;
 
 public class MultiCoreDSE : DSEExperiment<MultiCore>, IDisposable
 {
     private readonly Mapping mapping;
-    private readonly HWSpec hw;
+    private readonly List<HWSpec> hws;
     private readonly SNN snn;
-    private readonly SNN splittedSnn;
     private readonly ZipDataset dataset;
     private int nrCorrect = 0;
-    private int curBufferSize = -1;
 
-    public MultiCoreDSE(string snnPath, string hwPath, string mappingPath, string datasetPath)
+    public MultiCoreDSE(string snnPath, List<string> hwPaths, string mappingPath, string datasetPath)
     {
-        snn = SNN.Load(snnPath);
         mapping = Mapping.Load(mappingPath);
-        splittedSnn = SNN.SplitSNN(snn, mapping);
-        hw = HWSpec.Load(hwPath);
+        snn = SNN.SplitSNN(SNN.Load(snnPath), mapping);
+        hws = hwPaths.Select(p => HWSpec.Load(p)).ToList();
         dataset = new ZipDataset(datasetPath);
     }
 
     public override IEnumerable<IEnumerable<MultiCore>> Configs()
     {
-        // var sizes = Enumerable.Range(1, 64).Where(i => i % 2 == 1);
-        // var sizes = new int[] { 1, 2, 4, 8, 16, 128, 256, 512, 2048 };
-        var sizes = new int[] { 16384 };
-
-        foreach (var size in sizes)
+        foreach (var hw in hws)
         {
-            curBufferSize = size;
-            yield return WithBufferSize(size);
+            yield return With(hw);
         }
     }
 
-    public IEnumerable<MultiCore> WithBufferSize(int bufferSize)
+    public IEnumerable<MultiCore> With(HWSpec hw)
     {
         for (int i = 0; i < dataset.NrSamples; i++)
         {
-            var inputFile = dataset.ReadEntry($"input_{i}.trace"); // TODO: Harcoded input dataset size
-            var copy = splittedSnn.Copy();
+            var inputFile = dataset.ReadEntry($"input_{i}.trace");
+            var copy = snn.Copy();
             var exp = new MultiCore(inputFile, copy, mapping, hw)
             {
                 Debug = false,
@@ -53,7 +46,7 @@ public class MultiCoreDSE : DSEExperiment<MultiCore>, IDisposable
     public override void OnConfigCompleted(TimeSpan runningTime)
     {
         var acc = (float)nrCorrect / dataset.NrSamples;
-        Console.WriteLine($"{curBufferSize};{acc};{(int)runningTime.TotalMilliseconds}ms");
+        Console.WriteLine($"{acc};{(int)runningTime.TotalMilliseconds}ms");
         nrCorrect = 0;
     }
 

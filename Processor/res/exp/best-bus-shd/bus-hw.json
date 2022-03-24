@@ -1,0 +1,81 @@
+{
+    "NoC": {
+        "Type": "Bus",
+        "Ports": 7,
+        "TransferDelay": 16
+    },
+    "Cores": [
+        {
+            "Name": "controller",
+            "Type": "controller-v1",
+            "Interval": 100000,
+            "ConnectsTo": "bus,0"
+        },
+        {
+            "Name": "core1",
+            "Type": "core-v1",
+            "MaxNeurons": 64,
+            "BufferSize": 512,
+            "InputDelay": 7,
+            "ComputeDelay": 2,
+            "OutputDelay": 8,
+            "ComputeEnergy": 15.0,
+            "ConnectsTo": "bus,1"
+        },
+        {
+            "Name": "core2",
+            "Type": "core-v1",
+            "MaxNeurons": 64,
+            "BufferSize": 512,
+            "InputDelay": 7,
+            "ComputeDelay": 2,
+            "OutputDelay": 8,
+            "ComputeEnergy": 15.0,
+            "ConnectsTo": "bus,2"
+        },
+        {
+            "Name": "core3",
+            "Type": "core-v1",
+            "MaxNeurons": 64,
+            "BufferSize": 512,
+            "InputDelay": 7,
+            "ComputeDelay": 2,
+            "OutputDelay": 8,
+            "ComputeEnergy": 15.0,
+            "ConnectsTo": "bus,3"
+        },
+        {
+            "Name": "core4",
+            "Type": "core-v1",
+            "MaxNeurons": 64,
+            "BufferSize": 512,
+            "InputDelay": 7,
+            "ComputeDelay": 2,
+            "OutputDelay": 8,
+            "ComputeEnergy": 15.0,
+            "ConnectsTo": "bus,4"
+        },
+        {
+            "Name": "core5",
+            "Type": "core-v1",
+            "MaxNeurons": 64,
+            "BufferSize": 512,
+            "InputDelay": 7,
+            "ComputeDelay": 2,
+            "OutputDelay": 8,
+            "ComputeEnergy": 15.0,
+            "ConnectsTo": "bus,5"
+        },
+        {
+            "Name": "core6",
+            "Type": "core-v1",
+            "MaxNeurons": 64,
+            "BufferSize": 512,
+            "InputDelay": 7,
+            "ComputeDelay": 2,
+            "OutputDelay": 8,
+            "ComputeEnergy": 15.0,
+            "ConnectsTo": "bus,6"
+        }
+    ]
+}

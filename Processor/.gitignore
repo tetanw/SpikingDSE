@@ -1,6 +1,7 @@
 data
 res/results
 res/odin/result.trace
+admin/
 .vscode/
 
 ## Ignore Visual Studio temporary files, build results, and

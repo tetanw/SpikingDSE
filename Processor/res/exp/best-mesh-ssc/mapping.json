@@ -1,0 +1,61 @@
+{
+  "Mapped": [
+    {
+      "Layer": "i",
+      "Core": "controller",
+      "Partial": false,
+      "Index": 0,
+      "Start": 0,
+      "End": 700
+    },
+    {
+      "Layer": "h1",
+      "Core": "core1",
+      "Partial": true,
+      "Index": 1,
+      "Start": 0,
+      "End": 256
+    },
+    {
+      "Layer": "h1",
+      "Core": "core2",
+      "Partial": true,
+      "Index": 2,
+      "Start": 256,
+      "End": 400
+    },
+    {
+      "Layer": "h2",
+      "Core": "core2",
+      "Partial": true,
+      "Index": 1,
+      "Start": 0,
+      "End": 112
+    },
+    {
+      "Layer": "h2",
+      "Core": "core3",
+      "Partial": true,
+      "Index": 2,
+      "Start": 112,
+      "End": 368
+    },
+    {
+      "Layer": "h2",
+      "Core": "core4",
+      "Partial": true,
+      "Index": 3,
+      "Start": 368,
+      "End": 400
+    },
+    {
+      "Layer": "o",
+      "Core": "core4",
+      "Partial": false,
+      "Index": 0,
+      "Start": 0,
+      "End": 35
+    }
+  ],
+  "Unmapped": []
+}

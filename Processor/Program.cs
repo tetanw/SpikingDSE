@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using CommandLine;
 
 namespace SpikingDSE
@@ -169,7 +170,7 @@ namespace SpikingDSE
                 },
                 (SimDSEOptions opts) =>
                 {
-                    new MultiCoreDSE(opts.SNN, opts.HW, opts.Mapping, opts.Dataset).Run();
+                    new MultiCoreDSE(opts.SNN, opts.HW.Split(";").ToList(), opts.Mapping, opts.Dataset).Run();
                     return 0;
                 },
                 (ToTensorOptions opts) =>
