@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.IO.Compression;
+using System.Linq;
+using System.Text;
+using System.Text.Json;
 
 namespace SpikingDSE;
 
@@ -14,21 +16,38 @@ public interface ISpikeSource
     public int NrTimesteps();
 }
 
+class DatasetInfo
+{
+    public int InputSize { get; set; }
+    public int NrSamples { get; set; }
+    public int Timesteps { get; set; }
+}
+
 public class ZipDataset : IDisposable
 {
     private readonly ZipArchive archive;
     private readonly Dictionary<string, ZipArchiveEntry> entries = new();
-    private readonly int extraTimesteps;
+    private DatasetInfo info;
 
-    public ZipDataset(string zipPath, int extraTimesteps = 0)
+    public ZipDataset(string zipPath)
     {
         archive = ZipFile.OpenRead(zipPath);
-        this.extraTimesteps = extraTimesteps;
 
         foreach (ZipArchiveEntry entry in archive.Entries)
         {
             entries[entry.Name] = entry;
         }
+
+        ReadInfo();
+    }
+
+    private void ReadInfo()
+    {
+        var infoEntry = entries["info.json"];
+        using var sr = new StreamReader(infoEntry.Open(), Encoding.UTF8);
+        var content = sr.ReadToEnd();
+
+        info = JsonSerializer.Deserialize<DatasetInfo>(content);
     }
 
     public void Dispose()
@@ -37,11 +56,16 @@ public class ZipDataset : IDisposable
         GC.SuppressFinalize(this);
     }
 
-    public InputTraceFile ReadEntry(string name, int nrNeurons)
+    public InputTraceFile ReadEntry(string name)
     {
         var entry = entries[name];
 
-        return InputTraceFile.ReadFromStream(entry.Open(), nrNeurons, extraTimesteps);
+        return InputTraceFile.ReadFromStream(entry.Open(), info.InputSize, info.Timesteps);
+    }
+
+    public int NrSamples
+    {
+        get => info.NrSamples;
     }
 }
 
@@ -53,20 +77,21 @@ public class InputTraceFile : ISpikeSource
     private int nrNeurons;
     private int nrTimesteps;
 
-    public static InputTraceFile ReadFromPath(string path, int nrNeurons, int extraTimesteps)
+    public static InputTraceFile ReadFromPath(string path, int nrNeurons, int timesteps)
     {
         var stream = File.OpenRead(path);
-        var file = ReadFromStream(stream, nrNeurons, extraTimesteps);
+        var file = ReadFromStream(stream, nrNeurons, timesteps);
         stream.Dispose();
         return file;
     }
 
-    public static InputTraceFile ReadFromStream(Stream stream, int nrNeurons, int extraTimesteps)
+    public static InputTraceFile ReadFromStream(Stream stream, int nrNeurons, int timesteps)
     {
         var file = new InputTraceFile
         {
             allSpikes = new()
         };
+        int ts = 0;
         using (StreamReader sr = new(stream))
         {
             string line = null;
@@ -77,9 +102,11 @@ public class InputTraceFile : ISpikeSource
                 var parts = line.Split(",", StringSplitOptions.RemoveEmptyEntries);
                 List<int> spikes = parts.Skip(1).Select(v => int.Parse(v)).ToList();
                 file.allSpikes.Add(spikes);
+                ts++;
             }
         }
-        for (int i = 0; i < extraTimesteps; i++)
+        // If not all timesteps are defined then fill up until the required amount of timesteps
+        for (int i = 0; i < timesteps - ts; i++)
         {
             file.allSpikes.Add(new());
         }

@@ -1,13 +1,10 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
 
 namespace SpikingDSE;
 
 public class MultiCoreDSE : DSEExperiment<MultiCore>, IDisposable
 {
-    private readonly int DATASET_SIZE = 2264;
     private readonly Mapping mapping;
     private readonly HWSpec hw;
     private readonly SNN snn;
@@ -40,9 +37,9 @@ public class MultiCoreDSE : DSEExperiment<MultiCore>, IDisposable
 
     public IEnumerable<MultiCore> WithBufferSize(int bufferSize)
     {
-        for (int i = 0; i < DATASET_SIZE; i++)
+        for (int i = 0; i < dataset.NrSamples; i++)
         {
-            var inputFile = dataset.ReadEntry($"input_{i}.trace", 700); // TODO: Harcoded input dataset size
+            var inputFile = dataset.ReadEntry($"input_{i}.trace"); // TODO: Harcoded input dataset size
             var copy = splittedSnn.Copy();
             var exp = new MultiCore(inputFile, copy, mapping, hw)
             {
@@ -55,7 +52,7 @@ public class MultiCoreDSE : DSEExperiment<MultiCore>, IDisposable
 
     public override void OnConfigCompleted(TimeSpan runningTime)
     {
-        var acc = (float)nrCorrect / DATASET_SIZE;
+        var acc = (float)nrCorrect / dataset.NrSamples;
         Console.WriteLine($"{curBufferSize};{acc};{(int)runningTime.TotalMilliseconds}ms");
         nrCorrect = 0;
     }

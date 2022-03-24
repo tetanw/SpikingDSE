@@ -13,6 +13,7 @@ public class MultiCoreTest
     private TimeDelayReporter computeDelays;
     private FileReporter coreStats;
     private FileReporter transfers;
+    private string outputPath;
 
     private readonly MultiCore exp;
     private readonly SNN splittedSNN;
@@ -27,15 +28,16 @@ public class MultiCoreTest
 
         splittedSNN = SNN.SplitSNN(snn, mapping);
         var shd = new ZipDataset(datasetPath);
-        var inputFile = shd.ReadEntry(traceName, 700); // TODO: Harcoded input size
+        var inputFile = shd.ReadEntry(traceName);
         shd.Dispose();
         correct = inputFile.Correct;
+        this.outputPath = outputPath;
         exp = new MultiCore(inputFile, splittedSNN, mapping, hw);
     }
 
     public void Run()
     {
-        exp.SetupDone += () => SetupReporters(exp, "res/results/v1");
+        exp.SetupDone += () => SetupReporters(exp, outputPath);
         exp.Run();
         Console.WriteLine($"Predicted: {exp.Predict()}, Truth: {correct}");
         CleanupReporters();
