@@ -164,6 +164,76 @@ public sealed class CoreV1 : Actor, ICore
         yield return env.Delay(spec.ComputeDelay * spike.Layer.Size);
     }
 
+    private IEnumerable<Event> SendFeedbackSpikes(Simulator env, HiddenLayer layer, SyncEvent sync, int spikingNeuron)
+    {
+        foreach (var sibling in mapping.GetSiblings(layer))
+        {
+            var spikeEv = new SpikeEvent()
+            {
+                Layer = sibling,
+                Neuron = spikingNeuron + layer.Offset(),
+                Feedback = true,
+                TS = sync.TS + 1,
+                CreatedAt = env.Now
+            };
+            var siblingCoord = mapping.CoordOf(sibling);
+            if (siblingCoord == loc)
+            {
+                if (!coreBuffer.IsFull)
+                {
+                    spikeEv.ReceivedAt = env.Now;
+                    coreBuffer.Push(spikeEv);
+                }
+            }
+            else
+            {
+                // Send recurrent spikes to other core
+                var flit = new Packet
+                {
+                    Src = loc,
+                    Dest = siblingCoord,
+                    Message = spikeEv
+                };
+                yield return env.Send(output, flit, transferTime: spec.OutputDelay);
+            }
+        }
+    }
+
+    private IEnumerable<Event> SendOutputSpikes(Simulator env, HiddenLayer layer, SyncEvent sync, int spikingNeuron)
+    {
+        foreach (var destLayer in mapping.GetDestLayers(layer))
+        {
+            var spikeOut = new SpikeEvent()
+            {
+                Layer = destLayer,
+                Neuron = spikingNeuron + layer.Offset(),
+                Feedback = false,
+                TS = sync.TS + 1,
+                CreatedAt = env.Now
+            };
+            var destCoord = mapping.CoordOf(destLayer);
+            if (destCoord == loc)
+            {
+                spikeOut.ReceivedAt = env.Now;
+                if (!coreBuffer.IsFull)
+                    coreBuffer.Push(spikeOut);
+                else
+                    nrSpikesDroppedCore++;
+            }
+            else
+            {
+                var flit = new Packet
+                {
+                    Src = loc,
+                    Dest = destCoord,
+                    Message = spikeOut
+                };
+                yield return env.Send(output, flit, transferTime: spec.OutputDelay);
+            }
+            OnSpikeSent?.Invoke(env.Now, layer, spikingNeuron, spikeOut);
+        }
+    }
+
     private IEnumerable<Event> Sync(Simulator env, SyncEvent sync)
     {
         nrSpikesProduced = 0;
@@ -194,72 +264,13 @@ public sealed class CoreV1 : Actor, ICore
 
                 // Feedback spikes
                 if (layer.IsRecurrent())
-                {
-                    foreach (var sibling in mapping.GetSiblings(layer))
-                    {
-                        var spikeEv = new SpikeEvent()
-                        {
-                            Layer = sibling,
-                            Neuron = spikingNeuron + layer.Offset(),
-                            Feedback = true,
-                            TS = sync.TS + 1,
-                            CreatedAt = env.Now
-                        };
-                        var siblingCoord = mapping.CoordOf(sibling);
-                        if (siblingCoord == loc)
-                        {
-                            if (!coreBuffer.IsFull)
-                            {
-                                spikeEv.ReceivedAt = env.Now;
-                                coreBuffer.Push(spikeEv);
-                            }
-                        }
-                        else
-                        {
-                            // Send recurrent spikes to other core
-                            var flit = new Packet
-                            {
-                                Src = loc,
-                                Dest = siblingCoord,
-                                Message = spikeEv
-                            };
-                            yield return env.Send(output, flit, transferTime: spec.OutputDelay);
-                        }
-                    }
-                }
+                    foreach (var ev in SendFeedbackSpikes(env, layer, sync, spikingNeuron))
+                        yield return ev;
 
                 // Forward spikes
-                foreach (var destLayer in mapping.GetDestLayers(layer))
-                {
-                    var spikeOut = new SpikeEvent()
-                    {
-                        Layer = destLayer,
-                        Neuron = spikingNeuron + layer.Offset(),
-                        Feedback = false,
-                        TS = sync.TS + 1,
-                        CreatedAt = env.Now
-                    };
-                    var destCoord = mapping.CoordOf(destLayer);
-                    if (destCoord == loc)
-                    {
-                        spikeOut.ReceivedAt = env.Now;
-                        if (!coreBuffer.IsFull)
-                            coreBuffer.Push(spikeOut);
-                        else
-                            nrSpikesDroppedCore++;
-                    }
-                    else
-                    {
-                        var flit = new Packet
-                        {
-                            Src = loc,
-                            Dest = destCoord,
-                            Message = spikeOut
-                        };
-                        yield return env.Send(output, flit, transferTime: spec.OutputDelay);
-                    }
-                    OnSpikeSent?.Invoke(env.Now, layer, spikingNeuron, spikeOut);
-                }
+                foreach (var ev in SendOutputSpikes(env, layer, sync, spikingNeuron))
+                    yield return ev;
+
             }
             yield return env.Delay((layer.Size - lastSpikingNeuron) * spec.ComputeDelay);
 
