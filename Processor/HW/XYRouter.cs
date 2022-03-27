@@ -102,6 +102,7 @@ public sealed class XYRouter : MeshRouter
             int i = Array.FindIndex(condVar.Value, (v) => v > 0);
 
             // Update dir
+            // TODO: Reset to 0 and move to end of function
             condVar.Value[i]--;
             condVar.Update();
 
