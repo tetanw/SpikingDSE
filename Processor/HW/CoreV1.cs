@@ -62,58 +62,78 @@ public sealed class CoreV1 : Actor, ICore
             var packet = (Packet)rcv.Message;
             var @event = packet.Message as CoreEvent;
 
-            switch (@event)
+            if (@event is SyncEvent sync)
             {
-                case SyncEvent sync:
+                if (!coreBuffer.IsFull)
+                {
+                    yield return coreBuffer.RequestWrite();
+                    coreBuffer.Write(sync);
+                    coreBuffer.ReleaseWrite();
+                }
+
+                // write all spikes that were waiting for sync event to happen
+                while (!inputBuffer.IsEmpty)
+                {
+                    var spike = (SpikeEvent)inputBuffer.Pop();
+
                     if (!coreBuffer.IsFull)
-                    {
-                        yield return coreBuffer.RequestWrite();
-                        coreBuffer.Write(sync);
-                        coreBuffer.ReleaseWrite();
-                    }
-
-                    // write all spikes that were waiting for sync event to happen
-                    while (!inputBuffer.IsEmpty)
-                    {
-                        var spike = (SpikeEvent)inputBuffer.Pop();
-
-                        if (!coreBuffer.IsFull)
-                            coreBuffer.Push(spike);
-                        else
-                            nrSpikesDroppedCore++;
-                    }
-
-                    TS = sync.TS + 1;
-                    break;
-                case SpikeEvent spike:
-                    spike.ReceivedAt = env.Now;
-                    nrSpikesReceived++;
-                    OnSpikeReceived?.Invoke(env.Now, spike.Layer, spike.Neuron, spike.Feedback, spike, packet.NrHops);
-
-                    if (spike.TS > TS)
-                    {
-                        if (!inputBuffer.IsFull)
-                            inputBuffer.Push(spike);
-                        else
-                            nrSpikesDroppedInput++;
-                    }
-                    else if (spike.TS == TS)
-                    {
-                        if (!coreBuffer.IsFull)
-                            coreBuffer.Push(spike);
-                        else
-                            nrSpikesDroppedCore++;
-                    }
+                        coreBuffer.Push(spike);
                     else
-                    {
-                        nrLateSpikes++;
-                    }
-                    break;
-                default:
-                    throw new Exception("Unknown event when handling input: " + @event);
+                        nrSpikesDroppedCore++;
+                }
+
+                TS = sync.TS + 1;
             }
+            else if (@event is SpikeEvent spike)
+            {
+                spike.ReceivedAt = env.Now;
+                nrSpikesReceived++;
+                OnSpikeReceived?.Invoke(env.Now, spike.Layer, spike.Neuron, spike.Feedback, spike, packet.NrHops);
 
+                if (spike.TS > TS)
+                {
+                    if (!inputBuffer.IsFull)
+                        inputBuffer.Push(spike);
+                    else
+                        nrSpikesDroppedInput++;
+                }
+                else if (spike.TS == TS)
+                {
+                    if (!coreBuffer.IsFull)
+                        coreBuffer.Push(spike);
+                    else
+                        nrSpikesDroppedCore++;
+                }
+                else
+                {
+                    nrLateSpikes++;
+                }
+            }
+        }
+    }
 
+    private IEnumerable<Event> ALU(Simulator env)
+    {
+        while (true)
+        {
+            yield return coreBuffer.RequestRead();
+            var @event = coreBuffer.Read();
+            coreBuffer.ReleaseRead();
+
+            if (@event is SyncEvent sync)
+            {
+                foreach (var ev in Sync(env, sync))
+                    yield return ev;
+                lastSync = env.Now;
+            }
+            else if (@event is SpikeEvent spike)
+            {
+                foreach (var ev in Compute(env, spike))
+                    yield return ev;
+                lastSpike = env.Now;
+            }
+            else
+                throw new Exception("Unknown event!");
         }
     }
 
@@ -122,29 +142,8 @@ public sealed class CoreV1 : Actor, ICore
         inputBuffer = new(env, spec.BufferSize);
         coreBuffer = new(env, spec.BufferSize);
         env.Process(Receiver(env));
-
-        while (true)
-        {
-            yield return coreBuffer.RequestRead();
-            var core = coreBuffer.Read();
-            coreBuffer.ReleaseRead();
-
-            switch (core)
-            {
-                case SyncEvent sync:
-                    foreach (var ev in Sync(env, sync))
-                        yield return ev;
-                    lastSync = env.Now;
-                    break;
-                case SpikeEvent spike:
-                    foreach (var ev in Compute(env, spike))
-                        yield return ev;
-                    lastSpike = env.Now;
-                    break;
-                default:
-                    throw new Exception("Unknown event!");
-            }
-        }
+        env.Process(ALU(env));
+        yield break;
     }
 
     private IEnumerable<Event> Compute(Simulator env, SpikeEvent spike)
