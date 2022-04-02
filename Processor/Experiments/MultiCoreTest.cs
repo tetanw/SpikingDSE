@@ -103,7 +103,7 @@ public class MultiCoreTest
             {
                 spikeDelays.ReportDelay(spike.CreatedAt, time, layer.Name, nrHops.ToString());
             };
-            core.OnSpikeSent += (time, fromLayer, neuron, _) =>
+            core.OnSpikeSent += (time, fromLayer, neuron) =>
             {
                 spikes.InformSpike(fromLayer, neuron);
             };

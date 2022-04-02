@@ -8,7 +8,7 @@ namespace SpikingDSE;
 public sealed class CoreV1 : Actor, ICore
 {
     public delegate void SpikeReceived(long time, Layer layer, int neuron, bool feedback, SpikeEvent spike, int nrHopsTravelled);
-    public delegate void SpikeSent(long time, Layer from, int neuron, SpikeEvent spike);
+    public delegate void SpikeSent(long time, Layer from, int neuron);
     public delegate void SyncStarted(long time, int ts, HiddenLayer layer);
     public delegate void SyncEnded(long time, int ts, HiddenLayer layer);
     public delegate void SpikeComputed(long time, SpikeEvent spike);
@@ -174,53 +174,16 @@ public sealed class CoreV1 : Actor, ICore
         yield return env.Delay(spec.ComputeDelay * spike.Layer.Size);
     }
 
-    private IEnumerable<Event> SendFeedbackSpikes(Simulator env, HiddenLayer layer, SyncEvent sync, int spikingNeuron)
+    public IEnumerable<Event> SendSpikes(Simulator env, IEnumerable<HiddenLayer> dests, bool feedback, int TS, int spikingNeuron)
     {
-        foreach (var sibling in mapping.GetSiblings(layer))
-        {
-            var spikeEv = new SpikeEvent()
-            {
-                Layer = sibling,
-                Neuron = spikingNeuron + layer.Offset(),
-                Feedback = true,
-                TS = sync.TS + 1,
-                CreatedAt = env.Now
-            };
-            var siblingCoord = mapping.CoordOf(sibling);
-            if (siblingCoord == loc)
-            {
-                if (!coreBuffer.IsFull)
-                {
-                    spikeEv.ReceivedAt = env.Now;
-                    coreBuffer.Push(spikeEv);
-                }
-            }
-            else
-            {
-                yield return outputBuffer.RequestWrite();
-                // Send recurrent spikes to other core
-                var flit = new Packet
-                {
-                    Src = loc,
-                    Dest = siblingCoord,
-                    Message = spikeEv
-                };
-                outputBuffer.Write(flit);
-                outputBuffer.ReleaseWrite();
-            }
-        }
-    }
-
-    private IEnumerable<Event> SendOutputSpikes(Simulator env, HiddenLayer layer, SyncEvent sync, int spikingNeuron)
-    {
-        foreach (var destLayer in mapping.GetDestLayers(layer))
+        foreach (var destLayer in dests)
         {
             var spikeOut = new SpikeEvent()
             {
                 Layer = destLayer,
-                Neuron = spikingNeuron + layer.Offset(),
-                Feedback = false,
-                TS = sync.TS + 1,
+                Neuron = spikingNeuron,
+                Feedback = feedback,
+                TS = TS + 1,
                 CreatedAt = env.Now
             };
             var destCoord = mapping.CoordOf(destLayer);
@@ -244,7 +207,6 @@ public sealed class CoreV1 : Actor, ICore
                 outputBuffer.Write(flit);
                 outputBuffer.ReleaseWrite();
             }
-            OnSpikeSent?.Invoke(env.Now, layer, spikingNeuron, spikeOut);
         }
     }
 
@@ -281,12 +243,14 @@ public sealed class CoreV1 : Actor, ICore
 
                 // Feedback spikes
                 if (layer.IsRecurrent())
-                    foreach (var ev in SendFeedbackSpikes(env, layer, sync, i))
+                    foreach (var ev in SendSpikes(env, mapping.GetSiblings(layer).Cast<HiddenLayer>(), true, sync.TS, layer.Offset() + i))
                         yield return ev;
 
                 // Forward spikes
-                foreach (var ev in SendOutputSpikes(env, layer, sync, i))
+                foreach (var ev in SendSpikes(env, mapping.GetDestLayers(layer).Cast<HiddenLayer>(), false, sync.TS, layer.Offset() + i))
                     yield return ev;
+
+                OnSpikeSent?.Invoke(env.Now, layer, i);
             }
             yield return env.Delay((layer.Size - lastSpikingNeuron) * spec.ComputeDelay);
             layer.FinishSync();
