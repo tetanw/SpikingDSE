@@ -60,6 +60,7 @@ public abstract class OdinHiddenLayer : Layer
 public abstract class HiddenLayer : Layer
 {
     public abstract void Forward(int neuron);
+    public abstract void Feedback(int neuron);
     public abstract bool Sync(int neuron);
     public virtual void FinishSync() {}
     public abstract bool IsRecurrent();

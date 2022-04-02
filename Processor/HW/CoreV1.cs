@@ -149,14 +149,11 @@ public sealed class CoreV1 : Actor, ICore
     private IEnumerable<Event> Compute(Simulator env, SpikeEvent spike)
     {
         OnSpikeComputed?.Invoke(env.Now, spike);
+        var layer = spike.Layer as HiddenLayer;
         if (spike.Feedback)
-        {
-            (spike.Layer as ALIFLayer).Feedback(spike.Neuron);
-        }
+            layer.Feedback(spike.Neuron);
         else
-        {
-            (spike.Layer as HiddenLayer).Forward(spike.Neuron);
-        }
+            layer.Forward(spike.Neuron);
         nrSpikesConsumed++;
         nrSOPs += spike.Layer.Size;
         energySpent += spec.ComputeEnergy;
@@ -278,11 +275,6 @@ public sealed class CoreV1 : Actor, ICore
 
             OnSyncEnded?.Invoke(env.Now, sync.TS, layer);
         }
-    }
-
-    public override string ToString()
-    {
-        return $"{this.Name}";
     }
 
     string ICore.Name() => this.Name;

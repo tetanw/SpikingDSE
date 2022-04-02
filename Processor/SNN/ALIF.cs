@@ -36,7 +36,7 @@ public class ALIFLayer : HiddenLayer
         Rho = rho;
         this.VTh = VTh;
         Beta = 1.8f;
-        this.offset= offset;
+        this.offset = offset;
     }
 
     public override void Forward(int neuron)
@@ -44,14 +44,6 @@ public class ALIFLayer : HiddenLayer
         for (int dst = 0; dst < Size; dst++)
         {
             Pots[dst] += InWeights[neuron, dst];
-        }
-    }
-
-    public void Feedback(int neuron)
-    {
-        for (int dst = 0; dst < Size; dst++)
-        {
-            Pots[dst] += RecWeights[neuron, dst];
         }
     }
 
@@ -131,4 +123,12 @@ public class ALIFLayer : HiddenLayer
     public override bool IsRecurrent() => true;
 
     public override int Offset() => this.offset;
+
+    public override void Feedback(int neuron)
+    {
+        for (int dst = 0; dst < Size; dst++)
+        {
+            Pots[dst] += RecWeights[neuron, dst];
+        }
+    }
 }

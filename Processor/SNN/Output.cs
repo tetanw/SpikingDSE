@@ -107,4 +107,6 @@ public class OutputLayer : HiddenLayer
     public override bool IsRecurrent() => false;
 
     public override int Offset() => 0;
+
+    public override void Feedback(int neuron) { }
 }
