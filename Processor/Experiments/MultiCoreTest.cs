@@ -13,7 +13,7 @@ public class MultiCoreTest
     private TimeDelayReporter computeDelays;
     private FileReporter coreStats;
     private FileReporter transfers;
-    private string outputPath;
+    private readonly string outputPath;
 
     private readonly MultiCore exp;
     private readonly SNN splittedSNN;

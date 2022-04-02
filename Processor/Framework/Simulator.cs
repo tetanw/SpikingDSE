@@ -272,12 +272,13 @@ public sealed class Simulator
         channel.SendProcess = null;
     }
 
-    public SleepEvent Delay(long time)
+    public SleepEvent Delay(long delay)
     {
-        if (time < 0)
+        long newTime = Now + delay;
+        if (newTime < Now)
             throw new Exception("Can not go back in time");
 
-        return new SleepEvent { Time = time };
+        return new SleepEvent { Time = delay };
     }
 
     public SleepEvent SleepUntil(long newTime)
@@ -298,6 +299,9 @@ public sealed class Simulator
 
     public SendEvent SendAt(OutPort port, object message, long time)
     {
+        if (time < Now)
+            throw new Exception("Can not go back in time!");
+
         if (!port.IsBound)
             throw new Exception("Port is not bound!");
 

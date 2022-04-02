@@ -34,33 +34,33 @@ public class OutputLayer : HiddenLayer
         }
     }
 
-    public override IEnumerable<int> Sync()
+    public override bool Sync(int dst)
     {
-        for (int dst = 0; dst < Size; dst++)
-        {
-            float pot = Pots[dst];
+        float pot = Pots[dst];
 
-            // Readout
-            Readout[dst] = pot;
+        // Readout
+        Readout[dst] = pot;
 
-            // Leakage for next ts
-            pot *= Alpha[dst];
+        // Leakage for next ts
+        pot *= Alpha[dst];
 
-            // Writeback
-            Pots[dst] = pot;
-        }
+        // Writeback
+        Pots[dst] = pot;
 
-        ProcessReadout(Readout);
-        TS++;
-
-        yield break;
+        return false;
     }
 
-    private void ProcessReadout(float[] pots)
+    public override void FinishSync()
+    {
+        TS++;
+        ProcessReadout();
+    }
+
+    private void ProcessReadout()
     {
         if (TS > 0)
         {
-            float[] softmax = Softmax(pots);
+            float[] softmax = Softmax(Pots);
             for (int i = 0; i < Size; i++)
             {
                 Output[i] += softmax[i];

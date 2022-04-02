@@ -55,47 +55,49 @@ public class ALIFLayer : HiddenLayer
         }
     }
 
-    public override IEnumerable<int> Sync()
+    public override bool Sync(int dst)
     {
-        for (int dst = 0; dst < Size; dst++)
+        float pot = Pots[dst];
+
+        // Adapt
+        AdaptThr[dst] = AdaptThr[dst] * Rho[dst];
+        if (Spiked[dst])
         {
-            float pot = Pots[dst];
-
-            // Adapt
-            AdaptThr[dst] = AdaptThr[dst] * Rho[dst];
-            if (Spiked[dst])
-            {
-                AdaptThr[dst] += (1 - Rho[dst]);
-            }
-
-            // Reset potential
-            float resetPot = Beta * AdaptThr[dst] + VTh;
-
-            // Reset
-            if (Spiked[dst])
-                pot -= resetPot;
-
-            // Readout
-            Readout[dst] = pot;
-
-            // Threshold
-            float thrPot = resetPot - Bias[dst];
-            if (pot >= thrPot)
-            {
-                Spiked[dst] = true;
-                yield return dst;
-            }
-            else
-            {
-                Spiked[dst] = false;
-            }
-
-            // Leakage for next ts
-            pot *= Alpha[dst];
-
-            // Writeback
-            Pots[dst] = pot;
+            AdaptThr[dst] += (1 - Rho[dst]);
         }
+
+        // Reset potential
+        float resetPot = Beta * AdaptThr[dst] + VTh;
+
+        // Reset
+        if (Spiked[dst])
+            pot -= resetPot;
+
+        // Readout
+        Readout[dst] = pot;
+
+        // Threshold
+        float thrPot = resetPot - Bias[dst];
+        if (pot >= thrPot)
+        {
+            Spiked[dst] = true;
+        }
+        else
+        {
+            Spiked[dst] = false;
+        }
+
+        // Leakage for next ts
+        pot *= Alpha[dst];
+
+        // Writeback
+        Pots[dst] = pot;
+
+        return Spiked[dst];
+    }
+
+    public override void FinishSync()
+    {
         TS++;
     }
 

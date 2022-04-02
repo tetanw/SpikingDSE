@@ -250,28 +250,31 @@ public sealed class CoreV1 : Actor, ICore
 
             // Threshold of timestep TS - 1
             int lastSpikingNeuron = 0;
-            foreach (var spikingNeuron in layer.Sync())
+            for (int i = 0; i < layer.Size; i++)
             {
+                if (!layer.Sync(i))
+                    continue;
+                
                 // Delay accounting
-                var neuronsComputed = spikingNeuron - lastSpikingNeuron;
+                var neuronsComputed = i - lastSpikingNeuron;
                 yield return env.Delay(spec.ComputeDelay * neuronsComputed);
                 long afterDelayTime = env.Now;
-                lastSpikingNeuron = spikingNeuron;
+                lastSpikingNeuron = i;
 
                 // Stats accounting
                 nrSpikesProduced++;
 
                 // Feedback spikes
                 if (layer.IsRecurrent())
-                    foreach (var ev in SendFeedbackSpikes(env, layer, sync, spikingNeuron))
+                    foreach (var ev in SendFeedbackSpikes(env, layer, sync, i))
                         yield return ev;
 
                 // Forward spikes
-                foreach (var ev in SendOutputSpikes(env, layer, sync, spikingNeuron))
+                foreach (var ev in SendOutputSpikes(env, layer, sync, i))
                     yield return ev;
-
             }
             yield return env.Delay((layer.Size - lastSpikingNeuron) * spec.ComputeDelay);
+            layer.FinishSync();
 
             OnSyncEnded?.Invoke(env.Now, sync.TS, layer);
         }
