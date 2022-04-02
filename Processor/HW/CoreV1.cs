@@ -39,6 +39,7 @@ public sealed class CoreV1 : Actor, ICore
     private MappingTable mapping;
     private Buffer<CoreEvent> coreBuffer;
     private Buffer<CoreEvent> inputBuffer;
+    private Buffer<Packet> outputBuffer;
 
     public CoreV1(object location, CoreV1Spec spec)
     {
@@ -137,12 +138,25 @@ public sealed class CoreV1 : Actor, ICore
         }
     }
 
+    private IEnumerable<Event> Sender(Simulator env)
+    {
+        while (true)
+        {
+            yield return outputBuffer.RequestRead();
+            var packet = outputBuffer.Read();
+            yield return env.Send(output, packet);
+            outputBuffer.ReleaseRead();
+        }
+    }
+
     public override IEnumerable<Event> Run(Simulator env)
     {
         inputBuffer = new(env, spec.BufferSize);
         coreBuffer = new(env, spec.BufferSize);
+        outputBuffer = new(env, 1);
         env.Process(Receiver(env));
         env.Process(ALU(env));
+        env.Process(Sender(env));
         yield break;
     }
 
@@ -183,6 +197,7 @@ public sealed class CoreV1 : Actor, ICore
             }
             else
             {
+                yield return outputBuffer.RequestWrite();
                 // Send recurrent spikes to other core
                 var flit = new Packet
                 {
@@ -190,7 +205,8 @@ public sealed class CoreV1 : Actor, ICore
                     Dest = siblingCoord,
                     Message = spikeEv
                 };
-                yield return env.Send(output, flit, transferTime: spec.OutputDelay);
+                outputBuffer.Write(flit);
+                outputBuffer.ReleaseWrite();
             }
         }
     }
@@ -218,13 +234,15 @@ public sealed class CoreV1 : Actor, ICore
             }
             else
             {
+                yield return outputBuffer.RequestWrite();
                 var flit = new Packet
                 {
                     Src = loc,
                     Dest = destCoord,
                     Message = spikeOut
                 };
-                yield return env.Send(output, flit, transferTime: spec.OutputDelay);
+                outputBuffer.Write(flit);
+                outputBuffer.ReleaseWrite();
             }
             OnSpikeSent?.Invoke(env.Now, layer, spikingNeuron, spikeOut);
         }
@@ -251,7 +269,7 @@ public sealed class CoreV1 : Actor, ICore
             {
                 if (!layer.Sync(i))
                     continue;
-                
+
                 // Delay accounting
                 var neuronsComputed = i - lastSpikingNeuron;
                 yield return env.Delay(spec.ComputeDelay * neuronsComputed);
