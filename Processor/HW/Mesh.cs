@@ -46,7 +46,7 @@ public sealed class MeshUtils
     {
         int width = routers.GetLength(0);
         int height = routers.GetLength(1);
-        var mergeSplit = new MergeSplit(width * 2 + height * 2);
+        var mergeSplit = new MergeSplit(width * 2 + height * 2, "MergeSplit");
         sim.AddActor(mergeSplit);
         int i = 0;
         // FIXME: In some situations to many inputs are created

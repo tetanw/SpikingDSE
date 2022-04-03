@@ -9,13 +9,14 @@ public class MergeSplit : Actor
     public InPort FromController = new();
     public OutPort ToController = new();
 
-    public MergeSplit(int nrInputs)
+    public MergeSplit(int nrInputs, string name)
     {
         FromMesh = new InPort[nrInputs];
         for (int i = 0; i < nrInputs; i++)
         {
             FromMesh[i] = new();
         }
+        Name = name;
     }
 
     public override IEnumerable<Event> Run(Simulator env)
