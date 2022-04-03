@@ -170,8 +170,8 @@ public sealed class CoreV1 : Actor, ICore
             layer.Forward(spike.Neuron);
         nrSpikesConsumed++;
         nrSOPs += spike.Layer.Size;
-        energySpent += spec.ComputeEnergy;
-        yield return env.Delay(spec.ComputeDelay * spike.Layer.Size);
+        energySpent += spec.ComputeEnergy * spike.Layer.Size;
+        yield return env.Delay(spec.ComputeDelay * spike.Layer.Size / spec.NrParallel);
     }
 
     public IEnumerable<Event> SendSpikes(Simulator env, IEnumerable<HiddenLayer> dests, bool feedback, int TS, int spikingNeuron)

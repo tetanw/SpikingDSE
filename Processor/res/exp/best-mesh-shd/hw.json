@@ -94,7 +94,7 @@
         {
             "Name": "controller",
             "Type": "controller-v1",
-            "Interval": 100000,
+            "Interval": 20000,
             "ConnectsTo": "mesh,-1,0"
         }
     ]
