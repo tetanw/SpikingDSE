@@ -26,9 +26,8 @@ public sealed class Producer : Actor
         while (true)
         {
             var message = create();
-            yield return env.Send(output, message);
+            yield return env.Send(output, message, transferTime: 2);
             WhenProduced?.Invoke(this, env.Now, message);
-            yield return env.Delay(interval);
         }
     }
 }

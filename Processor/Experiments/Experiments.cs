@@ -44,7 +44,10 @@ public abstract class Experiment
         Cleanup();
 
         PrintLn("Simulation done");
-        if (Debug) sim.PrintDeadlockReport();
+        if (Debug) {
+            sim.PrintDeadlockReport();
+            sim.PrintActorReport();
+        }
         PrintLn($"Simulation was stopped at time: {sim.Now:n}");
         PrintLn($"Running time was: {stopwatch.ElapsedMilliseconds} ms");
         PrintLn($"Events handled: {sim.NrEventsProcessed:n}");

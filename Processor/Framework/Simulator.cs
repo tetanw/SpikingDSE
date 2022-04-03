@@ -32,7 +32,8 @@ public sealed class Simulator
         var process = new Process
         {
             Runnable = runnable.GetEnumerator(),
-            Time = Now
+            Time = Now,
+            Actor = CurrentProcess.Actor
         };
         ready.Enqueue(process);
         return process;
@@ -61,10 +62,10 @@ public sealed class Simulator
     public void AddChannel(OutPort outPort, InPort inPort) => AddChannel(inPort, outPort);
 
 
-    public T AddActor<T>(T process) where T : Actor
+    public T AddActor<T>(T actor) where T : Actor
     {
-        actors.Add(process);
-        return process;
+        actors.Add(actor);
+        return actor;
     }
 
     public void Compile()
@@ -74,7 +75,8 @@ public sealed class Simulator
             ready.Enqueue(new Process
             {
                 Runnable = actor.Run(this).GetEnumerator(),
-                Time = 0
+                Time = 0,
+                Actor = actor
             });
 
             var fields = actor.GetType().GetFields(BindingFlags.Public | BindingFlags.Instance);
@@ -125,6 +127,7 @@ public sealed class Simulator
         while (NrEventsProcessed < stopEvents && Now < stopTime && ready.Count > 0)
         {
             CurrentProcess = ready.Dequeue();
+            CurrentProcess.Actor.NrEvents++;
             Now = CurrentProcess.Time;
             NrEventsProcessed++;
 
@@ -142,7 +145,6 @@ public sealed class Simulator
 
     private void HandleEvent(Event ev)
     {
-
         if (ev is SleepEvent sleep)
         {
             CurrentProcess.Time += sleep.Time;
@@ -257,6 +259,15 @@ public sealed class Simulator
             {
                 Console.WriteLine($"  Waiting to send \"{channel.SendEvent.Message}\" on \"{channel.Name}\" at time {channel.SendEvent.Time}");
             }
+        }
+    }
+
+    public void PrintActorReport()
+    {
+        Console.WriteLine("Actor # events handled:");
+        foreach (var actor in actors)
+        {
+            Console.WriteLine($"  {actor.Name}: {actor.NrEvents:n}");
         }
     }
 
