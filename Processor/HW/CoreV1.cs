@@ -210,6 +210,24 @@ public sealed class CoreV1 : Actor, ICore
         }
     }
 
+    private IEnumerable<Event> SendPendingSpikes(Simulator env, int TS, List<(HiddenLayer, int)> pendingSpikes)
+    {
+        foreach (var (layer, neuron) in pendingSpikes)
+        {
+            if (layer.IsRecurrent())
+                foreach (var ev in SendSpikes(env, mapping.GetSiblings(layer).Cast<HiddenLayer>(), true, TS, layer.Offset() + neuron))
+                    yield return ev;
+
+            // Forward spikes
+            foreach (var ev in SendSpikes(env, mapping.GetDestLayers(layer).Cast<HiddenLayer>(), false, TS, layer.Offset() + neuron))
+                yield return ev;
+            
+            OnSpikeSent?.Invoke(env.Now, layer, neuron);
+        }
+
+        pendingSpikes.Clear();
+    }
+
     private IEnumerable<Event> Sync(Simulator env, SyncEvent sync)
     {
         nrSpikesProduced = 0;
@@ -217,41 +235,24 @@ public sealed class CoreV1 : Actor, ICore
         nrSOPs = 0;
 
         var mappedLayers = mapping.LayersOf(this).Cast<HiddenLayer>();
+        var pendingSpikes = new List<(HiddenLayer, int)>();
         foreach (var layer in mappedLayers)
         {
-            long startTime = env.Now;
-
-            // Readout of timestep TS - 1
             OnSyncStarted?.Invoke(env.Now, sync.TS, layer);
 
-            // Threshold of timestep TS - 1
-            int lastSpikingNeuron = 0;
-            for (int i = 0; i < layer.Size; i++)
+            for (int line = 0; line < layer.Size; line += spec.NrParallel)
             {
-                if (!layer.Sync(i))
-                    continue;
+                for (int neuron = line; neuron < Math.Min(line + spec.NrParallel, layer.Size); neuron++)
+                {
+                    if (layer.Sync(neuron))
+                        pendingSpikes.Add((layer, neuron));
+                }
 
-                // Delay accounting
-                var neuronsComputed = i - lastSpikingNeuron;
-                yield return env.Delay(spec.ComputeDelay * neuronsComputed);
-                long afterDelayTime = env.Now;
-                lastSpikingNeuron = i;
+                yield return env.Delay(spec.ComputeDelay);
 
-                // Stats accounting
-                nrSpikesProduced++;
-
-                // Feedback spikes
-                if (layer.IsRecurrent())
-                    foreach (var ev in SendSpikes(env, mapping.GetSiblings(layer).Cast<HiddenLayer>(), true, sync.TS, layer.Offset() + i))
-                        yield return ev;
-
-                // Forward spikes
-                foreach (var ev in SendSpikes(env, mapping.GetDestLayers(layer).Cast<HiddenLayer>(), false, sync.TS, layer.Offset() + i))
+                foreach (var ev in SendPendingSpikes(env, sync.TS, pendingSpikes))
                     yield return ev;
-
-                OnSpikeSent?.Invoke(env.Now, layer, i);
             }
-            yield return env.Delay((layer.Size - lastSpikingNeuron) * spec.ComputeDelay);
             layer.FinishSync();
 
             OnSyncEnded?.Invoke(env.Now, sync.TS, layer);

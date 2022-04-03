@@ -126,6 +126,7 @@ public class CoreV1Spec : CoreSpec
     public int OutputDelay { get; set; }
     public int ComputeDelay { get; set; }
     public double ComputeEnergy { get; set; }
+    public int NrParallel { get; set; } = 1;
 }
 
 public class ControllerV1Spec : CoreSpec
