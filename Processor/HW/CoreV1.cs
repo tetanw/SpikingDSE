@@ -171,7 +171,7 @@ public sealed class CoreV1 : Actor, ICore
         nrSpikesConsumed++;
         nrSOPs += spike.Layer.Size;
         energySpent += spec.ComputeEnergy * spike.Layer.Size;
-        yield return env.Delay(spec.ComputeDelay * spike.Layer.Size / spec.NrParallel);
+        yield return env.Delay(spec.IntegrateDelay * spike.Layer.Size / spec.NrParallel);
     }
 
     public IEnumerable<Event> SendSpikes(Simulator env, IEnumerable<HiddenLayer> dests, bool feedback, int TS, int spikingNeuron)
@@ -248,7 +248,7 @@ public sealed class CoreV1 : Actor, ICore
                         pendingSpikes.Add((layer, neuron));
                 }
 
-                yield return env.Delay(spec.ComputeDelay);
+                yield return env.Delay(spec.SyncDelay);
 
                 foreach (var ev in SendPendingSpikes(env, sync.TS, pendingSpikes))
                     yield return ev;

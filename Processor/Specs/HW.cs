@@ -36,7 +36,8 @@ public class HWSpec
             return new CoreV1Spec
             {
                 Name = instance["Name"].GetString(),
-                ComputeDelay = instance["ComputeDelay"].GetInt32(),
+                IntegrateDelay = instance["IntegrateDelay"].GetInt32(),
+                SyncDelay = instance["SyncDelay"].GetInt32(),
                 InputDelay = instance["InputDelay"].GetInt32(),
                 OutputDelay = instance["OutputDelay"].GetInt32(),
                 ConnectsTo = instance["ConnectsTo"].GetString(),
@@ -126,7 +127,8 @@ public class CoreV1Spec : CoreSpec
 {
     public int InputDelay { get; set; }
     public int OutputDelay { get; set; }
-    public int ComputeDelay { get; set; }
+    public int IntegrateDelay { get; set; }
+    public int SyncDelay { get; set; }
     public double ComputeEnergy { get; set; }
     public int NrParallel { get; set; }
     public int OutputBufferSize { get; set; }
