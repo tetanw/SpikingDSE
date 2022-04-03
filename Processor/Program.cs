@@ -94,6 +94,9 @@ namespace SpikingDSE
 
         [Option('d', "dataset", Required = true, HelpText = "The dataset to run")]
         public string Dataset { get; set; }
+
+        [Option("max-samples", Required = false, HelpText = "Max samples to run through")]
+        public int MaxSamples { get; set; } = -1;
     }
 
     class Program
@@ -170,7 +173,7 @@ namespace SpikingDSE
                 },
                 (SimDSEOptions opts) =>
                 {
-                    new MultiCoreDSE(opts.SNN, opts.HW.Split(";").ToList(), opts.Mapping, opts.Dataset).Run();
+                    new MultiCoreDSE(opts.SNN, opts.HW.Split(";").ToList(), opts.Mapping, opts.Dataset, opts.MaxSamples).Run();
                     return 0;
                 },
                 (ToTensorOptions opts) =>

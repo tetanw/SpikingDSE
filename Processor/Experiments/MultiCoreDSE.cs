@@ -11,13 +11,15 @@ public class MultiCoreDSE : DSEExperiment<MultiCore>, IDisposable
     private readonly SNN snn;
     private readonly ZipDataset dataset;
     private int nrCorrect = 0;
+    private readonly int maxSamples = 0;
 
-    public MultiCoreDSE(string snnPath, List<string> hwPaths, string mappingPath, string datasetPath)
+    public MultiCoreDSE(string snnPath, List<string> hwPaths, string mappingPath, string datasetPath, int maxSamples)
     {
         mapping = Mapping.Load(mappingPath);
         snn = SNN.SplitSNN(SNN.Load(snnPath), mapping);
         hws = hwPaths.Select(p => HWSpec.Load(p)).ToList();
         dataset = new ZipDataset(datasetPath);
+        this.maxSamples = maxSamples == -1 ? dataset.NrSamples : maxSamples;
     }
 
     public override IEnumerable<IEnumerable<MultiCore>> Configs()
@@ -30,7 +32,7 @@ public class MultiCoreDSE : DSEExperiment<MultiCore>, IDisposable
 
     public IEnumerable<MultiCore> With(HWSpec hw)
     {
-        for (int i = 0; i < dataset.NrSamples; i++)
+        for (int i = 0; i < maxSamples; i++)
         {
             var inputFile = dataset.ReadEntry($"input_{i}.trace");
             var copy = snn.Copy();
@@ -45,7 +47,8 @@ public class MultiCoreDSE : DSEExperiment<MultiCore>, IDisposable
 
     public override void OnConfigCompleted(TimeSpan runningTime)
     {
-        var acc = (float)nrCorrect / dataset.NrSamples;
+        var acc = (float)nrCorrect / maxSamples;
+        Console.WriteLine(maxSamples);
         Console.WriteLine($"{acc};{(int)runningTime.TotalMilliseconds}ms");
         nrCorrect = 0;
     }

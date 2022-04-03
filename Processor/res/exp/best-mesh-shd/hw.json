@@ -17,72 +17,84 @@
             "Name": "core1",
             "Type": "core-v1",
             "MaxNeurons": 64,
-            "BufferSize": 512,
             "InputDelay": 7,
             "ComputeDelay": 2,
             "OutputDelay": 8,
             "ComputeEnergy": 15.0,
-            "ConnectsTo": "mesh,0,0"
+            "ConnectsTo": "mesh,0,0",
+            "ComputeBufferSize": 512,
+            "OutputBufferSize": 8,
+            "NrParallel": 8
         },
         {
             "Name": "core2",
             "Type": "core-v1",
             "MaxNeurons": 64,
-            "BufferSize": 512,
             "InputDelay": 7,
             "ComputeDelay": 2,
             "OutputDelay": 8,
             "ComputeEnergy": 15.0,
-            "ConnectsTo": "mesh,0,1"
+            "ConnectsTo": "mesh,0,1",
+            "ComputeBufferSize": 512,
+            "OutputBufferSize": 8,
+            "NrParallel": 8
         },
         {
             "Name": "core3",
             "Type": "core-v1",
             "MaxNeurons": 64,
-            "BufferSize": 512,
             "InputDelay": 7,
             "ComputeDelay": 2,
             "OutputDelay": 8,
             "ComputeEnergy": 15.0,
-            "ConnectsTo": "mesh,1,0"
+            "ConnectsTo": "mesh,1,0",
+            "ComputeBufferSize": 512,
+            "OutputBufferSize": 8,
+            "NrParallel": 8
         },
         {
             "Name": "core4",
             "Type": "core-v1",
             "MaxNeurons": 64,
-            "BufferSize": 512,
             "InputDelay": 7,
             "ComputeDelay": 2,
             "OutputDelay": 8,
             "ComputeEnergy": 15.0,
-            "ConnectsTo": "mesh,1,1"
+            "ConnectsTo": "mesh,1,1",
+            "ComputeBufferSize": 512,
+            "OutputBufferSize": 8,
+            "NrParallel": 8
         },
         {
             "Name": "core5",
             "Type": "core-v1",
             "MaxNeurons": 64,
-            "BufferSize": 512,
             "InputDelay": 7,
             "ComputeDelay": 2,
             "OutputDelay": 8,
             "ComputeEnergy": 15.0,
-            "ConnectsTo": "mesh,2,0"
+            "ConnectsTo": "mesh,2,0",
+            "ComputeBufferSize": 512,
+            "OutputBufferSize": 8,
+            "NrParallel": 8
         },
         {
             "Name": "core6",
             "Type": "core-v1",
             "MaxNeurons": 64,
-            "BufferSize": 512,
             "InputDelay": 7,
             "ComputeDelay": 2,
             "OutputDelay": 8,
             "ComputeEnergy": 15.0,
-            "ConnectsTo": "mesh,2,1"
+            "ConnectsTo": "mesh,2,1",
+            "ComputeBufferSize": 512,
+            "OutputBufferSize": 8,
+            "NrParallel": 8
         },
         {
             "Name": "controller",
             "Type": "controller-v1",
-            "Interval": 10000000,
+            "Interval": 100000,
             "ConnectsTo": "mesh,-1,0"
         }
     ]

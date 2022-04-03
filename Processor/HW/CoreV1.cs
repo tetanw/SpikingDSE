@@ -151,9 +151,9 @@ public sealed class CoreV1 : Actor, ICore
 
     public override IEnumerable<Event> Run(Simulator env)
     {
-        inputBuffer = new(env, spec.BufferSize);
-        coreBuffer = new(env, spec.BufferSize);
-        outputBuffer = new(env, 1);
+        inputBuffer = new(env, spec.ComputeBufferSize);
+        coreBuffer = new(env, spec.ComputeBufferSize);
+        outputBuffer = new(env, spec.OutputBufferSize);
         env.Process(Receiver(env));
         env.Process(ALU(env));
         env.Process(Sender(env));

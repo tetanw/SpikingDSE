@@ -1,9 +1,9 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text.Json;
 using System.Linq;
+using System.Text.Json;
 using System.Text.Json.Serialization;
-using System;
 
 namespace SpikingDSE;
 
@@ -36,13 +36,15 @@ public class HWSpec
             return new CoreV1Spec
             {
                 Name = instance["Name"].GetString(),
-                BufferSize = instance["BufferSize"].GetInt32(),
                 ComputeDelay = instance["ComputeDelay"].GetInt32(),
                 InputDelay = instance["InputDelay"].GetInt32(),
                 OutputDelay = instance["OutputDelay"].GetInt32(),
                 ConnectsTo = instance["ConnectsTo"].GetString(),
                 MaxNeurons = instance["MaxNeurons"].GetInt32(),
-                ComputeEnergy = instance["ComputeEnergy"].GetDouble()
+                ComputeEnergy = instance["ComputeEnergy"].GetDouble(),
+                ComputeBufferSize = instance["ComputeBufferSize"].GetInt32(),
+                OutputBufferSize = instance["OutputBufferSize"].GetInt32(),
+                NrParallel = instance["NrParallel"].GetInt32(),
             };
         }
         else
@@ -70,7 +72,8 @@ public class HWSpec
 
     private static BusSpec BuildBus(Dictionary<string, JsonElement> NoC)
     {
-        return new BusSpec {
+        return new BusSpec
+        {
             Ports = NoC["Ports"].GetInt32()
         };
     }
@@ -121,12 +124,13 @@ public class CoreSpec
 
 public class CoreV1Spec : CoreSpec
 {
-    public int BufferSize { get; set; }
     public int InputDelay { get; set; }
     public int OutputDelay { get; set; }
     public int ComputeDelay { get; set; }
     public double ComputeEnergy { get; set; }
-    public int NrParallel { get; set; } = 1;
+    public int NrParallel { get; set; }
+    public int OutputBufferSize { get; set; }
+    public int ComputeBufferSize { get; set; }
 }
 
 public class ControllerV1Spec : CoreSpec
