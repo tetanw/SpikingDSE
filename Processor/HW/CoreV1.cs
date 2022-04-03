@@ -216,11 +216,10 @@ public sealed class CoreV1 : Actor, ICore
         nrSpikesConsumed = 0;
         nrSOPs = 0;
 
-        var mappedLayers = mapping.LayersOf(this);
-        foreach (var l in mappedLayers)
+        var mappedLayers = mapping.LayersOf(this).Cast<HiddenLayer>();
+        foreach (var layer in mappedLayers)
         {
             long startTime = env.Now;
-            var layer = (HiddenLayer)l;
 
             // Readout of timestep TS - 1
             OnSyncStarted?.Invoke(env.Now, sync.TS, layer);
