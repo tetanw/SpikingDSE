@@ -6,8 +6,7 @@
         "InputSize": 1,
         "OutputSize": 1,
         "TransferDelay": 16,
-        "ReswitchDelay": 3,
-        "PacketRouteDelay": 5,
+        "SwitchDelay": 8,
         "TransferEnergy": 50.0,
         "StaticEnergy": 100000.0,
         "Frequency": 100000000

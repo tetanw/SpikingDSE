@@ -63,8 +63,7 @@ public class HWSpec
             Height = NoC["Height"].GetInt32(),
             InputSize = NoC["InputSize"].GetInt32(),
             OutputSize = NoC["OutputSize"].GetInt32(),
-            ReswitchDelay = NoC["ReswitchDelay"].GetInt32(),
-            PacketRouteDelay = NoC["PacketRouteDelay"].GetInt32(),
+            SwitchDelay = NoC["SwitchDelay"].GetInt32(),
             TransferDelay = NoC["TransferDelay"].GetInt32(),
             TransferEnergy = NoC["TransferEnergy"].GetDouble(),
             StaticEnergy = NoC["StaticEnergy"].GetDouble(),
@@ -154,8 +153,7 @@ public class MeshSpec : NoCSpec
     public int InputSize { get; set; }
     public int OutputSize { get; set; }
     public int TransferDelay { get; set; }
-    public int ReswitchDelay { get; set; }
-    public int PacketRouteDelay { get; set; }
+    public int SwitchDelay { get; set; }
     public double TransferEnergy { get; set; }
     public double StaticEnergy { get; set; }
     public double Frequency { get; set; }

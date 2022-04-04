@@ -102,7 +102,6 @@ public sealed class XYRouter : MeshRouter
             int i = Array.FindIndex(condVar.Value, (v) => v > 0);
 
             // Update dir
-            // TODO: Reset to 0 and move to end of function
             condVar.Value[i]--;
             condVar.Update();
 
@@ -121,13 +120,8 @@ public sealed class XYRouter : MeshRouter
 
             if (routeFound)
             {
-                yield return env.Delay(spec.PacketRouteDelay);
+                yield return env.Delay(spec.SwitchDelay);
                 outBuffers[to].Push(inBuffers[from].Pop());
-            }
-            else
-            {
-                OnBlocking?.Invoke(env.Now);
-                yield return env.Delay(spec.ReswitchDelay);
             }
         }
     }

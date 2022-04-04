@@ -14,8 +14,7 @@ public class XYRouterValidation : Experiment
         var northProd = sim.AddActor(new Producer(10, () => new Packet { Src = new MeshCoord(-1, -1), Dest = new MeshCoord(1, 1), Message = ("North", j++) }, "North"));
 
         var spec = new MeshSpec {
-            ReswitchDelay = 3,
-            PacketRouteDelay = 5,
+            SwitchDelay = 5,
             InputSize = 1,
             OutputSize = 1,
             TransferDelay = 3 
