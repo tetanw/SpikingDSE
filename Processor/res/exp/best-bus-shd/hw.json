@@ -1,15 +1,8 @@
 {
     "NoC": {
-        "Type": "Mesh",
-        "Width": 3,
-        "Height": 2,
-        "InputSize": 1,
-        "OutputSize": 1,
-        "TransferDelay": 16,
-        "SwitchDelay": 8,
-        "TransferEnergy": 50.0,
-        "StaticEnergy": 100000.0,
-        "Frequency": 100000000
+        "Type": "Bus",
+        "Ports": 7,
+        "TransferDelay": 32
     },
     "Cores": [
         {
@@ -21,7 +14,7 @@
             "SyncDelay": 2,
             "OutputDelay": 8,
             "ComputeEnergy": 15.0,
-            "ConnectsTo": "mesh,0,0",
+            "ConnectsTo": "bus,1",
             "ComputeBufferSize": 512,
             "OutputBufferSize": 8,
             "NrParallel": 8,
@@ -36,7 +29,7 @@
             "SyncDelay": 2,
             "OutputDelay": 8,
             "ComputeEnergy": 15.0,
-            "ConnectsTo": "mesh,0,1",
+            "ConnectsTo": "bus,2",
             "ComputeBufferSize": 512,
             "OutputBufferSize": 8,
             "NrParallel": 8,
@@ -51,7 +44,7 @@
             "SyncDelay": 2,
             "OutputDelay": 8,
             "ComputeEnergy": 15.0,
-            "ConnectsTo": "mesh,1,0",
+            "ConnectsTo": "bus,3",
             "ComputeBufferSize": 512,
             "OutputBufferSize": 8,
             "NrParallel": 8,
@@ -66,7 +59,7 @@
             "SyncDelay": 2,
             "OutputDelay": 8,
             "ComputeEnergy": 15.0,
-            "ConnectsTo": "mesh,1,1",
+            "ConnectsTo": "bus,4",
             "ComputeBufferSize": 512,
             "OutputBufferSize": 8,
             "NrParallel": 8,
@@ -81,7 +74,7 @@
             "SyncDelay": 2,
             "OutputDelay": 8,
             "ComputeEnergy": 15.0,
-            "ConnectsTo": "mesh,2,0",
+            "ConnectsTo": "bus,5",
             "ComputeBufferSize": 512,
             "OutputBufferSize": 8,
             "NrParallel": 8,
@@ -96,7 +89,7 @@
             "SyncDelay": 2,
             "OutputDelay": 8,
             "ComputeEnergy": 15.0,
-            "ConnectsTo": "mesh,2,1",
+            "ConnectsTo": "bus,6",
             "ComputeBufferSize": 512,
             "OutputBufferSize": 8,
             "NrParallel": 8,
@@ -106,7 +99,7 @@
             "Name": "controller",
             "Type": "controller-v1",
             "Interval": 10000,
-            "ConnectsTo": "mesh,-1,0"
+            "ConnectsTo": "bus,0"
         }
     ]
 }

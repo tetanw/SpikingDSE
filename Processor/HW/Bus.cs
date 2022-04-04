@@ -11,6 +11,7 @@ public class Bus : Actor
 
     public InPort[] Inputs;
     public OutPort[] Outputs;
+    private readonly BusSpec spec;
 
     public Bus(BusSpec spec, string name = "Bus")
     {
@@ -23,6 +24,7 @@ public class Bus : Actor
             this.Inputs[i] = new();
             this.Outputs[i] = new();
         }
+        this.spec = spec;
     }
 
     public override IEnumerable<Event> Run(Simulator env)
@@ -37,7 +39,10 @@ public class Bus : Actor
 
             var packet = sel.Message;
             int dest = (int)packet.Dest;
+            long before = env.Now;
+            yield return env.Delay(spec.TransferDelay);
             yield return env.Send(Outputs[dest], packet);
+            long after = env.Now;
             OnTransfer?.Invoke(env.Now, sel.PortNr, dest);
         }
     }

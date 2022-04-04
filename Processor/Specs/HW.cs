@@ -75,7 +75,8 @@ public class HWSpec
     {
         return new BusSpec
         {
-            Ports = NoC["Ports"].GetInt32()
+            Ports = NoC["Ports"].GetInt32(),
+            TransferDelay = NoC["TransferDelay"].GetInt32()
         };
     }
 
@@ -162,4 +163,5 @@ public class MeshSpec : NoCSpec
 public class BusSpec : NoCSpec
 {
     public int Ports { get; set; }
+    public int TransferDelay { get; set; }
 }
