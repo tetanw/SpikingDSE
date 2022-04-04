@@ -46,6 +46,7 @@ public class HWSpec
                 ComputeBufferSize = instance["ComputeBufferSize"].GetInt32(),
                 OutputBufferSize = instance["OutputBufferSize"].GetInt32(),
                 NrParallel = instance["NrParallel"].GetInt32(),
+                IgnoreLayers = instance["IgnoreLayers"].GetBoolean()
             };
         }
         else
@@ -133,6 +134,7 @@ public class CoreV1Spec : CoreSpec
     public int NrParallel { get; set; }
     public int OutputBufferSize { get; set; }
     public int ComputeBufferSize { get; set; }
+    public bool IgnoreLayers { get; set; }
 }
 
 public class ControllerV1Spec : CoreSpec

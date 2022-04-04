@@ -25,7 +25,8 @@
             "ConnectsTo": "mesh,0,0",
             "ComputeBufferSize": 512,
             "OutputBufferSize": 8,
-            "NrParallel": 8
+            "NrParallel": 8,
+            "IgnoreLayers": true
         },
         {
             "Name": "core2",
@@ -39,7 +40,8 @@
             "ConnectsTo": "mesh,0,1",
             "ComputeBufferSize": 512,
             "OutputBufferSize": 8,
-            "NrParallel": 8
+            "NrParallel": 8,
+            "IgnoreLayers": true
         },
         {
             "Name": "core3",
@@ -53,7 +55,8 @@
             "ConnectsTo": "mesh,1,0",
             "ComputeBufferSize": 512,
             "OutputBufferSize": 8,
-            "NrParallel": 8
+            "NrParallel": 8,
+            "IgnoreLayers": true
         },
         {
             "Name": "core4",
@@ -67,7 +70,8 @@
             "ConnectsTo": "mesh,1,1",
             "ComputeBufferSize": 512,
             "OutputBufferSize": 8,
-            "NrParallel": 8
+            "NrParallel": 8,
+            "IgnoreLayers": true
         },
         {
             "Name": "core5",
@@ -81,7 +85,8 @@
             "ConnectsTo": "mesh,2,0",
             "ComputeBufferSize": 512,
             "OutputBufferSize": 8,
-            "NrParallel": 8
+            "NrParallel": 8,
+            "IgnoreLayers": true
         },
         {
             "Name": "core6",
@@ -95,7 +100,8 @@
             "ConnectsTo": "mesh,2,1",
             "ComputeBufferSize": 512,
             "OutputBufferSize": 8,
-            "NrParallel": 8
+            "NrParallel": 8,
+            "IgnoreLayers": true
         },
         {
             "Name": "controller",

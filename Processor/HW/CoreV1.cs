@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 
@@ -221,7 +222,7 @@ public sealed class CoreV1 : Actor, ICore
             // Forward spikes
             foreach (var ev in SendSpikes(env, mapping.GetDestLayers(layer).Cast<HiddenLayer>(), false, TS, layer.Offset() + neuron))
                 yield return ev;
-            
+
             OnSpikeSent?.Invoke(env.Now, layer, neuron);
         }
 
@@ -230,32 +231,40 @@ public sealed class CoreV1 : Actor, ICore
 
     private IEnumerable<Event> Sync(Simulator env, SyncEvent sync)
     {
-        nrSpikesProduced = 0;
-        nrSpikesConsumed = 0;
-        nrSOPs = 0;
-
         var mappedLayers = mapping.LayersOf(this).Cast<HiddenLayer>();
         var pendingSpikes = new List<(HiddenLayer, int)>();
+        int nrSpikesProcessed = 0;
         foreach (var layer in mappedLayers)
         {
             OnSyncStarted?.Invoke(env.Now, sync.TS, layer);
 
             for (int line = 0; line < layer.Size; line += spec.NrParallel)
             {
-                for (int neuron = line; neuron < Math.Min(line + spec.NrParallel, layer.Size); neuron++)
+                int spikesLeft = spec.NrParallel - nrSpikesProcessed;
+                for (int neuron = line; neuron < Math.Min(line + spec.NrParallel, Math.Min(layer.Size, line + spikesLeft)); neuron++)
                 {
                     if (layer.Sync(neuron))
                         pendingSpikes.Add((layer, neuron));
+                    nrSpikesProcessed++;
                 }
 
-                yield return env.Delay(spec.SyncDelay);
-
-                foreach (var ev in SendPendingSpikes(env, sync.TS, pendingSpikes))
-                    yield return ev;
+                if ((spec.IgnoreLayers && nrSpikesProcessed == spec.NrParallel) || !spec.IgnoreLayers)
+                {
+                    yield return env.Delay(spec.SyncDelay);
+                    foreach (var ev in SendPendingSpikes(env, sync.TS, pendingSpikes))
+                        yield return ev;
+                    nrSpikesProcessed = 0;
+                }
             }
             layer.FinishSync();
-
             OnSyncEnded?.Invoke(env.Now, sync.TS, layer);
+        }
+
+        if (nrSpikesProcessed > 0)
+        {
+            yield return env.Delay(spec.SyncDelay);
+            foreach (var ev in SendPendingSpikes(env, sync.TS, pendingSpikes))
+                yield return ev;
         }
     }
 
