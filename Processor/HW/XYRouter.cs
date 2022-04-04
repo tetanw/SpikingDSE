@@ -46,7 +46,7 @@ public sealed class XYRouter : MeshRouter
             if (inPort.IsBound)
             {
                 inBuffers[dir] = new Buffer<Packet>(env, spec.InputSize);
-                long transferDelay = dir == MeshDir.Local ? 0 : spec.TransferDelay;
+                int transferDelay = dir == MeshDir.Local ? spec.InputDelay : spec.TransferDelay;
                 env.Process(InLink(env, dir, transferDelay));
             }
 
@@ -54,7 +54,8 @@ public sealed class XYRouter : MeshRouter
             if (outPort.IsBound)
             {
                 outBuffers[dir] = new Buffer<Packet>(env, spec.OutputSize);
-                env.Process(OutLink(env, dir));
+                int transferDelay = dir == MeshDir.Local ? spec.OutputDelay : 0;
+                env.Process(OutLink(env, dir, transferDelay));
             }
         }
 
@@ -164,7 +165,7 @@ public sealed class XYRouter : MeshRouter
         return (false, -1, -1);
     }
 
-    private IEnumerable<Event> OutLink(Simulator env, int dir)
+    private IEnumerable<Event> OutLink(Simulator env, int dir, int transferDelay)
     {
         var outPort = GetOutputPort(dir);
         var buffer = outBuffers[dir];
@@ -173,7 +174,7 @@ public sealed class XYRouter : MeshRouter
         {
             yield return buffer.RequestRead();
             var flit = buffer.Read();
-            yield return env.Send(outPort, flit);
+            yield return env.Send(outPort, flit, transferTime: transferDelay);
             buffer.ReleaseRead();
 
             condVar.Value[dir + 5]++;
@@ -181,7 +182,7 @@ public sealed class XYRouter : MeshRouter
         }
     }
 
-    private IEnumerable<Event> InLink(Simulator env, int dir, long transferDelay)
+    private IEnumerable<Event> InLink(Simulator env, int dir, int transferDelay)
     {
         var inPort = GetInputPort(dir);
         var buffer = inBuffers[dir];
@@ -205,7 +206,7 @@ public sealed class XYRouter : MeshRouter
 
     private int DetermineOutput(Packet packet)
     {
-        var destCoord = (MeshCoord) packet.Dest;
+        var destCoord = (MeshCoord)packet.Dest;
         int DX = destCoord.X - x;
         int DY = destCoord.Y - y;
         if (DX > 0)

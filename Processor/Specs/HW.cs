@@ -38,8 +38,6 @@ public class HWSpec
                 Name = instance["Name"].GetString(),
                 IntegrateDelay = instance["IntegrateDelay"].GetInt32(),
                 SyncDelay = instance["SyncDelay"].GetInt32(),
-                InputDelay = instance["InputDelay"].GetInt32(),
-                OutputDelay = instance["OutputDelay"].GetInt32(),
                 ConnectsTo = instance["ConnectsTo"].GetString(),
                 MaxNeurons = instance["MaxNeurons"].GetInt32(),
                 ComputeEnergy = instance["ComputeEnergy"].GetDouble(),
@@ -67,7 +65,9 @@ public class HWSpec
             TransferDelay = NoC["TransferDelay"].GetInt32(),
             TransferEnergy = NoC["TransferEnergy"].GetDouble(),
             StaticEnergy = NoC["StaticEnergy"].GetDouble(),
-            Frequency = NoC["Frequency"].GetDouble()
+            Frequency = NoC["Frequency"].GetDouble(),
+            InputDelay = NoC["InputDelay"].GetInt32(),
+            OutputDelay = NoC["OutputDelay"].GetInt32(),
         };
     }
 
@@ -126,8 +126,6 @@ public class CoreSpec
 
 public class CoreV1Spec : CoreSpec
 {
-    public int InputDelay { get; set; }
-    public int OutputDelay { get; set; }
     public int IntegrateDelay { get; set; }
     public int SyncDelay { get; set; }
     public double ComputeEnergy { get; set; }
@@ -158,6 +156,8 @@ public class MeshSpec : NoCSpec
     public double TransferEnergy { get; set; }
     public double StaticEnergy { get; set; }
     public double Frequency { get; set; }
+    public int InputDelay { get; set; }
+    public int OutputDelay { get; set; }
 }
 
 public class BusSpec : NoCSpec

@@ -40,8 +40,7 @@ public class Bus : Actor
             var packet = sel.Message;
             int dest = (int)packet.Dest;
             long before = env.Now;
-            yield return env.Delay(spec.TransferDelay);
-            yield return env.Send(Outputs[dest], packet);
+            yield return env.Send(Outputs[dest], packet, transferTime: spec.TransferDelay);
             long after = env.Now;
             OnTransfer?.Invoke(env.Now, sel.PortNr, dest);
         }

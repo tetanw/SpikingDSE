@@ -59,7 +59,7 @@ public sealed class CoreV1 : Actor, ICore
 
         while (true)
         {
-            var rcv = env.Receive(input, transferTime: spec.InputDelay);
+            var rcv = env.Receive(input);
             yield return rcv;
             var packet = (Packet)rcv.Message;
             var @event = packet.Message as CoreEvent;
