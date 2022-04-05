@@ -138,7 +138,7 @@ public class CoreV1Spec : CoreSpec
     public int OutputBufferSize { get; set; }
     public int ComputeBufferSize { get; set; }
     public bool IgnoreLayers { get; set; }
-    public ReceiverType ReceiverType { get; set; } = ReceiverType.Bare;
+    public ReceiverType ReceiverType { get; set; } = ReceiverType.ReOrder;
 }
 
 public class ControllerV1Spec : CoreSpec

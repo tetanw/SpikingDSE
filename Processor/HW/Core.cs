@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace SpikingDSE;
 
 public interface ICore
@@ -14,6 +16,7 @@ public class SyncEvent : CoreEvent
 {
     public int TS = -1;
     public long CreatedAt = -1;
+    public List<Layer> Layers = null;
 }
 
 public class SpikeEvent : CoreEvent

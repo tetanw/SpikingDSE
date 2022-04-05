@@ -238,10 +238,9 @@ public sealed class CoreV1 : Actor, ICore
 
     private IEnumerable<Event> Sync(Simulator env, SyncEvent sync)
     {
-        var mappedLayers = mapping.LayersOf(this).Cast<HiddenLayer>();
         var pendingSpikes = new List<(HiddenLayer, int)>();
         int nrSpikesProcessed = 0;
-        foreach (var layer in mappedLayers)
+        foreach (var layer in sync.Layers.Cast<HiddenLayer>())
         {
             OnSyncStarted?.Invoke(env.Now, sync.TS, layer);
 

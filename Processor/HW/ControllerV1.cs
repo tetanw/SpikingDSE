@@ -78,11 +78,6 @@ public sealed class ControllerV1 : Actor, ICore
             var nextSync = spec.StartTime + spec.Interval * (TS + 1);
             yield return env.SleepUntil(Math.Max(nextSync, env.Now));
 
-            var sync = new SyncEvent()
-            {
-                TS = TS,
-                CreatedAt = env.Now
-            };
             foreach (var core in mapping.Cores)
             {
                 if (core is ControllerV1)
@@ -92,7 +87,11 @@ public sealed class ControllerV1 : Actor, ICore
                 {
                     Src = thisLoc,
                     Dest = core.GetLocation(),
-                    Message = sync
+                    Message = new SyncEvent {
+                        TS = TS,
+                        CreatedAt = env.Now,
+                        Layers = mapping.GetAllLayers(core)
+                    }
                 };
                 yield return env.Send(Output, flit);
             }
