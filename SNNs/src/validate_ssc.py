@@ -26,5 +26,5 @@ seq_dim = 250
 
 for images, labels in test_loader:
     images = images.view(-1, seq_dim, input_dim).to(device)
-    output = model(images)
+    output, _ = model(images)
     break

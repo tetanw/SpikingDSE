@@ -24,7 +24,7 @@ class ActFun(torch.autograd.Function):
 
 
 class ALIFLayer(nn.Module):
-    def __init__(self, size_in, size_out, dt=1.0, thr0=0.01, name=""):
+    def __init__(self, size_in, size_out, dt=1.0, thr0=0.01, tau_m=10.0, tau_adp=100.0, name=""):
         super().__init__()
         self.dt = dt
         self.thr0 = thr0
@@ -32,9 +32,9 @@ class ALIFLayer(nn.Module):
 
         # decay constants
         self.tau_m = nn.Parameter(torch.Tensor(size_out))
-        nn.init.constant_(self.tau_m, 10.0)
+        nn.init.constant_(self.tau_m, tau_m)
         self.tau_adp = nn.Parameter(torch.Tensor(size_out))
-        nn.init.constant_(self.tau_adp, 100.0)
+        nn.init.constant_(self.tau_adp, tau_adp)
 
         # bias
         self.bias = nn.Parameter(torch.Tensor(size_out))
@@ -50,8 +50,8 @@ class ALIFLayer(nn.Module):
 
     def forward(self, mem, thr, prev_spikes, spikes):
         # decay constants
-        alpha = torch.exp(-1. * self.dt / self.tau_m).cuda()
-        ro = torch.exp(-1. * self.dt / self.tau_adp).cuda()
+        alpha = torch.exp(-1. * self.dt / self.tau_m).to(mem.device)
+        ro = torch.exp(-1. * self.dt / self.tau_adp).to(mem.device)
 
         # new threshold
         beta = 1.8
@@ -71,7 +71,7 @@ class ALIFLayer(nn.Module):
 
 
 class OutputLayer(nn.Module):
-    def __init__(self, size_in, size_out, dt=1.0):
+    def __init__(self, size_in, size_out, tau_m=10.0, dt=1.0):
         super().__init__()
         self.dt = dt
 
@@ -81,7 +81,7 @@ class OutputLayer(nn.Module):
 
         # decay constant
         self.tau_m = nn.Parameter(torch.zeros(size_out))
-        nn.init.constant_(self.tau_m, 10.0)
+        nn.init.constant_(self.tau_m, tau_m)
 
     def forward(self, mem, spikes):
         inputs = torch.matmul(spikes, self.input)
@@ -91,7 +91,7 @@ class OutputLayer(nn.Module):
 
 
 class SRNN(nn.Module):
-    def __init__(self, input_size, hidden_size, output_size, thr0=0.01):
+    def __init__(self, input_size, hidden_size, output_size, tau_m=10.0, tau_adp=100.0, thr0=0.01):
         super(SRNN, self).__init__()
         self.thr0 = thr0
         self.hidden_size = hidden_size
@@ -100,24 +100,25 @@ class SRNN(nn.Module):
 
         sizes = [input_size] + hidden_size
         self.hidden = nn.ModuleList([ALIFLayer(
-            sizes[i], sizes[i+1], thr0=thr0, name=f"h{i+1}") for i in range(0, len(hidden_size))])
-        self.output = OutputLayer(sizes[-1], output_size)
+            sizes[i], sizes[i+1], thr0=thr0, tau_m=tau_m, tau_adp=tau_adp, name=f"h{i+1}") for i in range(0, len(hidden_size))])
+        self.output = OutputLayer(sizes[-1], output_size, tau_m=tau_m)
 
     def forward(self, input):
         batch_size, seq_num, _ = input.shape
 
         # hidden layers
-        spikes = [torch.zeros(batch_size, size).cuda()
+        spikes = [torch.zeros(batch_size, size).to(input.device)
                   for size in self.hidden_size]
-        mem = [torch.zeros(batch_size, size).cuda()
+        mem = [torch.zeros(batch_size, size).to(input.device)
                for size in self.hidden_size]
         thr = [self.thr0 for _ in self.hidden_size]
 
         # output
-        mem_output = torch.zeros(batch_size, self.output_size).cuda()
-        sum_output = torch.zeros(batch_size, self.output_size).cuda()
+        mem_output = torch.zeros(batch_size, self.output_size).to(input.device)
+        sum_output = torch.zeros(batch_size, self.output_size).to(input.device)
 
-        self.mem_trace = []
+        spike_trace = []
+        mem_trace = []
 
         for ts in range(seq_num):
             # output
@@ -126,16 +127,19 @@ class SRNN(nn.Module):
                 sum_output = sum_output + F.softmax(mem_output, dim=1)
 
             # hidden layers
+            s = []
+            m = []
             for i in reversed(range(0, len(self.hidden_size))):
                 # hidden 2
                 forward_spikes = spikes[i - 1] if i > 0 else input[:, ts, :]
                 mem[i], thr[i], spikes[i] = self.hidden[i](
                     mem[i], thr[i], spikes[i], forward_spikes)
+                
+                s.append(spikes[i])
+                m.append(mem[i])
+            s.reverse()
+            spike_trace.append(s)
+            m.reverse()
+            mem_trace.append(m)
 
-            # save trace
-            self.mem_trace.append(mem[0][0].data.cpu().numpy())
-
-        self.mem_trace = np.array(self.mem_trace).tolist()
-        pd.DataFrame(self.mem_trace).to_csv('mem_h0.csv')
-
-        return sum_output
+        return sum_output, spike_trace, mem_trace

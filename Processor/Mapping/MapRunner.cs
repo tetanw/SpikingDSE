@@ -1,5 +1,7 @@
 using System.Text.Json;
 using System.IO;
+using System.Linq;
+using System;
 
 namespace SpikingDSE;
 
@@ -23,11 +25,14 @@ public class MapRunner
         }
         else
         {
-            throw new System.Exception($"Unknown mapper: {opts.Mapper}");
+            throw new Exception($"Unknown mapper: {opts.Mapper}");
         }
         var mapping = MultiCoreMapping.CreateMapping(mapper, hw, snn);
         if (mapping.Unmapped.Count > 0)
-            throw new System.Exception("Could not map");    
+        {
+            var layerNames = string.Join(',', mapping.Unmapped.Select(l => l.Name).ToArray());
+            throw new Exception($"Could not map: {layerNames}");
+        }   
         mapping.Save(opts.Mapping);
     }
 }

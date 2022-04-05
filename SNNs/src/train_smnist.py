@@ -5,40 +5,60 @@ from torch.optim.lr_scheduler import StepLR
 from torch.utils import data
 import os
 from models import *
+import sys
 
 torch.manual_seed(0)
 
-(train_X, train_y), (test_X, test_y) = keras.datasets.mnist.load_data()
 
+def transform(x, y, size, input_size, stride):
+    nr_steps = size // stride
+    inputs = []
+    x = x.reshape(-1, size)
+    for i in range(nr_steps):
+        start_idx = i*stride
+        if start_idx < (size - input_size):
+            input = x[:, start_idx:start_idx +
+                      input_size].reshape(-1, 1, input_size)
+        else:
+            input = x[:, -input_size:].reshape(-1, 1, input_size)
+        inputs.append(torch.from_numpy(input))
+    return torch.cat(inputs, dim=1).float() / 255.0, torch.tensor(y).long()
+
+
+input_dim = 8
+hidden_dim = [40, 256, 128]
+output_dim = 10
+size = 28 * 28
+stride = 4
+seq_dim = size // stride
+
+(train_X, train_Y), (test_X, test_Y) = keras.datasets.mnist.load_data()
+train_X = train_X[:10000]
+train_Y = train_Y[:10000]
+train_X, train_Y = transform(train_X, train_Y, size, input_dim, stride)
+test_X, test_Y = transform(test_X, test_Y, size, input_dim, stride)
 print('dataset shape: ', train_X.shape)
 print('dataset shape: ', test_X.shape)
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print("device:", device)
 
-batch_size = 1024
+batch_size = 128
 
-tensor_trainX = torch.Tensor(train_X)  # transform to torch tensor
-tensor_trainY = torch.Tensor(train_y)
-train_dataset = data.TensorDataset(tensor_trainX, tensor_trainY)
+train_dataset = data.TensorDataset(train_X, train_Y)
 train_loader = data.DataLoader(
     train_dataset, batch_size=batch_size, shuffle=True)
 
-tensor_testX = torch.Tensor(test_X)  # transform to torch tensor
-tensor_testY = torch.Tensor(test_y)
-test_dataset = data.TensorDataset(tensor_testX, tensor_testY)
+test_dataset = data.TensorDataset(test_X, test_Y)
 test_loader = data.DataLoader(
     test_dataset, batch_size=batch_size, shuffle=False)
 
 '''
 STEP 4: INSTANTIATE MODEL CLASS
 '''
-input_dim = 28
-hidden_dim = [32]
-output_dim = 20
-seq_dim = 28  # Number of steps to unroll
 
-model = SRNN(input_dim, hidden_dim, output_dim)
+
+model = SRNN(input_dim, hidden_dim, output_dim, tau_m=4.0, tau_adp=25.0)
 
 model.to(device)
 criterion = nn.CrossEntropyLoss()
@@ -60,7 +80,7 @@ def train(model, model_name, num_epochs):
             # Clear gradients w.r.t. parameters
             optimizer.zero_grad()
             # Forward pass to get output/logits
-            outputs = model(images)
+            outputs, _, _ = model(images)
             # Calculate Loss: softmax --> cross entropy loss
             loss = criterion(outputs, labels)
             # Getting gradients w.r.t. parameters
@@ -83,7 +103,7 @@ def test(model, dataloader=test_loader):
     for images, labels in dataloader:
         images = images.view(-1, seq_dim, input_dim).to(device)
 
-        outputs = model(images)
+        outputs, _, _ = model(images)
         _, predicted = torch.max(outputs.data, 1)
         total += labels.size(0)
         if torch.cuda.is_available():
@@ -95,6 +115,27 @@ def test(model, dataloader=test_loader):
     return accuracy
 
 
-acc = train(model, "test19", 50)
-accuracy = test(model)
-print('Final accuracy: ', accuracy)
+# train
+acc = train(model, "smnist1", 10)
+
+# test
+# model = torch.load("model\smnist1\model_smnist1_9_73.44.pth")
+# accuracy = test(model)
+# print('Final accuracy: ', accuracy)
+
+# mem traces
+# model = torch.load("model\smnist1\model_smnist1_9_73.44.pth").to(device)
+# for images, labels in test_loader:
+#     images = images.view(-1, seq_dim, input_dim).to(device)
+
+#     _, _, mem_trace = model(images)
+#     mem_trace = mem_trace
+#     mems = []
+#     for ts in range(seq_dim):
+#         mem = mem_trace[ts][1][0]
+#         mem = torch.unsqueeze(mem, dim=0)
+#         mems.append(mem)
+
+#     mems = torch.cat(mems, dim=0)
+#     pd.DataFrame(mems.data.cpu().numpy()).to_csv('mem_h1.csv')
+#     sys.exit(0)

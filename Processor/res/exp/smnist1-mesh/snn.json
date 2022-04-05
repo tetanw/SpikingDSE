@@ -1,0 +1,37 @@
+{
+    "BasePath": "./res/snn/smnist1/",
+    "Layers": [
+        {
+            "Name": "i",
+            "Type": "input",
+            "Size": 40
+        },
+        {
+            "Name": "h1",
+            "Type": "ALIF",
+            "Size": 256,
+            "InWeights": "weights_i_2_h1.csv",
+            "RecWeights": "weights_h1_2_h1.csv",
+            "TauM": "tau_m_h1.csv",
+            "TauAdp": "tau_adp_h1.csv",
+            "Bias": "bias_h1.csv"
+        },
+        {
+            "Name": "h2",
+            "Type": "ALIF",
+            "Size": 128,
+            "InWeights": "weights_h1_2_h2.csv",
+            "RecWeights": "weights_h2_2_h2.csv",
+            "TauM": "tau_m_h2.csv",
+            "TauAdp": "tau_adp_h2.csv",
+            "Bias": "bias_h2.csv"
+        },
+        {
+            "Name": "o",
+            "Type": "output",
+            "Size": 10,
+            "InWeights": "weights_h2_2_o.csv",
+            "TauM": "tau_m_o.csv"
+        }
+    ]
+}

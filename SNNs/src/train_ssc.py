@@ -52,7 +52,7 @@ def train(model, model_name, num_epochs=150):
             # Clear gradients w.r.t. parameters
             optimizer.zero_grad()
             # Forward pass to get output/logits
-            outputs = model(images)
+            outputs, _ = model(images)
             # Calculate Loss: softmax --> cross entropy loss
             # print(outputs, labels)
             loss = criterion(outputs, labels.flatten())
@@ -76,7 +76,7 @@ def test(model, dataloader=test_loader):
         images = images.view(-1, seq_dim, input_dim).to(device)
         labels = labels.flatten()
 
-        outputs = model(images)
+        outputs, _ = model(images)
         _, predicted = torch.max(outputs.data, 1)
         total += labels.size(0)
         if torch.cuda.is_available():

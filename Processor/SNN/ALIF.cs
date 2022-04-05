@@ -41,6 +41,9 @@ public class ALIFLayer : HiddenLayer
 
     public override void Forward(int neuron)
     {
+        if (neuron > InputSize)
+            throw new Exception($"Neuron id {neuron} bigger than input size {InputSize}");
+
         for (int dst = 0; dst < Size; dst++)
         {
             Pots[dst] += InWeights[neuron, dst];
