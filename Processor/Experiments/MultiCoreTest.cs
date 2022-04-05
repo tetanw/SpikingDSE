@@ -62,7 +62,7 @@ public class MultiCoreTest
         int myTS = 0;
 
 
-        coreStats.ReportLine("name,ts,util,spikes_prod,spikes_cons,spikes_received,sops,core_spikes_dropped,input_spikes_dropped,late_spikes,core_energy_spent");
+        coreStats.ReportLine("name,ts,util,spikes_prod,spikes_cons,spikes_received,sops,core_spikes_dropped,input_spikes_dropped,early_spikes,late_spikes,core_energy_spent");
         multi.Controller.TimeAdvanced += (_, time, ts) =>
         {
             long interval = multi.Controller.spec.Interval;
@@ -81,7 +81,7 @@ public class MultiCoreTest
                     timeBusy = core.lastSpike - (time - interval);
                 }
                 double util = (double)timeBusy / interval;
-                coreStats.ReportLine($"{c.Name()},{myTS},{util},{core.nrSpikesProduced},{core.nrSpikesConsumed},{core.nrSpikesReceived},{core.nrSOPs},{core.nrSpikesDroppedCore},{core.nrSpikesDroppedInput},{core.nrLateSpikes},{core.energySpent}");
+                coreStats.ReportLine($"{c.Name()},{myTS},{util},{core.nrSpikesProduced},{core.nrSpikesConsumed},{core.nrSpikesReceived},{core.nrSOPs},{core.nrSpikesDroppedCore},{core.nrSpikesDroppedInput},{core.nrEarlySpikes},{core.nrLateSpikes},{core.energySpent}");
             }
 
             // Acounting to go to the next TS

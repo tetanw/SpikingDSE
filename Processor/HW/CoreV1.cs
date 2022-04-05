@@ -23,6 +23,7 @@ public sealed class CoreV1 : Actor, ICore
     public int nrSpikesDroppedCore = 0;
     public int nrSpikesDroppedInput = 0;
     public int nrLateSpikes = 0;
+    public int nrEarlySpikes = 0;
     public double energySpent = 0.0;
     public int nrSpikesReceived = 0;
 
@@ -39,7 +40,6 @@ public sealed class CoreV1 : Actor, ICore
     private readonly object loc;
     private MappingTable mapping;
     private Buffer<CoreEvent> coreBuffer;
-    private Buffer<CoreEvent> inputBuffer;
     private Buffer<Packet> outputBuffer;
 
     public CoreV1(object location, CoreV1Spec spec)
@@ -57,6 +57,7 @@ public sealed class CoreV1 : Actor, ICore
     {
         int TS = 0;
 
+        var inputBuffer = spec.ReceiverType == ReceiverType.Bare ? null : new Buffer<CoreEvent>(env, spec.ComputeBufferSize);
         while (true)
         {
             var rcv = env.Receive(input);
@@ -73,15 +74,18 @@ public sealed class CoreV1 : Actor, ICore
                     coreBuffer.ReleaseWrite();
                 }
 
-                // write all spikes that were waiting for sync event to happen
-                while (!inputBuffer.IsEmpty)
+                if (spec.ReceiverType == ReceiverType.ReOrder)
                 {
-                    var spike = (SpikeEvent)inputBuffer.Pop();
+                    // write all spikes that were waiting for sync event to happen
+                    while (!inputBuffer.IsEmpty)
+                    {
+                        var spike = (SpikeEvent)inputBuffer.Pop();
 
-                    if (!coreBuffer.IsFull)
-                        coreBuffer.Push(spike);
-                    else
-                        nrSpikesDroppedCore++;
+                        if (!coreBuffer.IsFull)
+                            coreBuffer.Push(spike);
+                        else
+                            nrSpikesDroppedCore++;
+                    }
                 }
 
                 TS = sync.TS + 1;
@@ -94,10 +98,14 @@ public sealed class CoreV1 : Actor, ICore
 
                 if (spike.TS > TS)
                 {
-                    if (!inputBuffer.IsFull)
-                        inputBuffer.Push(spike);
-                    else
-                        nrSpikesDroppedInput++;
+                    if (spec.ReceiverType == ReceiverType.ReOrder)
+                    {
+                        if (!inputBuffer.IsFull)
+                            inputBuffer.Push(spike);
+                        else
+                            nrSpikesDroppedInput++;
+                    }
+                    nrEarlySpikes++;
                 }
                 else if (spike.TS == TS)
                 {
@@ -152,7 +160,6 @@ public sealed class CoreV1 : Actor, ICore
 
     public override IEnumerable<Event> Run(Simulator env)
     {
-        inputBuffer = new(env, spec.ComputeBufferSize);
         coreBuffer = new(env, spec.ComputeBufferSize);
         outputBuffer = new(env, spec.OutputBufferSize);
         env.Process(Receiver(env));
