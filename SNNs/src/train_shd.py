@@ -39,12 +39,14 @@ test_loader = data.DataLoader(
     test_dataset, batch_size=batch_size, shuffle=False)
 
 input_dim = 700
-hidden_dim = [1024, 1024, 1024]  # 128
 output_dim = 20
 seq_dim = 100  # Number of steps to unroll
 
 # training
-model = SRNN(input_dim, hidden_dim, output_dim).to(device)
+model = SRNN2([
+    ALIFLayer(input_dim, 256),
+    OutputLayer(256, output_dim)
+]).to(device)
 criterion = nn.CrossEntropyLoss()
 learning_rate = 1e-2  # 1e-2
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
