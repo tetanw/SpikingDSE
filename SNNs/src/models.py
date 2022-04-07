@@ -4,6 +4,7 @@ import torch.nn.functional as F
 import numpy as np
 import pandas as pd
 
+
 class ActFun(torch.autograd.Function):
     @staticmethod
     def forward(ctx, input):  # input = membrane potential- threshold
@@ -139,7 +140,7 @@ class SRNN(nn.Module):
                 forward_spikes = spikes[i - 1] if i > 0 else input[:, ts, :]
                 mem[i], thr[i], spikes[i] = self.hidden[i](
                     mem[i], thr[i], spikes[i], forward_spikes)
-                
+
                 s.append(spikes[i])
                 m.append(mem[i])
             s.reverse()
@@ -150,6 +151,8 @@ class SRNN(nn.Module):
         return sum_output, spike_trace, mem_trace
 
 # new SRNN implementation: based on nn.Sequential
+
+
 class SRNN2(nn.Module):
     def __init__(self, layers):
         super(SRNN2, self).__init__()
@@ -164,13 +167,15 @@ class SRNN2(nn.Module):
         spikes = [torch.zeros(batch_size, layer.size).to(input.device)
                   for layer in self.layers]
         mems = [torch.zeros(batch_size, layer.size).to(input.device)
-               for layer in self.layers]
+                for layer in self.layers]
         thr = [getattr(layer, "thr0", -1) for layer in self.layers]
 
         # output
         sum_output = torch.zeros(batch_size, self.output_size).to(input.device)
 
         for ts in range(seq_num):
+            if ts > 0:
+                sum_output = sum_output + F.softmax(mems[-1], dim=1)
 
             # update all layers
             for i in reversed(range(0, len(self.layers))):
@@ -185,7 +190,5 @@ class SRNN2(nn.Module):
                 else:
                     raise Exception("Unknown layer type")
 
-            if ts > 0:
-                sum_output = sum_output + F.softmax(mems[-1], dim=1)
-            
+        # print(sum_output)
         return sum_output, None, None

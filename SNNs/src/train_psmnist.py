@@ -26,7 +26,6 @@ def transform(x, y, size, input_size, stride):
 
 
 input_dim = 8
-hidden_dim = [40, 256, 128]
 output_dim = 10
 size = 28 * 28
 stride = 2
@@ -58,7 +57,11 @@ test_dataset = data.TensorDataset(test_X, test_Y)
 test_loader = data.DataLoader(
     test_dataset, batch_size=batch_size, shuffle=False)
 
-model = SRNN(input_dim, hidden_dim, output_dim, tau_m=4.0, tau_adp=25.0).to(device)
+model = SRNN2([
+    ALIFLayer(input_dim, 40, tau_m=4.0, tau_adp=25.0),
+    ALIFLayer(40, 128, tau_m=4.0, tau_adp=25.0),
+    OutputLayer(128, output_dim, tau_m=4.0)
+]).to(device)
 criterion = nn.CrossEntropyLoss()
 learning_rate = 1e-2  # 1e-2
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
