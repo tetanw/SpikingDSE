@@ -37,8 +37,8 @@ train_X = psmnist["train_x"]
 train_Y = psmnist["train_y"]
 test_X = psmnist["test_x"]
 test_Y = psmnist["test_y"]
-train_X = train_X[:10000]
-train_Y = train_Y[:10000]
+# train_X = train_X[:10000]
+# train_Y = train_Y[:10000]
 train_X, train_Y = transform(train_X, train_Y, size, input_dim, stride)
 test_X, test_Y = transform(test_X, test_Y, size, input_dim, stride)
 print('dataset shape: ', train_X.shape)
@@ -58,8 +58,8 @@ test_loader = data.DataLoader(
     test_dataset, batch_size=batch_size, shuffle=False)
 
 model = SRNN2([
-    ALIFLayer(input_dim, 40, tau_m=4.0, tau_adp=25.0),
-    ALIFLayer(40, 128, tau_m=4.0, tau_adp=25.0),
+    ALIFLayer(input_dim, 40, tau_m=4.0, tau_adp=10.0),
+    ALIFLayer(40, 128, tau_m=4.0, tau_adp=10.0),
     OutputLayer(128, output_dim, tau_m=4.0)
 ]).to(device)
 criterion = nn.CrossEntropyLoss()
