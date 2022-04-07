@@ -1,12 +1,7 @@
-import numpy as np
 import torch
-import torch.nn as nn
-from torch.optim.lr_scheduler import StepLR
-import math
-import sys
-import torch.nn.functional as F
 from torch.utils import data
 import keras
+from extract_inputs import *
 
 
 def transform(x, y, size, input_size, stride):
@@ -34,16 +29,6 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print("device:", device)
 
 model = torch.load("model\smnist1\model_smnist1_9_73.44.pth").to("cpu")
-nr_timesteps = 28 * 28 // 4
+seq_dim = 28 * 28 // 4
 
-for step, (x, y) in enumerate(test_loader):
-    _, spikes, _ = model(x.to("cpu"))
-
-    with open("inputs/smnist/input_" + str(step) + ".trace", "w") as input_file:
-        correct = int(y.numpy()[0])
-        input_file.write(str(correct) + "\n")
-        input_file.write("0,\n")
-        for ts in range(1, nr_timesteps):
-            spikes_ts = spikes[ts - 1][0].flatten().nonzero().flatten().numpy()
-            spike_str = [str(spike) for spike in spikes_ts]
-            input_file.write(str(ts) + "," + ",".join(spike_str) + "\n")
+extract_inputs_2(test_loader, model, seq_dim, "inputs\smnist")
