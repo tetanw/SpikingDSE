@@ -81,15 +81,15 @@ class OutputLayer(nn.Module):
         self.dt = dt
 
         # weights
-        self.input_weights = nn.Parameter(torch.Tensor(input_size, size))
-        nn.init.xavier_uniform_(self.input_weights)
+        self.input = nn.Parameter(torch.Tensor(input_size, size))
+        nn.init.xavier_uniform_(self.input)
 
         # decay constant
         self.tau_m = nn.Parameter(torch.zeros(size))
         nn.init.constant_(self.tau_m, tau_m)
 
     def forward(self, mem, spikes):
-        inputs = torch.matmul(spikes, self.input_weights)
+        inputs = torch.matmul(spikes, self.input)
         alpha = torch.exp(-1.0 * self.dt / self.tau_m)
         mem_new = mem * alpha + (1.0 - alpha) * inputs
         return mem_new
@@ -174,16 +174,14 @@ class SRNN2(nn.Module):
         sum_output = torch.zeros(batch_size, self.output_size).to(input.device)
 
         # traces
-        spike_trace = []
-        mem_trace = []
+        spike_trace = [torch.zeros(batch_size, seq_num, layer.size).to(input.device) for layer in self.layers]
+        mem_trace = [torch.zeros(batch_size, seq_num, layer.size).to(input.device) for layer in self.layers]
 
         for ts in range(seq_num):
             if ts > 0:
                 sum_output = sum_output + F.softmax(mems[-1], dim=1)
 
             # update all layers
-            s = []
-            m = []
             for i in reversed(range(0, len(self.layers))):
                 forward_spikes = spikes[i - 1] if i > 0 else input[:, ts, :]
 
@@ -195,11 +193,7 @@ class SRNN2(nn.Module):
                     mems[i] = layer(mems[i], forward_spikes)
                 else:
                     raise Exception("Unknown layer type")
-                s.append(spikes[i])
-                m.append(mems[i])
-            s.reverse()
-            spike_trace.append(s)
-            m.reverse()
-            mem_trace.append(m)
-        # print(sum_output)
+                spike_trace[i][:, ts, :] = spikes[i]
+                mem_trace[i][:, ts, :] = mems[i]
+
         return sum_output, spike_trace, mem_trace
