@@ -7,30 +7,27 @@ namespace SpikingDSE;
 public class MultiCoreDSE : DSEExperiment<MultiCore>, IDisposable
 {
     private readonly Mapping mapping;
-    private readonly List<HWSpec> hws;
+    private readonly HWSpec hw;
     private readonly SNN snn;
     private readonly ZipDataset dataset;
     private int nrCorrect = 0;
     private readonly int maxSamples = 0;
 
-    public MultiCoreDSE(string snnPath, List<string> hwPaths, string mappingPath, string datasetPath, int maxSamples)
+    public MultiCoreDSE(string snnPath, string hwPath, string mappingPath, string datasetPath, int maxSamples)
     {
         mapping = Mapping.Load(mappingPath);
         snn = SNN.SplitSNN(SNN.Load(snnPath), mapping);
-        hws = hwPaths.Select(p => HWSpec.Load(p)).ToList();
+        hw = HWSpec.Load(hwPath);
         dataset = new ZipDataset(datasetPath);
         this.maxSamples = maxSamples == -1 ? dataset.NrSamples : maxSamples;
     }
 
     public override IEnumerable<IEnumerable<MultiCore>> Configs()
     {
-        foreach (var hw in hws)
-        {
-            yield return With(hw);
-        }
+        yield return Experiment();
     }
 
-    public IEnumerable<MultiCore> With(HWSpec hw)
+    public IEnumerable<MultiCore> Experiment()
     {
         for (int i = 0; i < maxSamples; i++)
         {
