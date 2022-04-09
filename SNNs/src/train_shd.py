@@ -44,14 +44,15 @@ seq_dim = 100  # Number of steps to unroll
 
 # training
 model = SRNN2([
-    ALIFLayer(input_dim, 256),
-    OutputLayer(256, output_dim)
+    ALIFLayer(input_dim, 512, tau_m=10.0, tau_adp=10.0),
+    ALIFLayer(512, 256, tau_m=10.0, tau_adp=10.0),
+    OutputLayer(256, output_dim, tau_m=10.0)
 ]).to(device)
 criterion = nn.CrossEntropyLoss()
 learning_rate = 1e-2  # 1e-2
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-scheduler = StepLR(optimizer, step_size=10, gamma=.5)
-train(model, "debug-1", 30, input_dim, seq_dim, train_loader, test_loader, device, criterion, scheduler, optimizer)
+scheduler = StepLR(optimizer, step_size=20, gamma=.5)
+train(model, "shd-4", 30, input_dim, seq_dim, train_loader, test_loader, device, criterion, scheduler, optimizer)
 
 # test
 # model = torch.load("")

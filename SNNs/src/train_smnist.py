@@ -54,16 +54,16 @@ test_loader = data.DataLoader(
     test_dataset, batch_size=batch_size, shuffle=False)
 
 model = SRNN2([
-    ALIFLayer(input_dim, 40, tau_m=4.0, tau_adp=25.0),
-    ALIFLayer(40, 256, tau_m=4.0, tau_adp=25.0),
-    ALIFLayer(256, 128, tau_m=4.0, tau_adp=25.0),
-    OutputLayer(128, output_dim, tau_m=4.0)
+    ALIFLayer(input_dim, 40, tau_m=4.0, tau_adp=10.0),
+    ALIFLayer(40, 512, tau_m=4.0, tau_adp=10.0),
+    ALIFLayer(512, 256, tau_m=4.0, tau_adp=10.0),
+    OutputLayer(256, output_dim, tau_m=4.0)
 ]).to(device)
 criterion = nn.CrossEntropyLoss()
 learning_rate = 1e-2  # 1e-2
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-scheduler = StepLR(optimizer, step_size=10, gamma=.5)
-train(model, "smnist-2", 2, input_dim, seq_dim, train_loader, test_loader, device, criterion, scheduler, optimizer)
+scheduler = StepLR(optimizer, step_size=25, gamma=.5)
+train(model, "smnist-3", 50, input_dim, seq_dim, train_loader, test_loader, device, criterion, scheduler, optimizer)
 
 # test
 # model = torch.load("model\smnist1\model_smnist1_9_73.44.pth")

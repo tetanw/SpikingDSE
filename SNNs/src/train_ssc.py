@@ -24,17 +24,21 @@ test_loader = data.DataLoader(
     test_dataset, batch_size=batch_size, shuffle=False)
 
 input_dim = 700
-hidden_dim = [400, 400] 
 output_dim = 35
 seq_dim = 250
 
 # train
-model = SRNN(input_dim, hidden_dim, output_dim).to(device)
+model = SRNN2([
+    ALIFLayer(input_dim, 400, tau_m=10.0, tau_adp=100.0),
+    ALIFLayer(400, 400, tau_m=10.0, tau_adp=100.0),
+    OutputLayer(400, output_dim, tau_m=10.0)
+]).to(device)
 criterion = nn.CrossEntropyLoss()
 learning_rate = 1e-2  # 1e-2
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-scheduler = StepLR(optimizer, step_size=10, gamma=.5)
-train(model, "debug-1", 30, input_dim, seq_dim, train_loader, test_loader, device, criterion, scheduler, optimizer)
+scheduler = StepLR(optimizer, step_size=20, gamma=.5)
+train(model, "ssc-1", 30, input_dim, seq_dim, train_loader,
+      test_loader, device, criterion, scheduler, optimizer)
 
 # test
 # accuracy = test(model)

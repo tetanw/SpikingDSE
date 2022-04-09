@@ -1,6 +1,8 @@
 data
 res/results
 res/odin/result.trace
+res/exp
+res/snn
 admin/
 .vscode/
 
