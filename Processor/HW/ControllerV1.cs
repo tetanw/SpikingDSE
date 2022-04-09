@@ -75,31 +75,39 @@ public sealed class ControllerV1 : Actor, ICore
             }
 
             // Wait until sync
-            var nextSync = spec.StartTime + spec.Interval * (TS + 1);
-            yield return env.SleepUntil(Math.Max(nextSync, env.Now));
-
-            var sync = new SyncEvent()
-            {
-                TS = TS,
-                CreatedAt = env.Now
-            };
-            foreach (var core in mapping.Cores)
-            {
-                if (core is ControllerV1)
-                    continue;
-
-                var flit = new Packet
-                {
-                    Src = thisLoc,
-                    Dest = core.GetLocation(),
-                    Message = sync
-                };
-                yield return env.Send(Output, flit);
-            }
-            TimeAdvanced?.Invoke(this, env.Now, TS);
-            
+            foreach (var ev in Sync(env, TS))
+                yield return ev;
             TS++;
         }
+
+        foreach (var ev in Sync(env, TS))
+            yield return ev;
+    }
+
+    private IEnumerable<Event> Sync(Simulator env, int TS)
+    {
+        var nextSync = spec.StartTime + spec.Interval * (TS + 1);
+        yield return env.SleepUntil(Math.Max(nextSync, env.Now));
+
+        var sync = new SyncEvent()
+        {
+            TS = TS,
+            CreatedAt = env.Now
+        };
+        foreach (var core in mapping.Cores)
+        {
+            if (core is ControllerV1)
+                continue;
+
+            var flit = new Packet
+            {
+                Src = thisLoc,
+                Dest = core.GetLocation(),
+                Message = sync
+            };
+            yield return env.Send(Output, flit);
+        }
+        TimeAdvanced?.Invoke(this, env.Now, TS);
     }
 
     private IEnumerable<Event> Receiver(Simulator env)
