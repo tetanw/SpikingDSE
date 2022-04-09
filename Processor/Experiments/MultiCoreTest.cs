@@ -7,7 +7,6 @@ namespace SpikingDSE;
 public class MultiCoreTest
 {
     // Reporting
-    private TensorReporter spikes;
     private MemReporter mem;
     private TimeDelayReporter spikeDelays;
     private TimeDelayReporter computeDelays;
@@ -18,6 +17,7 @@ public class MultiCoreTest
     private readonly MultiCore exp;
     private readonly SNN splittedSNN;
     private readonly int correct;
+    private int nrSpikes;
 
     public MultiCoreTest(string snnPath, string hwPath, string mappingPath, string datasetPath, string traceName, string outputPath)
     {
@@ -53,9 +53,6 @@ public class MultiCoreTest
         mem = new MemReporter($"{resultsFolder}");
         mem.RegisterSNN(splittedSNN);
 
-        spikes = new TensorReporter(splittedSNN, $"{resultsFolder}");
-        spikes.RegisterSNN(splittedSNN);
-
         spikeDelays = new TimeDelayReporter($"{resultsFolder}/spike-delays.csv");
         computeDelays = new TimeDelayReporter($"{resultsFolder}/compute-delays.csv");
 
@@ -85,7 +82,6 @@ public class MultiCoreTest
             }
 
             // Acounting to go to the next TS
-            spikes.AdvanceTimestep(ts);
             myTS++;
         };
 
@@ -105,7 +101,7 @@ public class MultiCoreTest
             };
             core.OnSpikeSent += (time, fromLayer, neuron) =>
             {
-                spikes.InformSpike(fromLayer, neuron);
+                nrSpikes++;
             };
             core.OnSpikeComputed += (time, spike) =>
             {
@@ -139,12 +135,11 @@ public class MultiCoreTest
 
     private void CleanupReporters()
     {
-        spikes?.Finish();
         mem?.Finish();
         spikeDelays?.Finish();
         computeDelays?.Finish();
         transfers?.Finish();
         coreStats?.Finish();
-        if (spikes != null) Console.WriteLine($"Nr spikes: {spikes.NrSpikes:n}");
+        Console.WriteLine($"Nr spikes: {nrSpikes:n}");
     }
 }
