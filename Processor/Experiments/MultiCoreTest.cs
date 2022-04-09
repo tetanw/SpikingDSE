@@ -50,9 +50,6 @@ public class MultiCoreTest
         mem = new MemReporter($"{resultsFolder}");
         mem.RegisterSNN(splittedSNN);
 
-        transfers = new FileReporter($"{resultsFolder}/transfers.csv");
-        transfers.ReportLine($"hw-time,snn-time,router-x,router-y,from,to");
-
         coreStats = new FileReporter($"{resultsFolder}/core-stats.csv");
         coreStats.ReportLine("name,ts,util,spikes_prod,spikes_cons,spikes_received,sops,core_spikes_dropped,input_spikes_dropped,early_spikes,late_spikes,core_energy_spent");
 
@@ -102,7 +99,7 @@ public class MultiCoreTest
             };
             core.OnSpikeReceived += (time, layer, neuron, feedback, spike, nrHops) =>
             {
-                spikeDelays.ReportLine($"{layer.Name},{time-spike.CreatedAt},{nrHops}");
+                spikeDelays.ReportLine($"{layer.Name},{time - spike.CreatedAt},{nrHops}");
             };
             core.OnSpikeSent += (time, fromLayer, neuron) =>
             {
@@ -110,12 +107,14 @@ public class MultiCoreTest
             };
             core.OnSpikeComputed += (time, spike) =>
             {
-                computeDelays.ReportLine($"{core.Name},{time-spike.ReceivedAt}");
+                computeDelays.ReportLine($"{core.Name},{time - spike.ReceivedAt}");
             };
         }
 
+        transfers = new FileReporter($"{resultsFolder}/transfers.csv");
         if (multi.Routers != null)
         {
+            transfers.ReportLine($"hw-time,snn-time,router-x,router-y,from,to");
             foreach (var r in multi.Routers)
             {
                 var router = r as XYRouter;
