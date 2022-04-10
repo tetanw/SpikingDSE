@@ -61,7 +61,7 @@ namespace SpikingDSE
         public string Mapping { get; set; }
     }
 
-    [Verb("test", HelpText = "Test a single input trace on HW")]
+    [Verb("trace-sim", HelpText = "Test a single input trace on HW")]
     public class SimTestOptions
     {
         [Option('s', "snn-path", Required = true, HelpText = "SNN specification")]
@@ -80,7 +80,7 @@ namespace SpikingDSE
         public string Output { get; set; }
     }
 
-    [Verb("dse", HelpText = "Test a whole dataset on HW")]
+    [Verb("dataset-sim", HelpText = "Test a whole dataset on HW")]
     public class SimDSEOptions
     {
         [Option('s', "snn-path", Required = true, HelpText = "SNN specification")]
