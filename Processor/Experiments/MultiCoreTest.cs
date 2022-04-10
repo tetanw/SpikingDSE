@@ -7,10 +7,9 @@ namespace SpikingDSE;
 public class MultiCoreTest
 {
     // Reporting
-    private TensorReporter spikes;
     private MemReporter mem;
-    private TimeDelayReporter spikeDelays;
-    private TimeDelayReporter computeDelays;
+    private FileReporter spikeDelays;
+    private FileReporter computeDelays;
     private FileReporter coreStats;
     private FileReporter transfers;
     private readonly string outputPath;
@@ -18,6 +17,7 @@ public class MultiCoreTest
     private readonly MultiCore exp;
     private readonly SNN splittedSNN;
     private readonly int correct;
+    private int nrSpikes;
 
     public MultiCoreTest(string snnPath, string hwPath, string mappingPath, string datasetPath, string traceName, string outputPath)
     {
@@ -47,22 +47,21 @@ public class MultiCoreTest
     {
         Directory.CreateDirectory(resultsFolder);
 
-        transfers = new FileReporter($"{resultsFolder}/transfers.csv");
-        coreStats = new FileReporter($"{resultsFolder}/core-stats.csv");
-
         mem = new MemReporter($"{resultsFolder}");
         mem.RegisterSNN(splittedSNN);
 
-        spikes = new TensorReporter(splittedSNN, $"{resultsFolder}");
-        spikes.RegisterSNN(splittedSNN);
+        coreStats = new FileReporter($"{resultsFolder}/core-stats.csv");
+        coreStats.ReportLine("name,ts,util,spikes_prod,spikes_cons,spikes_received,sops,core_spikes_dropped,input_spikes_dropped,early_spikes,late_spikes,core_energy_spent");
 
-        spikeDelays = new TimeDelayReporter($"{resultsFolder}/spike-delays.csv");
-        computeDelays = new TimeDelayReporter($"{resultsFolder}/compute-delays.csv");
+        spikeDelays = new FileReporter($"{resultsFolder}/spike-delays.csv");
+        spikeDelays.ReportLine($"layer,delay,nr_hops");
+
+        computeDelays = new FileReporter($"{resultsFolder}/compute-delays.csv");
+        computeDelays.ReportLine($"core,delay");
 
         int myTS = 0;
 
 
-        coreStats.ReportLine("name,ts,util,spikes_prod,spikes_cons,spikes_received,sops,core_spikes_dropped,input_spikes_dropped,early_spikes,late_spikes,core_energy_spent");
         multi.Controller.TimeAdvanced += (_, time, ts) =>
         {
             long interval = multi.Controller.spec.Interval;
@@ -85,7 +84,6 @@ public class MultiCoreTest
             }
 
             // Acounting to go to the next TS
-            spikes.AdvanceTimestep(ts);
             myTS++;
         };
 
@@ -101,18 +99,19 @@ public class MultiCoreTest
             };
             core.OnSpikeReceived += (time, layer, neuron, feedback, spike, nrHops) =>
             {
-                spikeDelays.ReportDelay(spike.CreatedAt, time, layer.Name, nrHops.ToString());
+                spikeDelays.ReportLine($"{layer.Name},{time - spike.CreatedAt},{nrHops}");
             };
             core.OnSpikeSent += (time, fromLayer, neuron) =>
             {
-                spikes.InformSpike(fromLayer, neuron);
+                nrSpikes++;
             };
             core.OnSpikeComputed += (time, spike) =>
             {
-                computeDelays.ReportDelay(spike.ReceivedAt, time, "");
+                computeDelays.ReportLine($"{core.Name},{time - spike.ReceivedAt}");
             };
         }
 
+        transfers = new FileReporter($"{resultsFolder}/transfers.csv");
         if (multi.Routers != null)
         {
             transfers.ReportLine($"hw-time,snn-time,router-x,router-y,from,to");
@@ -139,12 +138,11 @@ public class MultiCoreTest
 
     private void CleanupReporters()
     {
-        spikes?.Finish();
         mem?.Finish();
         spikeDelays?.Finish();
         computeDelays?.Finish();
         transfers?.Finish();
         coreStats?.Finish();
-        if (spikes != null) Console.WriteLine($"Nr spikes: {spikes.NrSpikes:n}");
+        Console.WriteLine($"Nr spikes: {nrSpikes:n}");
     }
 }

@@ -4,6 +4,7 @@ import torch.nn.functional as F
 import numpy as np
 import pandas as pd
 
+
 class ActFun(torch.autograd.Function):
     @staticmethod
     def forward(ctx, input):  # input = membrane potential- threshold
@@ -24,28 +25,30 @@ class ActFun(torch.autograd.Function):
 
 
 class ALIFLayer(nn.Module):
-    def __init__(self, size_in, size_out, dt=1.0, thr0=0.01, tau_m=10.0, tau_adp=100.0, name=""):
+    def __init__(self, input_size, size, dt=1.0, thr0=0.01, tau_m=10.0, tau_adp=100.0, name=""):
         super().__init__()
+        self.input_size = input_size
+        self.size = size
         self.dt = dt
         self.thr0 = thr0
         self.name = name
 
         # decay constants
-        self.tau_m = nn.Parameter(torch.Tensor(size_out))
+        self.tau_m = nn.Parameter(torch.Tensor(size))
         nn.init.constant_(self.tau_m, tau_m)
-        self.tau_adp = nn.Parameter(torch.Tensor(size_out))
+        self.tau_adp = nn.Parameter(torch.Tensor(size))
         nn.init.constant_(self.tau_adp, tau_adp)
 
         # bias
-        self.bias = nn.Parameter(torch.Tensor(size_out))
+        self.bias = nn.Parameter(torch.Tensor(size))
         nn.init.constant_(self.bias, 0.0)
 
         # recurrent weights
-        self.rec = nn.Parameter(torch.Tensor(size_out, size_out))
+        self.rec = nn.Parameter(torch.Tensor(size, size))
         nn.init.xavier_uniform_(self.rec)
 
         # input weights
-        self.input = nn.Parameter(torch.Tensor(size_in, size_out))
+        self.input = nn.Parameter(torch.Tensor(input_size, size))
         nn.init.xavier_uniform_(self.input)
 
     def forward(self, mem, thr, prev_spikes, spikes):
@@ -71,16 +74,18 @@ class ALIFLayer(nn.Module):
 
 
 class OutputLayer(nn.Module):
-    def __init__(self, size_in, size_out, tau_m=10.0, dt=1.0):
+    def __init__(self, input_size, size, tau_m=10.0, dt=1.0):
         super().__init__()
+        self.input_size = input_size
+        self.size = size
         self.dt = dt
 
         # weights
-        self.input = nn.Parameter(torch.Tensor(size_in, size_out))
+        self.input = nn.Parameter(torch.Tensor(input_size, size))
         nn.init.xavier_uniform_(self.input)
 
         # decay constant
-        self.tau_m = nn.Parameter(torch.zeros(size_out))
+        self.tau_m = nn.Parameter(torch.zeros(size))
         nn.init.constant_(self.tau_m, tau_m)
 
     def forward(self, mem, spikes):
@@ -90,6 +95,7 @@ class OutputLayer(nn.Module):
         return mem_new
 
 
+# old SRNN implementation: does not allow tau_m and tau_adp per layer
 class SRNN(nn.Module):
     def __init__(self, input_size, hidden_size, output_size, tau_m=10.0, tau_adp=100.0, thr0=0.01):
         super(SRNN, self).__init__()
@@ -134,12 +140,60 @@ class SRNN(nn.Module):
                 forward_spikes = spikes[i - 1] if i > 0 else input[:, ts, :]
                 mem[i], thr[i], spikes[i] = self.hidden[i](
                     mem[i], thr[i], spikes[i], forward_spikes)
-                
+
                 s.append(spikes[i])
                 m.append(mem[i])
             s.reverse()
             spike_trace.append(s)
             m.reverse()
             mem_trace.append(m)
+
+        return sum_output, spike_trace, mem_trace
+
+# new SRNN implementation: based on nn.Sequential
+
+
+class SRNN2(nn.Module):
+    def __init__(self, layers):
+        super(SRNN2, self).__init__()
+        self.layers = nn.ModuleList(layers)
+        self.input_size = self.layers[0].input_size
+        self.output_size = self.layers[-1].size
+
+    def forward(self, input):
+        batch_size, seq_num, _ = input.shape
+
+        # hidden layers
+        spikes = [torch.zeros(batch_size, layer.size).to(input.device)
+                  for layer in self.layers]
+        mems = [torch.zeros(batch_size, layer.size).to(input.device)
+                for layer in self.layers]
+        thr = [getattr(layer, "thr0", -1) for layer in self.layers]
+
+        # output
+        sum_output = torch.zeros(batch_size, self.output_size).to(input.device)
+
+        # traces
+        spike_trace = [torch.zeros(batch_size, seq_num, layer.size).to(input.device) for layer in self.layers]
+        mem_trace = [torch.zeros(batch_size, seq_num, layer.size).to(input.device) for layer in self.layers]
+
+        for ts in range(seq_num):
+            if ts > 0:
+                sum_output = sum_output + F.softmax(mems[-1], dim=1)
+
+            # update all layers
+            for i in reversed(range(0, len(self.layers))):
+                forward_spikes = spikes[i - 1] if i > 0 else input[:, ts, :]
+
+                layer = self.layers[i]
+                if isinstance(layer, ALIFLayer):
+                    mems[i], thr[i], spikes[i] = layer(
+                        mems[i], thr[i], spikes[i], forward_spikes)
+                elif isinstance(layer, OutputLayer):
+                    mems[i] = layer(mems[i], forward_spikes)
+                else:
+                    raise Exception("Unknown layer type")
+                spike_trace[i][:, ts, :] = spikes[i]
+                mem_trace[i][:, ts, :] = mems[i]
 
         return sum_output, spike_trace, mem_trace

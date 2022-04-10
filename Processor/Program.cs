@@ -173,7 +173,7 @@ namespace SpikingDSE
                 },
                 (SimDSEOptions opts) =>
                 {
-                    new MultiCoreDSE(opts.SNN, opts.HW.Split(";").ToList(), opts.Mapping, opts.Dataset, opts.MaxSamples).Run();
+                    new MultiCoreDSE(opts.SNN, opts.HW, opts.Mapping, opts.Dataset, opts.MaxSamples).Run();
                     return 0;
                 },
                 (ToTensorOptions opts) =>
