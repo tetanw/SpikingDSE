@@ -222,6 +222,7 @@ public sealed class Simulator
     private void DoChannelTransfer(Channel channel)
     {
         var rcv = channel.ReceiveEvent;
+        rcv.StartedReceiving = Now;
         var snd = channel.SendEvent;
         rcv.Message = channel.SendEvent.Message;
 

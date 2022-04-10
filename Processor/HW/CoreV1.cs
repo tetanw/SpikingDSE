@@ -26,6 +26,9 @@ public sealed class CoreV1 : Actor, ICore
     public int nrEarlySpikes = 0;
     public double energySpent = 0.0;
     public int nrSpikesReceived = 0;
+    public long receiverBusy;
+    public long ALUBusy;
+    public long senderBusy;
 
     public SpikeReceived OnSpikeReceived;
     public SpikeSent OnSpikeSent;
@@ -60,10 +63,12 @@ public sealed class CoreV1 : Actor, ICore
         var inputBuffer = spec.ReceiverType == ReceiverType.Bare ? null : new Buffer<CoreEvent>(env, spec.ComputeBufferSize);
         while (true)
         {
+            // Delay is determined by the NoC by setting a transfer time on the send side
             var rcv = env.Receive(input);
             yield return rcv;
             var packet = (Packet)rcv.Message;
             var @event = packet.Message as CoreEvent;
+            receiverBusy += env.Now - rcv.StartedReceiving;
 
             if (@event is SyncEvent sync)
             {
@@ -130,6 +135,7 @@ public sealed class CoreV1 : Actor, ICore
             var @event = coreBuffer.Read();
             coreBuffer.ReleaseRead();
 
+            long before = env.Now;
             if (@event is SyncEvent sync)
             {
                 foreach (var ev in Sync(env, sync))
@@ -144,6 +150,7 @@ public sealed class CoreV1 : Actor, ICore
             }
             else
                 throw new Exception("Unknown event!");
+            ALUBusy += env.Now - before;
         }
     }
 
@@ -152,9 +159,11 @@ public sealed class CoreV1 : Actor, ICore
         while (true)
         {
             yield return outputBuffer.RequestRead();
+            long before = env.Now;
             var packet = outputBuffer.Read();
             yield return env.Send(output, packet);
             outputBuffer.ReleaseRead();
+            senderBusy += env.Now - before;
         }
     }
 

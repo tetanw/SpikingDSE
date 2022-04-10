@@ -20,6 +20,7 @@ public class ReceiveEvent : Event
     public bool Ack;
 
     // Result
+    public long StartedReceiving;
     public object Message;
 }
 
