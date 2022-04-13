@@ -42,8 +42,12 @@ public sealed class CoreV1 : Actor, ICore
     private readonly CoreV1Spec spec;
     private readonly object loc;
     private MappingTable mapping;
-    private Buffer<CoreEvent> coreBuffer;
     private Buffer<Packet> outputBuffer;
+
+    private Queue<SpikeEvent>[] forwardSpikes;
+    private Queue<SpikeEvent>[] feedbackSpikes;
+    private Signal syncSignal;
+    private SyncEvent lastSyncEv;
 
     public CoreV1(object location, CoreV1Spec spec)
     {
@@ -60,7 +64,6 @@ public sealed class CoreV1 : Actor, ICore
     {
         int TS = 0;
 
-        var inputBuffer = spec.ReceiverType == ReceiverType.Bare ? null : new Buffer<CoreEvent>(env, spec.ComputeBufferSize);
         while (true)
         {
             // Delay is determined by the NoC by setting a transfer time on the send side
@@ -72,28 +75,9 @@ public sealed class CoreV1 : Actor, ICore
 
             if (@event is SyncEvent sync)
             {
-                if (!coreBuffer.IsFull)
-                {
-                    yield return coreBuffer.RequestWrite();
-                    coreBuffer.Write(sync);
-                    coreBuffer.ReleaseWrite();
-                }
-
-                if (spec.ReceiverType == ReceiverType.ReOrder)
-                {
-                    // write all spikes that were waiting for sync event to happen
-                    while (!inputBuffer.IsEmpty)
-                    {
-                        var spike = (SpikeEvent)inputBuffer.Pop();
-
-                        if (!coreBuffer.IsFull)
-                            coreBuffer.Push(spike);
-                        else
-                            nrSpikesDroppedCore++;
-                    }
-                }
-
+                lastSyncEv = sync;
                 TS = sync.TS + 1;
+                syncSignal.Notify();
             }
             else if (@event is SpikeEvent spike)
             {
@@ -103,25 +87,22 @@ public sealed class CoreV1 : Actor, ICore
 
                 if (spike.TS > TS)
                 {
-                    if (spec.ReceiverType == ReceiverType.ReOrder)
-                    {
-                        if (!inputBuffer.IsFull)
-                            inputBuffer.Push(spike);
-                        else
-                            nrSpikesDroppedInput++;
-                    }
                     nrEarlySpikes++;
                 }
-                else if (spike.TS == TS)
+                else if (spike.TS < TS)
                 {
-                    if (!coreBuffer.IsFull)
-                        coreBuffer.Push(spike);
-                    else
-                        nrSpikesDroppedCore++;
+                    nrLateSpikes++;
                 }
                 else
                 {
-                    nrLateSpikes++;
+                    if (spike.Feedback)
+                    {
+                        feedbackSpikes[TS % 2].Enqueue(spike);
+                    }
+                    else
+                    {
+                        forwardSpikes[TS % 2].Enqueue(spike);
+                    }
                 }
             }
         }
@@ -131,25 +112,27 @@ public sealed class CoreV1 : Actor, ICore
     {
         while (true)
         {
-            yield return coreBuffer.RequestRead();
-            var @event = coreBuffer.Read();
-            coreBuffer.ReleaseRead();
-
+            yield return syncSignal.Wait();
             long before = env.Now;
-            if (@event is SyncEvent sync)
+
+            int TS = lastSyncEv.TS;
+            while (feedbackSpikes[TS % 2].Count > 0)
             {
-                foreach (var ev in Sync(env, sync))
-                    yield return ev;
-                lastSync = env.Now;
-            }
-            else if (@event is SpikeEvent spike)
-            {
+                var spike = feedbackSpikes[TS % 2].Dequeue();
                 foreach (var ev in Compute(env, spike))
                     yield return ev;
-                lastSpike = env.Now;
             }
-            else
-                throw new Exception("Unknown event!");
+
+            while (forwardSpikes[TS % 2].Count > 0)
+            {
+                var spike = forwardSpikes[TS % 2].Dequeue();
+                foreach (var ev in Compute(env, spike))
+                    yield return ev;
+            }
+
+            foreach (var ev in Sync(env, lastSyncEv))
+                yield return ev;
+
             ALUBusy += env.Now - before;
         }
     }
@@ -169,8 +152,14 @@ public sealed class CoreV1 : Actor, ICore
 
     public override IEnumerable<Event> Run(Simulator env)
     {
-        coreBuffer = new(env, spec.ComputeBufferSize);
         outputBuffer = new(env, spec.OutputBufferSize);
+        forwardSpikes = new Queue<SpikeEvent>[2];
+        forwardSpikes[0] = new();
+        forwardSpikes[1] = new();
+        feedbackSpikes = new Queue<SpikeEvent>[2];
+        feedbackSpikes[0] = new();
+        feedbackSpikes[1] = new();
+        syncSignal = new(env);
         env.Process(Receiver(env));
         env.Process(ALU(env));
         env.Process(Sender(env));
@@ -204,26 +193,17 @@ public sealed class CoreV1 : Actor, ICore
                 CreatedAt = env.Now
             };
             var destCoord = mapping.CoordOf(destLayer);
-            if (destCoord == loc)
+
+
+            yield return outputBuffer.RequestWrite();
+            var flit = new Packet
             {
-                spikeOut.ReceivedAt = env.Now;
-                if (!coreBuffer.IsFull)
-                    coreBuffer.Push(spikeOut);
-                else
-                    nrSpikesDroppedCore++;
-            }
-            else
-            {
-                yield return outputBuffer.RequestWrite();
-                var flit = new Packet
-                {
-                    Src = loc,
-                    Dest = destCoord,
-                    Message = spikeOut
-                };
-                outputBuffer.Write(flit);
-                outputBuffer.ReleaseWrite();
-            }
+                Src = loc,
+                Dest = destCoord,
+                Message = spikeOut
+            };
+            outputBuffer.Write(flit);
+            outputBuffer.ReleaseWrite();
         }
     }
 
