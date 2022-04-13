@@ -44,7 +44,6 @@ public class HWSpec
                 ComputeBufferSize = instance["ComputeBufferSize"].GetInt32(),
                 OutputBufferSize = instance["OutputBufferSize"].GetInt32(),
                 NrParallel = instance["NrParallel"].GetInt32(),
-                IgnoreLayers = instance["IgnoreLayers"].GetBoolean()
             };
         }
         else
@@ -124,11 +123,6 @@ public class CoreSpec
     public string ConnectsTo { get; set; }
 }
 
-public enum ReceiverType {
-    Bare,
-    ReOrder
-}
-
 public class CoreV1Spec : CoreSpec
 {
     public int IntegrateDelay { get; set; }
@@ -137,8 +131,6 @@ public class CoreV1Spec : CoreSpec
     public int NrParallel { get; set; }
     public int OutputBufferSize { get; set; }
     public int ComputeBufferSize { get; set; }
-    public bool IgnoreLayers { get; set; }
-    public ReceiverType ReceiverType { get; set; } = ReceiverType.ReOrder;
 }
 
 public class ControllerV1Spec : CoreSpec
