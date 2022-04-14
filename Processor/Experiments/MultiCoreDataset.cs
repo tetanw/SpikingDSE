@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 
 namespace SpikingDSE;
@@ -11,7 +12,11 @@ public class MultiCoreDataset : DSEExperiment<MultiCore>, IDisposable
     private readonly SNN snn;
     private readonly ZipDataset dataset;
     private int nrCorrect = 0;
+    private int nrDone = 0;
     private readonly int maxSamples = 0;
+    private int sampleCounter = 0;
+    private readonly Stopwatch sampleCounterSw;
+    private readonly Stopwatch lastProgress;
 
     private readonly List<long> latencies = new();
 
@@ -22,6 +27,11 @@ public class MultiCoreDataset : DSEExperiment<MultiCore>, IDisposable
         hw = HWSpec.Load(hwPath);
         dataset = new ZipDataset(datasetPath);
         this.maxSamples = maxSamples == -1 ? dataset.NrSamples : maxSamples;
+        sampleCounterSw = new Stopwatch();
+        sampleCounterSw.Start();
+        lastProgress = new Stopwatch();
+        lastProgress.Start();
+        UpdateProgressBar(first: true);
     }
 
     public override IEnumerable<MultiCore> Exp()
@@ -41,6 +51,9 @@ public class MultiCoreDataset : DSEExperiment<MultiCore>, IDisposable
 
     public override void WhenCompleted(TimeSpan runningTime)
     {
+        // Done with progressbar
+        ClearCurrentConsoleLine();
+
         var acc = (float)nrCorrect / maxSamples;
         Console.WriteLine($"Samples: {maxSamples}");
         Console.WriteLine($"Accuracy: {acc}");
@@ -61,6 +74,45 @@ public class MultiCoreDataset : DSEExperiment<MultiCore>, IDisposable
         }
 
         latencies.Add(exp.Latency);
+
+        nrDone++;
+
+        UpdateProgressBar();
+    }
+
+    private void UpdateProgressBar(bool first = false)
+    {
+        sampleCounter++;
+        if (lastProgress.ElapsedMilliseconds > 5000)
+        {
+            if (first)
+            {
+                Console.Write($"Progress: {nrDone} / {maxSamples}");
+                return;
+            }
+
+            ClearCurrentConsoleLine();
+            double sampleRate = sampleCounter / sampleCounterSw.Elapsed.TotalSeconds;
+            int samplesLeft = maxSamples - nrDone;
+            double timeLeft = samplesLeft / sampleRate;
+            Console.Write($"Progress: {nrDone} / {maxSamples}, Sample rate: {(int)sampleRate} samples/s, Expected time left: {(int)timeLeft}s");
+            lastProgress.Restart();
+
+            if (sampleCounter >= 100)
+            {
+                sampleCounter = 0;
+                sampleCounterSw.Restart();
+            }
+        }
+
+    }
+
+    private static void ClearCurrentConsoleLine()
+    {
+        int currentLineCursor = Console.CursorTop;
+        Console.SetCursorPosition(0, Console.CursorTop);
+        Console.Write(new string(' ', Console.WindowWidth));
+        Console.SetCursorPosition(0, currentLineCursor);
     }
 
     public void Dispose()
