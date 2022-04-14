@@ -5,6 +5,7 @@
     <TargetFramework>net6.0</TargetFramework>
     <LangVersion>10.0</LangVersion>
     <RootNamespace>SpikingDSE</RootNamespace>
+    <ServerGarbageCollection>true</ServerGarbageCollection>
   </PropertyGroup>
 
   <ItemGroup>
