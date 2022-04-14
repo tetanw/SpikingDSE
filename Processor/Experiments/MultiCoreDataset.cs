@@ -50,10 +50,6 @@ public class MultiCoreDataset : DSEExperiment<MultiCore>, IDisposable
         Console.WriteLine($"Latency:");
         Console.WriteLine($"  Avg: {avgLat:n} cycles");
         Console.WriteLine($"  Std dev: {stdDevLat:n} cycles");
-        Console.WriteLine($"Compute requirements: -");
-        Console.WriteLine($"Memory requirements: -");
-
-        nrCorrect = 0;
     }
 
     public override void WhenSampleDone(MultiCore exp)
