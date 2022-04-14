@@ -3,6 +3,7 @@ res/results
 res/odin/result.trace
 res/exp
 res/snn
+res/dataset
 admin/
 .vscode/
 
