@@ -4,7 +4,7 @@ using System.IO;
 
 namespace SpikingDSE;
 
-public class MultiCoreTest
+public class MultiCoreTrace
 {
     // Reporting
     private MemReporter mem;
@@ -19,7 +19,7 @@ public class MultiCoreTest
     private readonly int correct;
     private int nrSpikes;
 
-    public MultiCoreTest(string snnPath, string hwPath, string mappingPath, string datasetPath, string traceName, string outputPath)
+    public MultiCoreTrace(string snnPath, string hwPath, string mappingPath, string datasetPath, string traceName, string outputPath)
     {
         var snn = SNN.Load(snnPath);
         var hw = HWSpec.Load(hwPath);

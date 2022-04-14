@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace SpikingDSE;
 
-public class MultiCoreDSE : DSEExperiment<MultiCore>, IDisposable
+public class MultiCoreDataset : DSEExperiment<MultiCore>, IDisposable
 {
     private readonly Mapping mapping;
     private readonly HWSpec hw;
@@ -13,7 +13,9 @@ public class MultiCoreDSE : DSEExperiment<MultiCore>, IDisposable
     private int nrCorrect = 0;
     private readonly int maxSamples = 0;
 
-    public MultiCoreDSE(string snnPath, string hwPath, string mappingPath, string datasetPath, int maxSamples)
+    private readonly List<long> latencies = new();
+
+    public MultiCoreDataset(string snnPath, string hwPath, string mappingPath, string datasetPath, int maxSamples)
     {
         mapping = Mapping.Load(mappingPath);
         snn = SNN.SplitSNN(SNN.Load(snnPath), mapping);
@@ -22,12 +24,7 @@ public class MultiCoreDSE : DSEExperiment<MultiCore>, IDisposable
         this.maxSamples = maxSamples == -1 ? dataset.NrSamples : maxSamples;
     }
 
-    public override IEnumerable<IEnumerable<MultiCore>> Configs()
-    {
-        yield return Experiment();
-    }
-
-    public IEnumerable<MultiCore> Experiment()
+    public override IEnumerable<MultiCore> Exp()
     {
         for (int i = 0; i < maxSamples; i++)
         {
@@ -42,21 +39,32 @@ public class MultiCoreDSE : DSEExperiment<MultiCore>, IDisposable
         }
     }
 
-    public override void OnConfigCompleted(TimeSpan runningTime)
+    public override void WhenCompleted(TimeSpan runningTime)
     {
         var acc = (float)nrCorrect / maxSamples;
-        Console.WriteLine(maxSamples);
-        Console.WriteLine($"{acc};{(int)runningTime.TotalMilliseconds}ms");
+        Console.WriteLine($"Samples: {maxSamples}");
+        Console.WriteLine($"Accuracy: {acc}");
+        Console.WriteLine($"Running time: {(int)runningTime.TotalMilliseconds:n}ms");
+        double avgLat = latencies.Sum() / maxSamples;
+        double stdDevLat = Math.Sqrt(latencies.Sum((s) => Math.Pow(s - avgLat, 2)) / (maxSamples - 1));
+        Console.WriteLine($"Latency:");
+        Console.WriteLine($"  Avg: {avgLat:n} cycles");
+        Console.WriteLine($"  Std dev: {stdDevLat:n} cycles");
+        Console.WriteLine($"Compute requirements: -");
+        Console.WriteLine($"Memory requirements: -");
+
         nrCorrect = 0;
     }
 
-    public override void OnExpCompleted(MultiCore exp)
+    public override void WhenSampleDone(MultiCore exp)
     {
         int correct = (int)exp.Context;
         if (exp.Predict() == correct)
         {
             nrCorrect++;
         }
+
+        latencies.Add(exp.Latency);
     }
 
     public void Dispose()

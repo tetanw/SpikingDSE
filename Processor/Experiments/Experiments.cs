@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Threading.Tasks;
-using System.Threading;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace SpikingDSE;
 
@@ -18,7 +18,7 @@ public abstract class Experiment
     public object Context { get; set; }
     protected Simulator sim;
     protected SimStopConditions simStop;
-    
+
     public Experiment()
     {
         this.sim = new Simulator();
@@ -44,7 +44,8 @@ public abstract class Experiment
         Cleanup();
 
         PrintLn("Simulation done");
-        if (Debug) {
+        if (Debug)
+        {
             sim.PrintDeadlockReport();
             sim.PrintActorReport();
         }
@@ -70,28 +71,28 @@ public abstract class DSEExperiment<T>
     {
         var m = new System.Threading.Mutex();
 
-        foreach (var config in Configs())
-        {
-            var sw = new Stopwatch();
-            sw.Start();
 
-            Parallel.ForEach(config, (exp, _, j) =>
-             {
-                 exp.Run();
+        var sw = new Stopwatch();
+        sw.Start();
 
-                 m.WaitOne();
-                 OnExpCompleted(exp);
-                 m.ReleaseMutex();
-             });
+        var exp = Exp();
+        Parallel.ForEach(exp, (exp, _, j) =>
+         {
+             exp.Run();
 
-            sw.Stop();
-            OnConfigCompleted(sw.Elapsed);
-        }
+             m.WaitOne();
+             WhenSampleDone(exp);
+             m.ReleaseMutex();
+         });
+
+        sw.Stop();
+        WhenCompleted(sw.Elapsed);
+
     }
 
-    public abstract IEnumerable<IEnumerable<T>> Configs();
+    public abstract IEnumerable<T> Exp();
 
-    public abstract void OnExpCompleted(T exp);
+    public abstract void WhenSampleDone(T exp);
 
-    public abstract void OnConfigCompleted(TimeSpan runningTime);
+    public abstract void WhenCompleted(TimeSpan runningTime);
 }

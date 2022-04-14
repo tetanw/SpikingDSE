@@ -57,6 +57,8 @@ public class MultiCore : Experiment
     private readonly ISpikeSource source;
     private readonly HWSpec spec;
 
+    public long Latency { get; set; }
+
     public MultiCore(ISpikeSource source, SNN snn, Mapping mapping, HWSpec spec)
     {
         this.snn = snn;
@@ -225,7 +227,10 @@ public class MultiCore : Experiment
         SetupDone?.Invoke();
     }
 
-    public override void Cleanup() { }
+    public override void Cleanup()
+    {
+        Latency = sim.Now;
+    }
 
     public int Predict() => snn.GetOutputLayer().Prediction();
 }

@@ -168,12 +168,12 @@ namespace SpikingDSE
                     var split = opts.Trace.Split(";");
                     var datasetPath = split[0];
                     var traceName = split[1];
-                    new MultiCoreTest(opts.SNN, opts.HW, opts.Mapping, datasetPath, traceName, opts.Output).Run();
+                    new MultiCoreTrace(opts.SNN, opts.HW, opts.Mapping, datasetPath, traceName, opts.Output).Run();
                     return 0;
                 },
                 (SimDSEOptions opts) =>
                 {
-                    new MultiCoreDSE(opts.SNN, opts.HW, opts.Mapping, opts.Dataset, opts.MaxSamples).Run();
+                    new MultiCoreDataset(opts.SNN, opts.HW, opts.Mapping, opts.Dataset, opts.MaxSamples).Run();
                     return 0;
                 },
                 (ToTensorOptions opts) =>
