@@ -62,6 +62,7 @@ public abstract class HiddenLayer : Layer
     public abstract void Forward(int neuron);
     public abstract void Feedback(int neuron);
     public abstract bool Sync(int neuron);
+    public virtual void StartSync() {}
     public virtual void FinishSync() {}
     public abstract bool IsRecurrent();
     public abstract int Offset();

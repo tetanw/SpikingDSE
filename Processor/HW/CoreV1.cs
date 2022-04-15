@@ -248,7 +248,7 @@ public sealed class CoreV1 : Actor, ICore
         foreach (var layer in sync.Layers.Cast<HiddenLayer>())
         {
             OnSyncStarted?.Invoke(env.Now, sync.TS, layer);
-
+            layer.StartSync();
             for (int line = 0; line < layer.Size; line += spec.NrParallel)
             {
                 int spikesLeft = spec.NrParallel - nrSpikesProcessed;

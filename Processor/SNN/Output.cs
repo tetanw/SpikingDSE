@@ -34,6 +34,11 @@ public class OutputLayer : HiddenLayer
         }
     }
 
+    public override void StartSync()
+    {
+        ProcessReadout();
+    }
+
     public override bool Sync(int dst)
     {
         float pot = Pots[dst];
@@ -53,7 +58,6 @@ public class OutputLayer : HiddenLayer
     public override void FinishSync()
     {
         TS++;
-        ProcessReadout();
     }
 
     private void ProcessReadout()
