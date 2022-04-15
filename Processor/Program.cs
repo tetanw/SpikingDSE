@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Linq;
 using CommandLine;
 
@@ -173,6 +174,7 @@ namespace SpikingDSE
                 },
                 (SimDSEOptions opts) =>
                 {
+                    System.Diagnostics.Process.GetCurrentProcess().PriorityClass = ProcessPriorityClass.Idle;
                     new MultiCoreDataset(opts.SNN, opts.HW, opts.Mapping, opts.Dataset, opts.MaxSamples).Run();
                     return 0;
                 },
