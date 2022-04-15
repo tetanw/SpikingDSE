@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace SpikingDSE;
 
@@ -133,6 +134,8 @@ public class MultiCore : Experiment
             }
             mappingTable.Map(core, layer);
         }
+        mappingTable.ControllerCoord = Controller.GetLocation();
+        mappingTable.Cores = Cores;
 
         // Load stuff
         foreach (var core in mappingTable.Cores)

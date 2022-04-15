@@ -8,6 +8,8 @@ public class MappingTable
     private readonly Dictionary<Layer, ICore> layerToCore = new();
     private readonly SNN snn;
 
+    public List<ICore> Cores { get; set; } = new();
+
     public MappingTable(SNN snn)
     {
         this.snn = snn;
@@ -31,7 +33,7 @@ public class MappingTable
         return coreToLayer[core];
     }
 
-    public IEnumerable<ICore> Cores
+    public IEnumerable<ICore> MappedCores
     {
         get => coreToLayer.Keys;
     }
@@ -51,6 +53,8 @@ public class MappingTable
         return layerToCore[layer].GetLocation();
     }
 
+    public object ControllerCoord { get; set; }
+
     public Layer GetDestLayer(Layer layer)
     {
         return snn.GetDestLayer(layer);
@@ -68,6 +72,6 @@ public class MappingTable
 
     public List<Layer> GetAllLayers(ICore core)
     {
-        return coreToLayer[core];
+        return coreToLayer.GetValueOrDefault(core);
     }
 }

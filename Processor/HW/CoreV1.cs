@@ -133,6 +133,20 @@ public sealed class CoreV1 : Actor, ICore
             foreach (var ev in Sync(env, lastSyncEv))
                 yield return ev;
 
+            if (spec.DoSyncEndEvent)
+            {
+                yield return outputBuffer.RequestWrite();
+                outputBuffer.Write(new Packet {
+                    Dest = mapping.ControllerCoord,
+                    Src = loc,
+                    Message = new SyncDone {
+                        TS = TS,
+                        Core = this
+                    }
+                });
+                outputBuffer.ReleaseWrite();
+            }
+
             ALUBusy += env.Now - before;
         }
     }

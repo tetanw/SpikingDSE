@@ -19,6 +19,12 @@ public class SyncEvent : CoreEvent
     public List<Layer> Layers = null;
 }
 
+public class SyncDone : CoreEvent
+{
+    public int TS = -1;
+    public object Core = null;
+}
+
 public class SpikeEvent : CoreEvent
 {
     public Layer Layer = null;

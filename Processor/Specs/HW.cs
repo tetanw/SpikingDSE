@@ -131,12 +131,14 @@ public class CoreV1Spec : CoreSpec
     public int NrParallel { get; set; }
     public int OutputBufferSize { get; set; }
     public int ComputeBufferSize { get; set; }
+    public bool DoSyncEndEvent { get; set; } = true;
 }
 
 public class ControllerV1Spec : CoreSpec
 {
     public long StartTime { get; set; } = 0;
     public long Interval { get; set; }
+    public bool DoGlobalSync { get; set; } = false;
 }
 
 public class NoCSpec

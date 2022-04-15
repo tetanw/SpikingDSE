@@ -82,14 +82,15 @@ public class MultiCoreDataset : DSEExperiment<MultiCore>, IDisposable
 
     private void UpdateProgressBar(bool first = false)
     {
-        sampleCounter++;
-        if (lastProgress.ElapsedMilliseconds > 5000)
+        if (first)
         {
-            if (first)
-            {
-                Console.Write($"Progress: {nrDone} / {maxSamples}");
-                return;
-            }
+            Console.Write($"Progress: {nrDone} / {maxSamples}");
+            return;
+        }
+
+        sampleCounter++;
+        if (lastProgress.ElapsedMilliseconds > 3000)
+        {
 
             ClearCurrentConsoleLine();
             double sampleRate = sampleCounter / sampleCounterSw.Elapsed.TotalSeconds;

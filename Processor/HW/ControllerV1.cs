@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace SpikingDSE;
 
@@ -19,6 +20,8 @@ public sealed class ControllerV1 : Actor, ICore
     private MappingTable mapping;
     public ControllerV1Spec spec;
 
+    private Signal syncSignal;
+
     public ControllerV1(InputLayer inputLayer, ISpikeSource source, object location, ControllerV1Spec spec)
     {
         this.inputLayer = inputLayer;
@@ -34,6 +37,7 @@ public sealed class ControllerV1 : Actor, ICore
 
     public override IEnumerable<Event> Run(Simulator env)
     {
+        syncSignal = new(env);
         env.Process(Sender(env));
         env.Process(Receiver(env));
 
@@ -75,20 +79,37 @@ public sealed class ControllerV1 : Actor, ICore
             }
 
             // Wait until sync
-            foreach (var ev in Sync(env, TS))
-                yield return ev;
-            TS++;
+            if (spec.DoGlobalSync)
+            {
+                var nextSync = spec.StartTime + spec.Interval * (TS + 1);
+                yield return env.SleepUntil(Math.Max(nextSync, env.Now));
+
+                // Sync
+                foreach (var ev in Sync(env, TS))
+                    yield return ev;
+                TS++;
+            }
+            else
+            {
+                // Sync
+                foreach (var ev in Sync(env, TS))
+                    yield return ev;
+
+                yield return syncSignal.Wait();
+                TS++;
+            }
         }
 
-        foreach (var ev in Sync(env, TS))
-            yield return ev;
+        if (!spec.DoGlobalSync)
+        {
+            // Sync
+            foreach (var ev in Sync(env, TS))
+                yield return ev;
+        }
     }
 
     private IEnumerable<Event> Sync(Simulator env, int TS)
     {
-        var nextSync = spec.StartTime + spec.Interval * (TS + 1);
-        yield return env.SleepUntil(Math.Max(nextSync, env.Now));
-
         foreach (var core in mapping.Cores)
         {
             if (core is ControllerV1)
@@ -98,7 +119,7 @@ public sealed class ControllerV1 : Actor, ICore
             {
                 TS = TS,
                 CreatedAt = env.Now,
-                Layers = mapping.GetAllLayers(core)
+                Layers = mapping.GetAllLayers(core) ?? new List<Layer>()
             };
             var flit = new Packet
             {
@@ -113,20 +134,20 @@ public sealed class ControllerV1 : Actor, ICore
 
     private IEnumerable<Event> Receiver(Simulator env)
     {
+        var coresDone = new HashSet<object>();
+        int nrCores = mapping.Cores.Count - 1;
+
         while (true)
         {
             var rcv = env.Receive(Input);
             yield return rcv;
-            var ev = rcv.Message;
+            var syncDone = (rcv.Message as Packet).Message as SyncDone;
 
-            if (ev is Packet)
+            coresDone.Add(syncDone.Core);
+            if (coresDone.Count == nrCores)
             {
-                var spike = (ev as Packet).Message as SpikeEvent;
-                SpikeReceived?.Invoke(this, env.Now, spike);
-            }
-            else
-            {
-                throw new Exception("Receiver received unknown message!");
+                syncSignal.Notify();
+                coresDone.Clear();
             }
         }
     }

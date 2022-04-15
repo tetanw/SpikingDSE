@@ -94,6 +94,7 @@ public class MultiCoreTrace
 
             core.OnSyncEnded += (_, ts, layer) =>
             {
+                // TODO: Hardcoded stuff
                 float[] pots = (layer as ALIFLayer)?.Readout ?? (layer as OutputLayer)?.Readout;
                 mem.AdvanceLayer(layer, ts, pots);
             };
