@@ -35,10 +35,6 @@ public class OutputLayer : HiddenLayer
         }
     }
 
-    public override void StartSync()
-    {
-    }
-
     public override bool Sync(int dst)
     {
         float pot = Pots[dst];
