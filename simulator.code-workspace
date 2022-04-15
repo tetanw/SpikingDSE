@@ -13,9 +13,6 @@
 			"path": "Analysis"
 		},
 		{
-			"path": "Data"
-		},
-		{
 			"path": "..\\Efficient-spiking-networks-main"
 		}
 	],
