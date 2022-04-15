@@ -53,13 +53,13 @@ public class OutputLayer : HiddenLayer
 
     public override void FinishSync()
     {
-        ProcessReadout();
+        UpdateOutput();
         TS++;
     }
 
-    private void ProcessReadout()
+    private void UpdateOutput()
     {
-        float[] softmax = Softmax(Pots);
+        float[] softmax = Softmax(Readout);
         for (int i = 0; i < Size; i++)
         {
             Output[i] += softmax[i];

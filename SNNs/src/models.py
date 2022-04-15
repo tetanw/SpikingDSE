@@ -188,8 +188,8 @@ class SRNN2(nn.Module):
                     mems[i], thr[i], spikes[i] = layer(
                         mems[i], thr[i], spikes[i], forward_spikes)
                 elif isinstance(layer, OutputLayer):
-                    sum_output = sum_output + F.softmax(mems[i], dim=1)
                     mems[i] = layer(mems[i], forward_spikes)
+                    sum_output = sum_output + F.softmax(mems[i], dim=1)
                 else:
                     raise Exception("Unknown layer type")
                 spike_trace[i][:, ts, :] = spikes[i]
