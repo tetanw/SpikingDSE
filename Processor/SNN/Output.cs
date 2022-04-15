@@ -62,15 +62,11 @@ public class OutputLayer : HiddenLayer
 
     private void ProcessReadout()
     {
-        if (TS > 0)
+        float[] softmax = Softmax(Pots);
+        for (int i = 0; i < Size; i++)
         {
-            float[] softmax = Softmax(Pots);
-            for (int i = 0; i < Size; i++)
-            {
-                Output[i] += softmax[i];
-            }
+            Output[i] += softmax[i];
         }
-
     }
 
     private static float[] Softmax(float[] vector)
