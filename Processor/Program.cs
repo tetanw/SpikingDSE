@@ -174,7 +174,7 @@ namespace SpikingDSE
                 },
                 (SimDSEOptions opts) =>
                 {
-                    System.Diagnostics.Process.GetCurrentProcess().PriorityClass = ProcessPriorityClass.Idle;
+                    System.Diagnostics.Process.GetCurrentProcess().PriorityClass = ProcessPriorityClass.BelowNormal;
                     new MultiCoreDataset(opts.SNN, opts.HW, opts.Mapping, opts.Dataset, opts.MaxSamples).Run();
                     return 0;
                 },
