@@ -54,7 +54,7 @@ public class MultiCoreDataset : DSEExperiment<MultiCore>, IDisposable
         // Done with progressbar
         ClearCurrentConsoleLine();
 
-        var acc = (float)nrCorrect / maxSamples;
+        var acc = (float)nrCorrect / maxSamples * 100;
         Console.WriteLine($"Samples: {maxSamples}");
         Console.WriteLine($"Accuracy: {acc}");
         Console.WriteLine($"Running time: {(int)runningTime.TotalMilliseconds:n}ms");
