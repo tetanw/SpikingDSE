@@ -59,10 +59,20 @@ public class MultiCoreDataset : DSEExperiment<MultiCore>, IDisposable
         Console.WriteLine($"Accuracy: {acc}");
         Console.WriteLine($"Running time: {(int)runningTime.TotalMilliseconds:n}ms");
         double avgLat = latencies.Sum() / maxSamples;
-        double stdDevLat = Math.Sqrt(latencies.Sum((s) => Math.Pow(s - avgLat, 2)) / (maxSamples - 1));
+        double maxLat = latencies.Max();
+        double minLat = latencies.Min();
         Console.WriteLine($"Latency:");
         Console.WriteLine($"  Avg: {avgLat:n} cycles");
-        Console.WriteLine($"  Std dev: {stdDevLat:n} cycles");
+        Console.WriteLine($"  Min: {minLat:n} cycles");
+        Console.WriteLine($"  Max: {maxLat:n} cycles");
+
+        var reporter = new FileReporter("res/results/dataset.csv");
+        reporter.ReportLine("exp,latency,energy");
+        for (int i = 0; i < maxSamples; i++)
+        {
+            reporter.ReportLine($"{i},{latencies[i]},0");
+        }
+        reporter.Finish();
     }
 
     public override void WhenSampleDone(MultiCore exp)
