@@ -26,6 +26,7 @@ public class OutputLayer : HiddenLayer
         this.Alpha = alpha;
         this.Name = name;
     }
+
     public override void Forward(int neuron)
     {
         for (int dst = 0; dst < Size; dst++)
@@ -36,7 +37,6 @@ public class OutputLayer : HiddenLayer
 
     public override void StartSync()
     {
-        ProcessReadout();
     }
 
     public override bool Sync(int dst)
@@ -57,6 +57,7 @@ public class OutputLayer : HiddenLayer
 
     public override void FinishSync()
     {
+        ProcessReadout();
         TS++;
     }
 
