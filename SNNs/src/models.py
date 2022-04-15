@@ -178,8 +178,6 @@ class SRNN2(nn.Module):
         mem_trace = [torch.zeros(batch_size, seq_num, layer.size).to(input.device) for layer in self.layers]
 
         for ts in range(seq_num):
-            if ts > 0:
-                sum_output = sum_output + F.softmax(mems[-1], dim=1)
 
             # update all layers
             for i in reversed(range(0, len(self.layers))):
@@ -190,6 +188,7 @@ class SRNN2(nn.Module):
                     mems[i], thr[i], spikes[i] = layer(
                         mems[i], thr[i], spikes[i], forward_spikes)
                 elif isinstance(layer, OutputLayer):
+                    sum_output = sum_output + F.softmax(mems[i], dim=1)
                     mems[i] = layer(mems[i], forward_spikes)
                 else:
                     raise Exception("Unknown layer type")
