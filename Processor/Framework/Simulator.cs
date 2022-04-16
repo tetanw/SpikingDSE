@@ -17,6 +17,7 @@ public sealed class Simulator
 
     public void Schedule(Process process)
     {
+        process.IsScheduled = true;
         process.Time = Now;
         ready.Enqueue(process);
     }
@@ -127,6 +128,7 @@ public sealed class Simulator
         while (NrEventsProcessed < stopEvents && Now < stopTime && ready.Count > 0)
         {
             CurrentProcess = ready.Dequeue();
+            CurrentProcess.IsScheduled = false;
             CurrentProcess.Actor.NrEvents++;
             Now = CurrentProcess.Time;
             NrEventsProcessed++;

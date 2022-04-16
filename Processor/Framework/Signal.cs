@@ -23,7 +23,8 @@ public sealed class Signal
     {
         foreach (var waitingEv in Waiting)
         {
-            env.Schedule(waitingEv.Process);
+            if (!waitingEv.Process.IsScheduled)
+                env.Schedule(waitingEv.Process);
         }
         Waiting.Clear();
     }

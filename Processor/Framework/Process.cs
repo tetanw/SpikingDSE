@@ -18,6 +18,7 @@ public sealed class Process : IComparable<Process>
     public IEnumerator<Event> Runnable;
     public long Time;
     public Actor Actor;
+    public bool IsScheduled = false;
     public List<Process> Waiting = new();
 
     public int CompareTo([AllowNull] Process other)
