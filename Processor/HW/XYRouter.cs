@@ -18,13 +18,16 @@ public sealed class XYRouter : MeshRouter
 
     // Stats
     private double dynamicEnergy = 0.0;
+    public long[] inBusy = new long[5];
+    public long[] outBusy = new long[5];
+    public long switchBusy = 0;
 
     public XYRouter(int x, int y, MeshSpec spec)
     {
         this.x = x;
         this.y = y;
         this.spec = spec;
-        this.Name = $"router({x},{y})";
+        this.Name = $"router({x}_{y})";
     }
 
     public double Energy(long now)
@@ -99,6 +102,8 @@ public sealed class XYRouter : MeshRouter
             foreach (var ev in condVar.BlockUntil(AnyPortEvent))
                 yield return ev;
 
+            long before = env.Now;
+
             // Find the offending port
             int i = Array.FindIndex(condVar.Value, (v) => v > 0);
 
@@ -124,6 +129,8 @@ public sealed class XYRouter : MeshRouter
                 yield return env.Delay(spec.SwitchDelay);
                 outBuffers[to].Push(inBuffers[from].Pop());
             }
+
+            switchBusy += env.Now - before;
         }
     }
 
@@ -174,7 +181,9 @@ public sealed class XYRouter : MeshRouter
         {
             yield return buffer.RequestRead();
             var flit = buffer.Read();
+            long before = env.Now;
             yield return env.Send(outPort, flit, transferTime: transferDelay);
+            outBusy[dir] += env.Now - before;
             buffer.ReleaseRead();
 
             condVar.Value[dir + 5]++;
@@ -193,6 +202,7 @@ public sealed class XYRouter : MeshRouter
             // This symbolises the amount of time for the transfer to take place
             var rcv = env.Receive(inPort, transferTime: transferDelay);
             yield return rcv;
+            inBusy[dir] += env.Now - rcv.StartedReceiving;
             var packet = (Packet)rcv.Message;
             packet.NrHops++;
             dynamicEnergy += spec.TransferEnergy;

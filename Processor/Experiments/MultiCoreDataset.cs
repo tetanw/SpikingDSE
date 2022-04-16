@@ -19,6 +19,7 @@ public class MultiCoreDataset : DSEExperiment<MultiCore>, IDisposable
     private readonly Stopwatch lastProgress;
 
     private readonly List<long> latencies = new();
+    private readonly UtilManager utilMan = new UtilManager();
 
     public MultiCoreDataset(string snnPath, string hwPath, string mappingPath, string datasetPath, int maxSamples)
     {
@@ -66,13 +67,22 @@ public class MultiCoreDataset : DSEExperiment<MultiCore>, IDisposable
         Console.WriteLine($"  Min: {minLat:n} cycles");
         Console.WriteLine($"  Max: {maxLat:n} cycles");
 
-        var reporter = new FileReporter("res/results/dataset.csv");
-        reporter.ReportLine("exp,latency,energy");
+        var expRep = new FileReporter("res/results/experiments.csv");
+        expRep.ReportLine("exp,latency,energy");
         for (int i = 0; i < maxSamples; i++)
         {
-            reporter.ReportLine($"{i},{latencies[i]},0");
+            expRep.ReportLine($"{i},{latencies[i]},0");
         }
-        reporter.Finish();
+        expRep.Finish();
+
+        var utilRep = new FileReporter("res/results/utilization.csv");
+        utilRep.ReportLine("name,util");
+        foreach (var (name, period) in utilMan.GetPeriods())
+        {
+            double util = (double)period.Busy / period.Period;
+            utilRep.ReportLine($"{name},{util}");
+        }
+        utilRep.Finish();
     }
 
     public override void WhenSampleDone(MultiCore exp)
@@ -86,6 +96,29 @@ public class MultiCoreDataset : DSEExperiment<MultiCore>, IDisposable
         latencies.Add(exp.Latency);
 
         nrDone++;
+
+        foreach (var c in exp.Cores)
+        {
+            if (c is not CoreV1 core)
+                continue;
+
+            utilMan.WriteBusyPeriod($"{core.Name}-receiver", core.receiverBusy, exp.Latency);
+            utilMan.WriteBusyPeriod($"{core.Name}-sender", core.senderBusy, exp.Latency);
+            utilMan.WriteBusyPeriod($"{core.Name}-alu", core.ALUBusy, exp.Latency);
+        }
+
+        foreach (var r in exp.Routers)
+        {
+            if (r is not XYRouter router)
+                continue;
+
+            for (int i = 0; i < 5; i++)
+            {
+                utilMan.WriteBusyPeriod($"{router.Name}-in{i}", router.inBusy[i], exp.Latency);
+                utilMan.WriteBusyPeriod($"{router.Name}-out{i}", router.outBusy[i], exp.Latency);
+            }
+            utilMan.WriteBusyPeriod($"{router.Name}-switch", router.switchBusy, exp.Latency);
+        }
 
         UpdateProgressBar();
     }
