@@ -29,3 +29,36 @@ public class CondVar<T>
         onChange.Notify();
     }
 }
+
+
+public class Condition
+{
+    private readonly Signal onChange;
+    private readonly Func<bool> condMet;
+
+    public Condition(Simulator env, Func<bool> condMet)
+    {
+        onChange = new Signal(env);
+        this.condMet = condMet;
+    }
+
+    public IEnumerable<Event> Wait()
+    {
+        bool ready = condMet();
+        while (!ready)
+        {
+            yield return onChange.Wait();
+            ready = condMet();
+        }
+    }
+
+    public bool Poll()
+    {
+        return condMet();
+    }
+
+    public void Update()
+    {
+        onChange.Notify();
+    }
+}

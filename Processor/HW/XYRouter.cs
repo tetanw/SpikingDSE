@@ -14,7 +14,8 @@ public sealed class XYRouter : MeshRouter
     private readonly MeshSpec spec;
     private Buffer<Packet>[] inBuffers;
     private Buffer<Packet>[] outBuffers;
-    private CondVar<int[]> condVar;
+    private bool eventsReady = false;
+    private Condition anEventReady;
 
     // Stats
     private double dynamicEnergy = 0.0;
@@ -41,7 +42,7 @@ public sealed class XYRouter : MeshRouter
     {
         inBuffers = new Buffer<Packet>[5];
         outBuffers = new Buffer<Packet>[5];
-        condVar = new(env, new int[10]);
+        anEventReady = new(env, () => eventsReady);
 
         for (int dir = 0; dir < 5; dir++)
         {
@@ -87,11 +88,6 @@ public sealed class XYRouter : MeshRouter
         else throw new Exception("Unknown direction");
     }
 
-    private static bool AnyPortEvent(int[] events)
-    {
-        return events.Any((v) => v > 0);
-    }
-
     private IEnumerable<Event> Switch(Simulator env)
     {
         int lastDir = 0;
@@ -99,77 +95,36 @@ public sealed class XYRouter : MeshRouter
         while (true)
         {
             // Wait until one of the input ports is filled or output port is free
-            foreach (var ev in condVar.BlockUntil(AnyPortEvent))
+            foreach (var ev in anEventReady.Wait())
                 yield return ev;
+            eventsReady = false;
 
             long before = env.Now;
-
-            // Find the offending port
-            int i = Array.FindIndex(condVar.Value, (v) => v > 0);
-
-            // Update dir
-            condVar.Value[i]--;
-            condVar.Update();
-
-            int from, to;
-            bool routeFound;
-            if (i < 5)
+            bool noRouteFound = false;
+            while (!noRouteFound)
             {
-                // Is input event
-                (routeFound, from, to) = OnInputEvent(env, ref lastDir, i);
-            }
-            else
-            {
-                // Is output event
-                (routeFound, from, to) = OnOutputEvent(env, ref lastDir, i - 5);
-            }
-
-            if (routeFound)
-            {
-                yield return env.Delay(spec.SwitchDelay);
-                outBuffers[to].Push(inBuffers[from].Pop());
+                for (int j = 0; j < 5; j++)
+                {
+                    int inDir = (lastDir + 1 + j) % 5;
+                    var inBuffer = inBuffers[inDir];
+                    if (inBuffer == null || inBuffer.Count == 0)
+                        continue;
+                    var packet = inBuffer.Peek();
+                    int outDir = DetermineOutput(packet);
+                    if (!outBuffers[outDir].IsFull)
+                    {
+                        lastDir = inDir;
+                        yield return env.Delay(spec.SwitchDelay);
+                        OnTransfer?.Invoke(env.Now, inDir, outDir);
+                        outBuffers[outDir].Push(inBuffers[inDir].Pop());
+                        break;
+                    }
+                }
+                noRouteFound = true;
             }
 
             switchBusy += env.Now - before;
         }
-    }
-
-    private (bool, int, int) OnInputEvent(Simulator env, ref int lastDir, int dir)
-    {
-        var inBuffer = inBuffers[dir];
-        var packet = inBuffer.Peek();
-        int outDir = DetermineOutput(packet);
-        var outBuffer = outBuffers[outDir];
-        if (!outBuffer.IsFull)
-        {
-            lastDir = dir;
-            OnTransfer?.Invoke(env.Now, dir, outDir);
-            return (true, dir, outDir);
-        }
-        else
-        {
-            return (false, -1, -1);
-        }
-    }
-
-    private (bool, int, int) OnOutputEvent(Simulator env, ref int lastDir, int freeDir)
-    {
-        for (int i = 0; i < 5; i++)
-        {
-            int inDir = (lastDir + 1 + i) % 5;
-            var inBuffer = inBuffers[inDir];
-            if (inBuffer == null || inBuffer.Count == 0)
-                continue;
-            var packet = inBuffer.Peek();
-            int outDir = DetermineOutput(packet);
-            if (outDir == freeDir)
-            {
-                lastDir = inDir;
-                OnTransfer?.Invoke(env.Now, inDir, outDir);
-                return (true, inDir, outDir);
-            }
-        }
-        return (false, -1, -1);
     }
 
     private IEnumerable<Event> OutLink(Simulator env, int dir, int transferDelay)
@@ -186,8 +141,8 @@ public sealed class XYRouter : MeshRouter
             outBusy[dir] += env.Now - before;
             buffer.ReleaseRead();
 
-            condVar.Value[dir + 5]++;
-            condVar.Update();
+            eventsReady = true;
+            anEventReady.Update();
         }
     }
 
@@ -209,8 +164,8 @@ public sealed class XYRouter : MeshRouter
             buffer.Write(packet);
             buffer.ReleaseWrite();
 
-            condVar.Value[dir]++;
-            condVar.Update();
+            eventsReady = true;
+            anEventReady.Update();
         }
     }
 
