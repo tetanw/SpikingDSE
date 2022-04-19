@@ -22,6 +22,7 @@ public class MultiCoreDataset : DSEExperiment<MultiCore>, IDisposable
     private readonly Stopwatch lastProgress;
 
     private readonly List<long> latencies = new();
+    private readonly List<(int, int)> predictions = new();
 
     public MultiCoreDataset(string snnPath, string hwPath, string mappingPath, string datasetPath, string outputDir, int maxSamples)
     {
@@ -75,10 +76,10 @@ public class MultiCoreDataset : DSEExperiment<MultiCore>, IDisposable
         Console.WriteLine($"  Max: {maxLat:n} cycles");
 
         var expRep = new FileReporter($"{outputDir}/experiments.csv");
-        expRep.ReportLine("exp,latency");
+        expRep.ReportLine("exp,latency,correct,predicted");
         for (int i = 0; i < maxSamples; i++)
         {
-            expRep.ReportLine($"{i},{latencies[i]}");
+            expRep.ReportLine($"{i},{latencies[i]},{predictions[i].Item1},{predictions[i].Item2}");
         }
         expRep.Finish();
     }
@@ -92,6 +93,7 @@ public class MultiCoreDataset : DSEExperiment<MultiCore>, IDisposable
         }
 
         latencies.Add(exp.Latency);
+        predictions.Add((correct, exp.Predict()));
 
         nrDone++;
 
