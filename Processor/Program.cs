@@ -98,6 +98,9 @@ namespace SpikingDSE
 
         [Option("max-samples", Required = false, HelpText = "Max samples to run through")]
         public int MaxSamples { get; set; } = -1;
+
+        [Option('o', "output-dir", Required = true, HelpText = "Director to place results")]
+        public string OutputDir { get; set; }
     }
 
     class Program
@@ -175,7 +178,7 @@ namespace SpikingDSE
                 (SimDSEOptions opts) =>
                 {
                     System.Diagnostics.Process.GetCurrentProcess().PriorityClass = ProcessPriorityClass.BelowNormal;
-                    new MultiCoreDataset(opts.SNN, opts.HW, opts.Mapping, opts.Dataset, opts.MaxSamples).Run();
+                    new MultiCoreDataset(opts.SNN, opts.HW, opts.Mapping, opts.Dataset, opts.OutputDir, opts.MaxSamples).Run();
                     return 0;
                 },
                 (ToTensorOptions opts) =>

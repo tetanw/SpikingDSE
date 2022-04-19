@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 
 namespace SpikingDSE;
@@ -11,6 +12,8 @@ public class MultiCoreDataset : DSEExperiment<MultiCore>, IDisposable
     private readonly HWSpec hw;
     private readonly SNN snn;
     private readonly ZipDataset dataset;
+    private readonly string outputDir;
+
     private int nrCorrect = 0;
     private int nrDone = 0;
     private readonly int maxSamples = 0;
@@ -19,9 +22,8 @@ public class MultiCoreDataset : DSEExperiment<MultiCore>, IDisposable
     private readonly Stopwatch lastProgress;
 
     private readonly List<long> latencies = new();
-    private readonly UtilManager utilMan = new UtilManager();
 
-    public MultiCoreDataset(string snnPath, string hwPath, string mappingPath, string datasetPath, int maxSamples)
+    public MultiCoreDataset(string snnPath, string hwPath, string mappingPath, string datasetPath, string outputDir, int maxSamples)
     {
         mapping = Mapping.Load(mappingPath);
         snn = SNN.SplitSNN(SNN.Load(snnPath), mapping);
@@ -33,6 +35,7 @@ public class MultiCoreDataset : DSEExperiment<MultiCore>, IDisposable
         lastProgress = new Stopwatch();
         lastProgress.Start();
         UpdateProgressBar(first: true);
+        this.outputDir = outputDir;
     }
 
     public override IEnumerable<MultiCore> Exp()
@@ -55,6 +58,10 @@ public class MultiCoreDataset : DSEExperiment<MultiCore>, IDisposable
         // Done with progressbar
         ClearCurrentConsoleLine();
 
+        if (!Directory.Exists(outputDir))
+            Directory.CreateDirectory(outputDir);
+
+
         var acc = (float)nrCorrect / maxSamples * 100;
         Console.WriteLine($"Samples: {maxSamples}");
         Console.WriteLine($"Accuracy: {acc}");
@@ -67,22 +74,13 @@ public class MultiCoreDataset : DSEExperiment<MultiCore>, IDisposable
         Console.WriteLine($"  Min: {minLat:n} cycles");
         Console.WriteLine($"  Max: {maxLat:n} cycles");
 
-        var expRep = new FileReporter("res/results/experiments.csv");
-        expRep.ReportLine("exp,latency,energy");
+        var expRep = new FileReporter($"{outputDir}/experiments.csv");
+        expRep.ReportLine("exp,latency");
         for (int i = 0; i < maxSamples; i++)
         {
-            expRep.ReportLine($"{i},{latencies[i]},0");
+            expRep.ReportLine($"{i},{latencies[i]}");
         }
         expRep.Finish();
-
-        var utilRep = new FileReporter("res/results/utilization.csv");
-        utilRep.ReportLine("name,util");
-        foreach (var (name, period) in utilMan.GetPeriods())
-        {
-            double util = (double)period.Busy / period.Period;
-            utilRep.ReportLine($"{name},{util}");
-        }
-        utilRep.Finish();
     }
 
     public override void WhenSampleDone(MultiCore exp)
@@ -97,28 +95,6 @@ public class MultiCoreDataset : DSEExperiment<MultiCore>, IDisposable
 
         nrDone++;
 
-        foreach (var c in exp.Cores)
-        {
-            if (c is not CoreV1 core)
-                continue;
-
-            utilMan.WriteBusyPeriod($"{core.Name}-receiver", core.receiverBusy, exp.Latency);
-            utilMan.WriteBusyPeriod($"{core.Name}-sender", core.senderBusy, exp.Latency);
-            utilMan.WriteBusyPeriod($"{core.Name}-alu", core.ALUBusy, exp.Latency);
-        }
-
-        foreach (var r in exp.Routers)
-        {
-            if (r is not XYRouter router)
-                continue;
-
-            for (int i = 0; i < 5; i++)
-            {
-                utilMan.WriteBusyPeriod($"{router.Name}-in{i}", router.inBusy[i], exp.Latency);
-                utilMan.WriteBusyPeriod($"{router.Name}-out{i}", router.outBusy[i], exp.Latency);
-            }
-            utilMan.WriteBusyPeriod($"{router.Name}-switch", router.switchBusy, exp.Latency);
-        }
 
         UpdateProgressBar();
     }
