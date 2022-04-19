@@ -22,6 +22,7 @@ public sealed class XYRouter : MeshRouter
     public long[] inBusy = new long[5];
     public long[] outBusy = new long[5];
     public long switchBusy = 0;
+    public long nrHops = 0;
 
     public XYRouter(int x, int y, MeshSpec spec)
     {
@@ -140,6 +141,9 @@ public sealed class XYRouter : MeshRouter
             yield return env.Send(outPort, flit, transferTime: transferDelay);
             outBusy[dir] += env.Now - before;
             buffer.ReleaseRead();
+
+            if (dir != MeshDir.Local)
+                nrHops++;
 
             eventsReady = true;
             anEventReady.Update();

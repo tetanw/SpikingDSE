@@ -6,6 +6,15 @@ using System.Linq;
 
 namespace SpikingDSE;
 
+struct ExpRes
+{
+    public long Latency;
+    public long NrHops;
+    public long NrSOPs;
+    public int Correct;
+    public int Predicted;
+}
+
 public class MultiCoreDataset : DSEExperiment<MultiCore>, IDisposable
 {
     private readonly Mapping mapping;
@@ -21,8 +30,7 @@ public class MultiCoreDataset : DSEExperiment<MultiCore>, IDisposable
     private readonly Stopwatch sampleCounterSw;
     private readonly Stopwatch lastProgress;
 
-    private readonly List<long> latencies = new();
-    private readonly List<(int, int)> predictions = new();
+    private readonly List<ExpRes> expResList = new();
 
     public MultiCoreDataset(string snnPath, string hwPath, string mappingPath, string datasetPath, string outputDir, int maxSamples)
     {
@@ -67,6 +75,7 @@ public class MultiCoreDataset : DSEExperiment<MultiCore>, IDisposable
         Console.WriteLine($"Samples: {maxSamples}");
         Console.WriteLine($"Accuracy: {acc}");
         Console.WriteLine($"Running time: {(int)runningTime.TotalMilliseconds:n}ms");
+        List<long> latencies = expResList.Select(res => res.Latency).ToList();
         double avgLat = latencies.Sum() / maxSamples;
         double maxLat = latencies.Max();
         double minLat = latencies.Min();
@@ -76,10 +85,11 @@ public class MultiCoreDataset : DSEExperiment<MultiCore>, IDisposable
         Console.WriteLine($"  Max: {maxLat:n} cycles");
 
         var expRep = new FileReporter($"{outputDir}/experiments.csv");
-        expRep.ReportLine("exp,latency,correct,predicted");
+        expRep.ReportLine("exp,latency,correct,predicted,nrHops,nrSOPs");
         for (int i = 0; i < maxSamples; i++)
         {
-            expRep.ReportLine($"{i},{latencies[i]},{predictions[i].Item1},{predictions[i].Item2}");
+            var res = expResList[i];
+            expRep.ReportLine($"{i},{res.Latency},{res.Correct},{res.Predicted},{res.NrHops},{res.NrSOPs}");
         }
         expRep.Finish();
     }
@@ -91,13 +101,16 @@ public class MultiCoreDataset : DSEExperiment<MultiCore>, IDisposable
         {
             nrCorrect++;
         }
-
-        latencies.Add(exp.Latency);
-        predictions.Add((correct, exp.Predict()));
-
         nrDone++;
-
-
+    
+        expResList.Add(new ExpRes {
+            Correct = correct,
+            Predicted = exp.Predict(),
+            Latency = exp.Latency,
+            NrHops = exp.Routers.Cast<XYRouter>().Sum(r => r.nrHops),
+            NrSOPs = exp.Cores.Where(c => c is CoreV1).Cast<CoreV1>().Sum(c => c.nrSOPs)
+        });
+    
         UpdateProgressBar();
     }
 
