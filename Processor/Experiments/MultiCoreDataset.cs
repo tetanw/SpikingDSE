@@ -8,14 +8,16 @@ namespace SpikingDSE;
 
 struct ExpRes
 {
+    public int ExpNr;
     public long Latency;
     public long NrHops;
     public long NrSOPs;
     public int Correct;
     public int Predicted;
+    public double RunningTime;
 }
 
-public class MultiCoreDataset : DSEExperiment<MultiCore>, IDisposable
+public class MultiCoreDataset : BatchExperiment<MultiCore>, IDisposable
 {
     private readonly Mapping mapping;
     private readonly HWSpec hw;
@@ -30,7 +32,7 @@ public class MultiCoreDataset : DSEExperiment<MultiCore>, IDisposable
     private readonly Stopwatch sampleCounterSw;
     private readonly Stopwatch lastProgress;
 
-    private readonly List<ExpRes> expResList = new();
+    private readonly ExpRes[] expResList;
 
     public MultiCoreDataset(string snnPath, string hwPath, string mappingPath, string datasetPath, string outputDir, int maxSamples)
     {
@@ -45,6 +47,7 @@ public class MultiCoreDataset : DSEExperiment<MultiCore>, IDisposable
         lastProgress.Start();
         UpdateProgressBar(first: true);
         this.outputDir = outputDir;
+        expResList = new ExpRes[this.maxSamples];
     }
 
     public override IEnumerable<MultiCore> Exp()
@@ -85,16 +88,16 @@ public class MultiCoreDataset : DSEExperiment<MultiCore>, IDisposable
         Console.WriteLine($"  Max: {maxLat:n} cycles");
 
         var expRep = new FileReporter($"{outputDir}/experiments.csv");
-        expRep.ReportLine("exp,latency,correct,predicted,nrHops,nrSOPs");
+        expRep.ReportLine("exp,latency,correct,predicted,nrHops,nrSOPs,runningTime");
         for (int i = 0; i < maxSamples; i++)
         {
             var res = expResList[i];
-            expRep.ReportLine($"{i},{res.Latency},{res.Correct},{res.Predicted},{res.NrHops},{res.NrSOPs}");
+            expRep.ReportLine($"{res.ExpNr},{res.Latency},{res.Correct},{res.Predicted},{res.NrHops},{res.NrSOPs},{res.RunningTime}");
         }
         expRep.Finish();
     }
 
-    public override void WhenSampleDone(MultiCore exp)
+    public override void WhenSampleDone(MultiCore exp, long j, TimeSpan sampleTime)
     {
         int correct = (int)exp.Context;
         if (exp.Predict() == correct)
@@ -102,15 +105,18 @@ public class MultiCoreDataset : DSEExperiment<MultiCore>, IDisposable
             nrCorrect++;
         }
         nrDone++;
-    
-        expResList.Add(new ExpRes {
+
+        expResList[j] = new ExpRes
+        {
+            ExpNr = (int)j,
             Correct = correct,
             Predicted = exp.Predict(),
             Latency = exp.Latency,
             NrHops = exp.Routers.Cast<XYRouter>().Sum(r => r.nrHops),
-            NrSOPs = exp.Cores.Where(c => c is CoreV1).Cast<CoreV1>().Sum(c => c.nrSOPs)
-        });
-    
+            NrSOPs = exp.Cores.Where(c => c is CoreV1).Cast<CoreV1>().Sum(c => c.nrSOPs),
+            RunningTime = sampleTime.TotalMilliseconds
+        };
+
         UpdateProgressBar();
     }
 

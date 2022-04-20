@@ -64,7 +64,7 @@ public abstract class Experiment
     public abstract void Cleanup();
 }
 
-public abstract class DSEExperiment<T>
+public abstract class BatchExperiment<T>
     where T : Experiment
 {
     public void Run()
@@ -72,27 +72,30 @@ public abstract class DSEExperiment<T>
         var m = new System.Threading.Mutex();
 
 
-        var sw = new Stopwatch();
-        sw.Start();
+        var batchTime = new Stopwatch();
+        batchTime.Start();
 
         var exp = Exp();
         Parallel.ForEach(exp, (exp, _, j) =>
          {
+             var sampleTime = new Stopwatch();
+             sampleTime.Start();
              exp.Run();
+             sampleTime.Stop();
 
              m.WaitOne();
-             WhenSampleDone(exp);
+             WhenSampleDone(exp, j, sampleTime.Elapsed);
              m.ReleaseMutex();
          });
 
-        sw.Stop();
-        WhenCompleted(sw.Elapsed);
+        batchTime.Stop();
+        WhenCompleted(batchTime.Elapsed);
 
     }
 
     public abstract IEnumerable<T> Exp();
 
-    public abstract void WhenSampleDone(T exp);
+    public abstract void WhenSampleDone(T exp, long j, TimeSpan sampleTime);
 
-    public abstract void WhenCompleted(TimeSpan runningTime);
+    public abstract void WhenCompleted(TimeSpan batchTime);
 }
