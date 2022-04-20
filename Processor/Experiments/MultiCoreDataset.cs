@@ -33,6 +33,7 @@ public class MultiCoreDataset : BatchExperiment<MultiCore>, IDisposable
     private readonly Stopwatch lastProgress;
 
     private readonly ExpRes[] expResList;
+    private StreamWriter logFile;
 
     public MultiCoreDataset(string snnPath, string hwPath, string mappingPath, string datasetPath, string outputDir, int maxSamples)
     {
@@ -43,11 +44,23 @@ public class MultiCoreDataset : BatchExperiment<MultiCore>, IDisposable
         this.maxSamples = maxSamples == -1 ? dataset.NrSamples : maxSamples;
         sampleCounterSw = new Stopwatch();
         sampleCounterSw.Start();
+        expResList = new ExpRes[this.maxSamples];
+
+        this.outputDir = outputDir;
+        if (!Directory.Exists(outputDir))
+            Directory.CreateDirectory(outputDir);
+        logFile = new StreamWriter(File.Create($"{outputDir}/summary.log"));
+
+        Report($"Input files:");
+        Report($"  SNN: {snnPath}");
+        Report($"  HW: {hwPath}");
+        Report($"  Mapping: {mappingPath}");
+        Report($"  Dataset: {datasetPath}");
+        Report($"  Output: {outputDir}");
+
         lastProgress = new Stopwatch();
         lastProgress.Start();
         UpdateProgressBar(first: true);
-        this.outputDir = outputDir;
-        expResList = new ExpRes[this.maxSamples];
     }
 
     public override IEnumerable<MultiCore> Exp()
@@ -70,22 +83,18 @@ public class MultiCoreDataset : BatchExperiment<MultiCore>, IDisposable
         // Done with progressbar
         ClearCurrentConsoleLine();
 
-        if (!Directory.Exists(outputDir))
-            Directory.CreateDirectory(outputDir);
-
-
         var acc = (float)nrCorrect / maxSamples * 100;
-        Console.WriteLine($"Samples: {maxSamples}");
-        Console.WriteLine($"Accuracy: {acc}");
-        Console.WriteLine($"Running time: {(int)runningTime.TotalMilliseconds:n}ms");
+        Report($"Samples: {maxSamples}");
+        Report($"Accuracy: {acc}");
+        Report($"Running time: {(int)runningTime.TotalMilliseconds:n}ms");
         List<long> latencies = expResList.Select(res => res.Latency).ToList();
         double avgLat = latencies.Sum() / maxSamples;
         double maxLat = latencies.Max();
         double minLat = latencies.Min();
-        Console.WriteLine($"Latency:");
-        Console.WriteLine($"  Avg: {avgLat:n} cycles");
-        Console.WriteLine($"  Min: {minLat:n} cycles");
-        Console.WriteLine($"  Max: {maxLat:n} cycles");
+        Report($"Latency:");
+        Report($"  Avg: {avgLat:n} cycles");
+        Report($"  Min: {minLat:n} cycles");
+        Report($"  Max: {maxLat:n} cycles");
 
         var expRep = new FileReporter($"{outputDir}/experiments.csv");
         expRep.ReportLine("exp,latency,correct,predicted,nrHops,nrSOPs,runningTime");
@@ -95,6 +104,14 @@ public class MultiCoreDataset : BatchExperiment<MultiCore>, IDisposable
             expRep.ReportLine($"{res.ExpNr},{res.Latency},{res.Correct},{res.Predicted},{res.NrHops},{res.NrSOPs},{res.RunningTime}");
         }
         expRep.Finish();
+
+        logFile.Dispose();
+    }
+
+    private void Report(string line)
+    {
+        Console.WriteLine(line);
+        logFile.WriteLine(line);
     }
 
     public override void WhenSampleDone(MultiCore exp, long j, TimeSpan sampleTime)
