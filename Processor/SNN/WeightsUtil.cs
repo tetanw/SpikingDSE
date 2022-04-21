@@ -178,11 +178,11 @@ public static class WeigthsUtil
         return slice;
     }
 
-    public static int[,] Slice(int[,] parent, int sX, int sY, int sWidth, int sHeight)
+    public static long[,] Slice(long[,] parent, int sX, int sY, int sWidth, int sHeight)
     {
         // int width = parent.GetLength(0);
         // int height = parent.GetLength(1);
-        var slice = new int[sHeight, sWidth];
+        var slice = new long[sHeight, sWidth];
         for (int yy = 0; yy < sHeight; yy++)
         {
             for (int xx = 0; xx < sWidth; xx++)
@@ -204,10 +204,10 @@ public static class WeigthsUtil
         return slice;
     }
 
-    public static int[] Slice(int[] parent, int sOffset, int sLength)
+    public static long[] Slice(long[] parent, int sOffset, int sLength)
     {
         // int length = parent.GetLength(0);
-        var slice = new int[sLength];
+        var slice = new long[sLength];
         for (int i = 0; i < sLength; i++)
         {
             slice[i] = parent[i + sOffset];

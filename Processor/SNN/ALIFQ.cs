@@ -5,33 +5,33 @@ namespace SpikingDSE;
 
 public class ALIFQLayer : HiddenLayer
 {
-    public int[,] InWeights;
-    public int[,] RecWeights;
-    public int[] Pots;
+    public long[,] InWeights;
+    public long[,] RecWeights;
+    public long[] Pots;
     public bool[] Spiked;
-    public int VTh;
+    public long VTh;
     public float[] Readout;
-    public int Beta;
-    public int[] Bias;
-    public int[] AdaptThr;
-    public int[] Alpha;
-    public int[] Rho;
+    public long Beta;
+    public long[] Bias;
+    public long[] AdaptThr;
+    public long[] Alpha;
+    public long[] Rho;
     private readonly int offset;
     public int TS { get; private set; }
-    public int Scale { get; set; }
+    public long Scale { get; set; }
 
-    public ALIFQLayer(int scale, int[,] inWeights, int[,] recWeights, int[] bias, int[] alpha, int[] rho, int VTh, int Beta, string name, int offset = 0)
+    public ALIFQLayer(long scale, long[,] inWeights, long[,] recWeights, long[] bias, long[] alpha, long[] rho, long VTh, long Beta, string name, int offset = 0)
     {
         Scale = scale;
         InputSize = inWeights.GetLength(0);
         Size = inWeights.GetLength(1);
-        Pots = new int[Size];
+        Pots = new long[Size];
         Readout = new float[Size];
         Spiked = new bool[Size];
         InWeights = inWeights;
         RecWeights = recWeights;
         Name = name;
-        AdaptThr = new int[Size];
+        AdaptThr = new long[Size];
         Array.Fill(AdaptThr, VTh);
         Bias = bias;
         Alpha = alpha;
@@ -54,7 +54,7 @@ public class ALIFQLayer : HiddenLayer
 
     public override bool Sync(int dst)
     {
-        int pot = Pots[dst];
+        long pot = Pots[dst];
 
         // Adapt
         AdaptThr[dst] = AdaptThr[dst] * Rho[dst];
@@ -65,7 +65,7 @@ public class ALIFQLayer : HiddenLayer
         AdaptThr[dst] /= Scale;
 
         // Reset potential
-        int resetPot = (Beta * AdaptThr[dst] + VTh) / Scale;
+        long resetPot = (Beta * AdaptThr[dst] + VTh) / Scale;
 
         // Reset
         if (Spiked[dst])
@@ -75,7 +75,7 @@ public class ALIFQLayer : HiddenLayer
         Readout[dst] = pot;
 
         // Threshold
-        int thrPot = resetPot - Bias[dst];
+        long thrPot = resetPot - Bias[dst];
         if (pot >= thrPot)
         {
             Spiked[dst] = true;
@@ -86,7 +86,7 @@ public class ALIFQLayer : HiddenLayer
         }
 
         // Leakage for next ts
-        pot = (int)(pot * Alpha[dst]) / Scale;
+        pot = pot * Alpha[dst] / Scale;
 
         // Writeback
         Pots[dst] = pot;

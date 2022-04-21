@@ -82,7 +82,7 @@ public class SNN
 
     private static ALIFQLayer CreateALIFQLayer(string path, Dictionary<string, JsonElement> layer)
     {
-        float scale = 16_384.0f;
+        float scale = 16_777_216.0f;
 
         string tauMPath = path + layer["TauM"].GetString();
         string tauAdpPath = path + layer["TauAdp"].GetString();
@@ -90,8 +90,8 @@ public class SNN
         string recWeightsPath = path + layer["RecWeights"].GetString();
         string biasPath = path + layer["Bias"].GetString();
 
-        var scale1D = (int i, float v) => (int)(v * scale);
-        var scale2D = (int x, int y, float v) => (int)(v * scale);
+        var scale1D = (int i, float v) => (long)(v * scale);
+        var scale2D = (int x, int y, float v) => (long)(v * scale);
         float[] tau_m = WeigthsUtil.Read1DFloat(tauMPath, headers: true);
         float[] tau_adp = WeigthsUtil.Read1DFloat(tauAdpPath, headers: true);
         float[] alpha = tau_m.Transform(WeigthsUtil.Exp);
