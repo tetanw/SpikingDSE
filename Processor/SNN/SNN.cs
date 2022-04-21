@@ -80,6 +80,39 @@ public class SNN
         return hidden;
     }
 
+    private static ALIFQLayer CreateALIFQLayer(string path, Dictionary<string, JsonElement> layer)
+    {
+        float scale = 16_384.0f;
+
+        string tauMPath = path + layer["TauM"].GetString();
+        string tauAdpPath = path + layer["TauAdp"].GetString();
+        string inWeightsPath = path + layer["InWeights"].GetString();
+        string recWeightsPath = path + layer["RecWeights"].GetString();
+        string biasPath = path + layer["Bias"].GetString();
+
+        var scale1D = (int i, float v) => (int)(v * scale);
+        var scale2D = (int x, int y, float v) => (int)(v * scale);
+        float[] tau_m = WeigthsUtil.Read1DFloat(tauMPath, headers: true);
+        float[] tau_adp = WeigthsUtil.Read1DFloat(tauAdpPath, headers: true);
+        float[] alpha = tau_m.Transform(WeigthsUtil.Exp);
+        float[] rho = tau_adp.Transform(WeigthsUtil.Exp);
+        float[] alphaComp = alpha.Transform((_, a) => 1 - a);
+        int vth = (int)(0.01 * scale);
+        int beta = (int)(1.8f * scale);
+        var hidden = new ALIFQLayer(
+            (int)scale,
+            WeigthsUtil.Read2DFloat(inWeightsPath, headers: true).Transform(WeigthsUtil.ScaleWeights(alphaComp)).Transform(scale2D),
+            WeigthsUtil.Read2DFloat(recWeightsPath, headers: true).Transform(WeigthsUtil.ScaleWeights(alphaComp)).Transform(scale2D),
+            WeigthsUtil.Read1DFloat(biasPath, headers: true).Transform(scale1D),
+            alpha.Transform(scale1D),
+            rho.Transform(scale1D),
+            vth,
+            beta,
+            name: layer["Name"].GetString()
+        );
+        return hidden;
+    }
+
     private static OutputLayer CreateOutputLayer(string path, Dictionary<string, JsonElement> layer)
     {
         string tauMPath = path + layer["TauM"].GetString();
@@ -117,6 +150,14 @@ public class SNN
             else if (type == "output")
             {
                 layers.Add(CreateOutputLayer(snnFile.BasePath, layer));
+            }
+            else if (type == "ALIFQ")
+            {
+                layers.Add(CreateALIFQLayer(snnFile.BasePath, layer));
+            }
+            else
+            {
+                throw new Exception($"Unknown layer type: {type}");
             }
         }
 

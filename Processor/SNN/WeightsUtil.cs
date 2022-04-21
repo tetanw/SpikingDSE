@@ -1,7 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Collections.Generic;
 
 namespace SpikingDSE;
 
@@ -62,10 +62,10 @@ public static class WeigthsUtil
         return array1D;
     }
 
-    private static float[] Flatten(float[,] input)
+    private static T[] Flatten<T>(T[,] input)
     {
         int size = input.GetLength(1);
-        float[] res = new float[size];
+        T[] res = new T[size];
         for (int i = 0; i < size; i++)
         {
             res[i] = input[0, i];
@@ -178,10 +178,36 @@ public static class WeigthsUtil
         return slice;
     }
 
+    public static int[,] Slice(int[,] parent, int sX, int sY, int sWidth, int sHeight)
+    {
+        // int width = parent.GetLength(0);
+        // int height = parent.GetLength(1);
+        var slice = new int[sHeight, sWidth];
+        for (int yy = 0; yy < sHeight; yy++)
+        {
+            for (int xx = 0; xx < sWidth; xx++)
+            {
+                slice[yy, xx] = parent[yy + sY, xx + sX];
+            }
+        }
+        return slice;
+    }
+
     public static float[] Slice(float[] parent, int sOffset, int sLength)
     {
         // int length = parent.GetLength(0);
         var slice = new float[sLength];
+        for (int i = 0; i < sLength; i++)
+        {
+            slice[i] = parent[i + sOffset];
+        }
+        return slice;
+    }
+
+    public static int[] Slice(int[] parent, int sOffset, int sLength)
+    {
+        // int length = parent.GetLength(0);
+        var slice = new int[sLength];
         for (int i = 0; i < sLength; i++)
         {
             slice[i] = parent[i + sOffset];

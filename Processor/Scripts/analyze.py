@@ -2,16 +2,17 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 runs = [
-    ("hw-mesh1", "mapping1", 1),
-    ("hw-mesh1", "mapping1", 2),
-    ("hw-mesh1", "mapping1", 3),
+    ("hw-mesh1", "mapping1", 4),
+    ("hw-mesh1", "mapping1", 5),
+    ("hw-mesh1", "mapping1", 6),
+    ("hw-mesh1", "mapping1", 7),
 ]
 models = [
     ("shd1", "shd-10"),
     ("shd4", "shd-10"),
     ("smnist3", "smnist-3"),
-    ("smnist4", "smnist-4"),
-    ("psmnist1", "psmnist-1"),
+    # ("smnist4", "smnist-4"),
+    # ("psmnist1", "psmnist-1"),
     ("psmnist2", "psmnist-2"),
     ("ssc2", "ssc-4"),
     ("ssc3", "ssc-4")
@@ -27,6 +28,5 @@ for hwName, mappingName, expNr in runs:
         # print(f"  Hops: Mean {data['nrHops'].mean()}, Min {data['nrHops'].min()}, Max {data['nrHops'].max()}")
         # print(f"  SOPs/cycle: Mean {synIntensity.mean()}")
         # print(f"{dsName}-{expNr}:")
-        synIntensity = data['nrSOPs'] / data['latency']
-        means.append(f"{synIntensity.mean()}")
+        means.append(f"{data['latency'].mean()}")
     print(f"{expNr}," + ",".join(means))

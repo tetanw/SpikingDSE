@@ -95,7 +95,7 @@ public class MultiCoreTrace
             core.OnSyncEnded += (_, ts, layer) =>
             {
                 // TODO: Hardcoded stuff
-                float[] pots = (layer as ALIFLayer)?.Readout ?? (layer as OutputLayer)?.Readout;
+                float[] pots = (layer as ALIFLayer)?.Readout ?? (layer as OutputLayer)?.Readout ?? (layer as ALIFQLayer).Readout;
                 mem.AdvanceLayer(layer, ts, pots);
             };
             core.OnSpikeReceived += (time, layer, neuron, feedback, spike, nrHops) =>

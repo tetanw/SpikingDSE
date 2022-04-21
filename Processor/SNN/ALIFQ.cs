@@ -3,39 +3,41 @@ using System.Collections.Generic;
 
 namespace SpikingDSE;
 
-public class ALIFLayer : HiddenLayer
+public class ALIFQLayer : HiddenLayer
 {
-    public float[,] InWeights;
-    public float[,] RecWeights;
-    public float[] Pots;
+    public int[,] InWeights;
+    public int[,] RecWeights;
+    public int[] Pots;
     public bool[] Spiked;
-    public float VTh;
+    public int VTh;
     public float[] Readout;
-    public float Beta;
-    public float[] Bias;
-    public float[] AdaptThr;
-    public float[] Alpha;
-    public float[] Rho;
+    public int Beta;
+    public int[] Bias;
+    public int[] AdaptThr;
+    public int[] Alpha;
+    public int[] Rho;
     private readonly int offset;
     public int TS { get; private set; }
+    public int Scale { get; set; }
 
-    public ALIFLayer(float[,] inWeights, float[,] recWeights, float[] bias, float[] alpha, float[] rho, float VTh, string name, int offset = 0)
+    public ALIFQLayer(int scale, int[,] inWeights, int[,] recWeights, int[] bias, int[] alpha, int[] rho, int VTh, int Beta, string name, int offset = 0)
     {
+        Scale = scale;
         InputSize = inWeights.GetLength(0);
         Size = inWeights.GetLength(1);
-        Pots = new float[Size];
+        Pots = new int[Size];
         Readout = new float[Size];
         Spiked = new bool[Size];
         InWeights = inWeights;
         RecWeights = recWeights;
         Name = name;
-        AdaptThr = new float[Size];
+        AdaptThr = new int[Size];
         Array.Fill(AdaptThr, VTh);
         Bias = bias;
         Alpha = alpha;
         Rho = rho;
         this.VTh = VTh;
-        Beta = 1.8f;
+        this.Beta = Beta;
         this.offset = offset;
     }
 
@@ -52,17 +54,18 @@ public class ALIFLayer : HiddenLayer
 
     public override bool Sync(int dst)
     {
-        float pot = Pots[dst];
+        int pot = Pots[dst];
 
         // Adapt
         AdaptThr[dst] = AdaptThr[dst] * Rho[dst];
         if (Spiked[dst])
         {
-            AdaptThr[dst] += (1 - Rho[dst]);
+            AdaptThr[dst] += 1 - Rho[dst];
         }
+        AdaptThr[dst] /= Scale;
 
         // Reset potential
-        float resetPot = Beta * AdaptThr[dst] + VTh;
+        int resetPot = (Beta * AdaptThr[dst] + VTh) / Scale;
 
         // Reset
         if (Spiked[dst])
@@ -72,7 +75,7 @@ public class ALIFLayer : HiddenLayer
         Readout[dst] = pot;
 
         // Threshold
-        float thrPot = resetPot - Bias[dst];
+        int thrPot = resetPot - Bias[dst];
         if (pot >= thrPot)
         {
             Spiked[dst] = true;
@@ -83,7 +86,7 @@ public class ALIFLayer : HiddenLayer
         }
 
         // Leakage for next ts
-        pot *= Alpha[dst];
+        pot = (int)(pot * Alpha[dst]) / Scale;
 
         // Writeback
         Pots[dst] = pot;
@@ -98,25 +101,27 @@ public class ALIFLayer : HiddenLayer
 
     public override string ToString()
     {
-        return $"ALIF - \"{this.Name}\"";
+        return $"ALIF - \"{Name}\"";
     }
 
     public override Layer Copy()
     {
-        return new ALIFLayer(this.InWeights, this.RecWeights, this.Bias, this.Alpha, this.Rho, this.VTh, this.Name, offset: this.offset);
+        return new ALIFQLayer(Scale, InWeights, RecWeights, Bias, Alpha, Rho, VTh, Beta, Name, offset: offset);
     }
 
     public override Layer Slice(int start, int end, int partNr)
     {
         var sliceSize = end - start;
-        var slice = new ALIFLayer(
-            WeigthsUtil.Slice(this.InWeights, start, 0, sliceSize, this.InputSize),
-            WeigthsUtil.Slice(this.RecWeights, start, 0, sliceSize, Size),
-            WeigthsUtil.Slice(this.Bias, start, sliceSize),
-            WeigthsUtil.Slice(this.Alpha, start, sliceSize),
-            WeigthsUtil.Slice(this.Rho, start, sliceSize),
-            this.VTh,
-            $"{this.Name}-{partNr}",
+        var slice = new ALIFQLayer(
+            Scale,
+            WeigthsUtil.Slice(InWeights, start, 0, sliceSize, this.InputSize),
+            WeigthsUtil.Slice(RecWeights, start, 0, sliceSize, Size),
+            WeigthsUtil.Slice(Bias, start, sliceSize),
+            WeigthsUtil.Slice(Alpha, start, sliceSize),
+            WeigthsUtil.Slice(Rho, start, sliceSize),
+            VTh,
+            Beta,
+            $"{Name}-{partNr}",
             offset: start
         );
 
