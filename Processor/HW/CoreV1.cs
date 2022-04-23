@@ -133,7 +133,7 @@ public sealed class CoreV1 : Actor, ICore
             foreach (var ev in Sync(env, lastSyncEv))
                 yield return ev;
 
-            if (spec.DoSyncEndEvent)
+            if (spec.ReportSyncEnd)
             {
                 yield return outputBuffer.RequestWrite();
                 outputBuffer.Write(new Packet {
@@ -190,7 +190,7 @@ public sealed class CoreV1 : Actor, ICore
             layer.Forward(spike.Neuron);
         nrSpikesConsumed++;
         nrSOPs += spike.Layer.Size;
-        energySpent += spec.ComputeEnergy * spike.Layer.Size;
+        energySpent += spec.IntegrateEnergy * spike.Layer.Size;
         // Calculate amount of lines required, careful: trick to ceil divide
         int nrLines = (spike.Layer.Size + spec.NrParallel) / spec.NrParallel;
         yield return env.Delay(spec.IntegrateDelay * nrLines);

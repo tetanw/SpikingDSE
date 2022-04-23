@@ -34,7 +34,7 @@ public sealed class XYRouter : MeshRouter
 
     public double Energy(long now)
     {
-        double staticEnergy = spec.StaticEnergy * (now / spec.Frequency);
+        double staticEnergy = spec.StaticPower * (now / spec.Frequency);
         double energy = dynamicEnergy + staticEnergy;
         return energy;
     }

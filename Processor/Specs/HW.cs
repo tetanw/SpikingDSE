@@ -40,15 +40,17 @@ public class HWSpec
                 SyncDelay = instance["SyncDelay"].GetInt32(),
                 ConnectsTo = instance["ConnectsTo"].GetString(),
                 MaxNeurons = instance["MaxNeurons"].GetInt32(),
-                ComputeEnergy = instance["ComputeEnergy"].GetDouble(),
-                ComputeBufferSize = instance["ComputeBufferSize"].GetInt32(),
+                IntegrateEnergy = instance["IntegrateEnergy"].GetDouble(),
+                SyncEnergy = instance["SyncEnergy"].GetDouble(),
+                StaticPower = instance["StaticPower"].GetDouble(),
                 OutputBufferSize = instance["OutputBufferSize"].GetInt32(),
                 NrParallel = instance["NrParallel"].GetInt32(),
+                ReportSyncEnd = instance["ReportSyncEnd"].GetBoolean()
             };
         }
         else
         {
-            throw new System.Exception($"Invalid instance type: {type}");
+            throw new Exception($"Invalid instance type: {type}");
         }
     }
 
@@ -58,13 +60,13 @@ public class HWSpec
         {
             Width = NoC["Width"].GetInt32(),
             Height = NoC["Height"].GetInt32(),
+            Frequency = NoC["Frequency"].GetDouble(),
             InputSize = NoC["InputSize"].GetInt32(),
             OutputSize = NoC["OutputSize"].GetInt32(),
             SwitchDelay = NoC["SwitchDelay"].GetInt32(),
             TransferDelay = NoC["TransferDelay"].GetInt32(),
             TransferEnergy = NoC["TransferEnergy"].GetDouble(),
-            StaticEnergy = NoC["StaticEnergy"].GetDouble(),
-            Frequency = NoC["Frequency"].GetDouble(),
+            StaticPower = NoC["StaticPower"].GetDouble(),
             InputDelay = NoC["InputDelay"].GetInt32(),
             OutputDelay = NoC["OutputDelay"].GetInt32(),
         };
@@ -75,7 +77,9 @@ public class HWSpec
         return new BusSpec
         {
             Ports = NoC["Ports"].GetInt32(),
-            TransferDelay = NoC["TransferDelay"].GetInt32()
+            TransferDelay = NoC["TransferDelay"].GetInt32(),
+            TransferEnergy = NoC["TransferEnergy"].GetDouble(),
+            StaticPower = NoC["StaticPower"].GetDouble()
         };
     }
 
@@ -127,11 +131,12 @@ public class CoreV1Spec : CoreSpec
 {
     public int IntegrateDelay { get; set; }
     public int SyncDelay { get; set; }
-    public double ComputeEnergy { get; set; }
+    public double IntegrateEnergy { get; set; }
+    public double SyncEnergy { get; set; }
+    public double StaticPower { get; set; }
     public int NrParallel { get; set; }
     public int OutputBufferSize { get; set; }
-    public int ComputeBufferSize { get; set; }
-    public bool DoSyncEndEvent { get; set; } = true;
+    public bool ReportSyncEnd { get; set; }
 }
 
 public class ControllerV1Spec : CoreSpec
@@ -154,8 +159,8 @@ public class MeshSpec : NoCSpec
     public int TransferDelay { get; set; }
     public int SwitchDelay { get; set; }
     public double TransferEnergy { get; set; }
-    public double StaticEnergy { get; set; }
-    public double Frequency { get; set; }
+    public double StaticPower { get; set; }
+    public double Frequency { get; set; } = 100_000_000.0;
     public int InputDelay { get; set; }
     public int OutputDelay { get; set; }
 }
@@ -164,4 +169,11 @@ public class BusSpec : NoCSpec
 {
     public int Ports { get; set; }
     public int TransferDelay { get; set; }
+    public double TransferEnergy { get; set; }
+    public double StaticPower { get; set; }
+}
+
+public class GlobalSpec
+{
+    public long Frequency { get; set; }
 }
