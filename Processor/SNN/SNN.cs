@@ -74,7 +74,7 @@ public class SNN
             WeigthsUtil.Read1DFloat(biasPath, headers: true),
             alpha,
             rho,
-            0.01f,
+            0.5f,
             name: layer["Name"].GetString()
         );
         return hidden;
@@ -82,7 +82,7 @@ public class SNN
 
     private static ALIFQLayer CreateALIFQLayer(string path, Dictionary<string, JsonElement> layer)
     {
-        float scale = 16_777_216.0f;
+        float scale = 16_384.0f;
 
         string tauMPath = path + layer["TauM"].GetString();
         string tauAdpPath = path + layer["TauAdp"].GetString();
@@ -97,7 +97,7 @@ public class SNN
         float[] alpha = tau_m.Transform(WeigthsUtil.Exp);
         float[] rho = tau_adp.Transform(WeigthsUtil.Exp);
         float[] alphaComp = alpha.Transform((_, a) => 1 - a);
-        int vth = (int)(0.01 * scale);
+        int vth = (int)(0.5 * scale);
         int beta = (int)(1.8f * scale);
         var hidden = new ALIFQLayer(
             (int)scale,
@@ -283,7 +283,6 @@ public class SNN
 
         var newLayers = new List<List<Layer>>();
 
-        // TODO: Layer parts is not viable in future
         foreach (var layer in layerParts)
         {
             var newLayer = new List<Layer>();

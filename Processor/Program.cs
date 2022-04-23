@@ -40,12 +40,6 @@ namespace SpikingDSE
         public string TensorOut { get; set; }
     }
 
-    [Verb("trace", HelpText = "Converts srnn into a trace")]
-    public class TraceGeneratorOptions
-    {
-
-    }
-
     [Verb("mapping", HelpText = "Maps a SNN on HW")]
     public class MappingOptions
     {
@@ -107,7 +101,7 @@ namespace SpikingDSE
     {
         static int Main(string[] args)
         {
-            var result = Parser.Default.ParseArguments<SimOptions, SimTestOptions, SimDSEOptions, VCDOptions, ToTensorOptions, TraceGeneratorOptions, MappingOptions>(args);
+            var result = Parser.Default.ParseArguments<SimOptions, SimTestOptions, SimDSEOptions, VCDOptions, ToTensorOptions, MappingOptions>(args);
             var ret = result.MapResult(
                 (VCDOptions opts) =>
                 {
@@ -185,11 +179,6 @@ namespace SpikingDSE
                 {
                     var converter = new ToTensor(opts.TensorInput, opts.EventInput, opts.TensorOut);
                     converter.Run();
-                    return 0;
-                },
-                (TraceGeneratorOptions opts) =>
-                {
-                    TraceGenerator.Run();
                     return 0;
                 },
                 (MappingOptions opts) =>

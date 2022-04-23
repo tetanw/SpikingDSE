@@ -10,7 +10,7 @@ public class ALIFQLayer : HiddenLayer
     public long[] Pots;
     public bool[] Spiked;
     public long VTh;
-    public float[] Readout;
+    public float[] ReadoutArr;
     public long Beta;
     public long[] Bias;
     public long[] AdaptThr;
@@ -26,7 +26,7 @@ public class ALIFQLayer : HiddenLayer
         InputSize = inWeights.GetLength(0);
         Size = inWeights.GetLength(1);
         Pots = new long[Size];
-        Readout = new float[Size];
+        ReadoutArr = new float[Size];
         Spiked = new bool[Size];
         InWeights = inWeights;
         RecWeights = recWeights;
@@ -72,7 +72,7 @@ public class ALIFQLayer : HiddenLayer
             pot -= resetPot;
 
         // Readout
-        Readout[dst] = pot;
+        ReadoutArr[dst] = pot;
 
         // Threshold
         long thrPot = resetPot - Bias[dst];
@@ -139,4 +139,6 @@ public class ALIFQLayer : HiddenLayer
             Pots[dst] += RecWeights[neuron, dst];
         }
     }
+
+    public override float[] Readout() => ReadoutArr;
 }

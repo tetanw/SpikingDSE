@@ -10,7 +10,7 @@ public class ALIFLayer : HiddenLayer
     public float[] Pots;
     public bool[] Spiked;
     public float VTh;
-    public float[] Readout;
+    public float[] ReadoutArr;
     public float Beta;
     public float[] Bias;
     public float[] AdaptThr;
@@ -24,7 +24,7 @@ public class ALIFLayer : HiddenLayer
         InputSize = inWeights.GetLength(0);
         Size = inWeights.GetLength(1);
         Pots = new float[Size];
-        Readout = new float[Size];
+        ReadoutArr = new float[Size];
         Spiked = new bool[Size];
         InWeights = inWeights;
         RecWeights = recWeights;
@@ -69,7 +69,7 @@ public class ALIFLayer : HiddenLayer
             pot -= resetPot;
 
         // Readout
-        Readout[dst] = pot;
+        ReadoutArr[dst] = pot;
 
         // Threshold
         float thrPot = resetPot - Bias[dst];
@@ -134,4 +134,6 @@ public class ALIFLayer : HiddenLayer
             Pots[dst] += RecWeights[neuron, dst];
         }
     }
+
+    public override float[] Readout() => ReadoutArr;
 }

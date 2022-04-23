@@ -59,6 +59,7 @@ public abstract class OdinHiddenLayer : Layer
 
 public abstract class HiddenLayer : Layer
 {
+    public abstract float[] Readout();
     public abstract void Forward(int neuron);
     public abstract void Feedback(int neuron);
     public abstract bool Sync(int neuron);

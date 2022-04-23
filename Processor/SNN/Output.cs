@@ -7,7 +7,7 @@ namespace SpikingDSE;
 public class OutputLayer : HiddenLayer
 {
     public int TS = 0;
-    public float[] Readout;
+    public float[] ReadoutArr;
     public float[] Pots;
     public float[] Output;
     public float[,] Weights;
@@ -20,7 +20,7 @@ public class OutputLayer : HiddenLayer
         this.Size = weights.GetLength(1);
         this.Weights = weights;
         this.Pots = new float[Size];
-        this.Readout = new float[Size];
+        this.ReadoutArr = new float[Size];
         this.Output = new float[Size];
         this.Thr = threshold;
         this.Alpha = alpha;
@@ -40,7 +40,7 @@ public class OutputLayer : HiddenLayer
         float pot = Pots[dst];
 
         // Readout
-        Readout[dst] = pot;
+        ReadoutArr[dst] = pot;
 
         // Leakage for next ts
         pot *= Alpha[dst];
@@ -59,7 +59,7 @@ public class OutputLayer : HiddenLayer
 
     private void UpdateOutput()
     {
-        float[] softmax = Softmax(Readout);
+        float[] softmax = Softmax(ReadoutArr);
         for (int i = 0; i < Size; i++)
         {
             Output[i] += softmax[i];
@@ -106,4 +106,6 @@ public class OutputLayer : HiddenLayer
     public override int Offset() => 0;
 
     public override void Feedback(int neuron) { }
+
+    public override float[] Readout() => ReadoutArr;
 }

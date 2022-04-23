@@ -49,7 +49,6 @@ public sealed class MeshUtils
         var mergeSplit = new MergeSplit(width * 2 + height * 2, "MergeSplit");
         sim.AddActor(mergeSplit);
         int i = 0;
-        // FIXME: In some situations to many inputs are created
         for (int y = 0; y < height; y++)
         {
             sim.AddChannel(mergeSplit.FromMesh[i++], routers[0, y].outWest);
