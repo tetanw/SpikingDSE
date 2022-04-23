@@ -51,9 +51,9 @@ public sealed class CoreV1 : Actor, ICore
 
     public CoreV1(object location, CoreV1Spec spec)
     {
-        this.loc = location;
+        loc = location;
+        Name = spec.Name;
         this.spec = spec;
-        this.Name = spec.Name;
     }
 
     public object GetLocation() => loc;

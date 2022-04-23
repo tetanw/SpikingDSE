@@ -15,14 +15,14 @@ public class Bus : Actor
 
     public Bus(BusSpec spec, string name = "Bus")
     {
-        this.Name = name;
+        Name = name;
 
-        this.Inputs = new InPort[spec.Ports];
-        this.Outputs = new OutPort[spec.Ports];
+        Inputs = new InPort[spec.Ports];
+        Outputs = new OutPort[spec.Ports];
         for (int i = 0; i < spec.Ports; i++)
         {
-            this.Inputs[i] = new();
-            this.Outputs[i] = new();
+            Inputs[i] = new();
+            Outputs[i] = new();
         }
         this.spec = spec;
     }

@@ -14,7 +14,7 @@ public sealed class ControllerV1 : Actor, ICore
     public InPort Input = new();
     public OutPort Output = new();
 
-    private readonly object thisLoc;
+    private readonly object location;
     private readonly InputLayer inputLayer;
     private readonly ISpikeSource source;
     private MappingTable mapping;
@@ -26,14 +26,14 @@ public sealed class ControllerV1 : Actor, ICore
     {
         this.inputLayer = inputLayer;
         this.source = source;
-        this.thisLoc = location;
+        this.location = location;
         this.spec = spec;
-        this.Name = spec.Name;
+        Name = spec.Name;
     }
 
     public void LoadMapping(MappingTable mapping) => this.mapping = mapping;
 
-    public object GetLocation() => thisLoc;
+    public object GetLocation() => location;
 
     public override IEnumerable<Event> Run(Simulator env)
     {
@@ -69,7 +69,7 @@ public sealed class ControllerV1 : Actor, ICore
                     var dest = mapping.CoordOf(spike.Layer);
                     var packet = new Packet
                     {
-                        Src = thisLoc,
+                        Src = location,
                         Dest = dest,
                         Message = spike
                     };
@@ -123,7 +123,7 @@ public sealed class ControllerV1 : Actor, ICore
             };
             var flit = new Packet
             {
-                Src = thisLoc,
+                Src = location,
                 Dest = core.GetLocation(),
                 Message = sync,
             };
