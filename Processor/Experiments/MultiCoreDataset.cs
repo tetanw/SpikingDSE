@@ -15,6 +15,8 @@ struct ExpRes
     public int Correct;
     public int Predicted;
     public double RunningTime;
+    public double CoreEnergy;
+    public double ComEnergy;
 }
 
 public class MultiCoreDataset : BatchExperiment<MultiCore>, IDisposable
@@ -33,7 +35,7 @@ public class MultiCoreDataset : BatchExperiment<MultiCore>, IDisposable
     private readonly Stopwatch lastProgress;
 
     private readonly ExpRes[] expResList;
-    private StreamWriter logFile;
+    private readonly StreamWriter logFile;
 
     public MultiCoreDataset(string snnPath, string hwPath, string mappingPath, string datasetPath, string outputDir, int maxSamples)
     {
@@ -95,13 +97,22 @@ public class MultiCoreDataset : BatchExperiment<MultiCore>, IDisposable
         Report($"  Avg: {avgLat:n} cycles");
         Report($"  Min: {minLat:n} cycles");
         Report($"  Max: {maxLat:n} cycles");
+        List<double> energies = expResList.Select(res => res.CoreEnergy + res.ComEnergy).ToList();
+        double avgEnergy = energies.Sum() / maxSamples;
+        double maxEnergy = energies.Max();
+        double minEnergy = energies.Min();
+        Report($"Energy:");
+        Report($"  Avg: {Measurements.FormatSI(avgEnergy, "J")}");
+        Report($"  Min: {Measurements.FormatSI(minEnergy, "J")}");
+        Report($"  Max: {Measurements.FormatSI(maxEnergy, "J")}");
+
 
         var expRep = new FileReporter($"{outputDir}/experiments.csv");
-        expRep.ReportLine("exp,latency,correct,predicted,nrHops,nrSOPs,runningTime");
+        expRep.ReportLine("exp,latency,correct,predicted,nrHops,nrSOPs,runningTime,coreEnergy,comEnergy");
         for (int i = 0; i < maxSamples; i++)
         {
             var res = expResList[i];
-            expRep.ReportLine($"{res.ExpNr},{res.Latency},{res.Correct},{res.Predicted},{res.NrHops},{res.NrSOPs},{res.RunningTime}");
+            expRep.ReportLine($"{res.ExpNr},{res.Latency},{res.Correct},{res.Predicted},{res.NrHops},{res.NrSOPs},{res.RunningTime},{res.CoreEnergy},{res.ComEnergy}");
         }
         expRep.Finish();
 
@@ -112,6 +123,17 @@ public class MultiCoreDataset : BatchExperiment<MultiCore>, IDisposable
     {
         Console.WriteLine(line);
         logFile.WriteLine(line);
+    }
+
+    private static IEnumerable<T> Flatten<T>(T[,] map)
+    {
+        for (int row = 0; row < map.GetLength(0); row++)
+        {
+            for (int col = 0; col < map.GetLength(1); col++)
+            {
+                yield return map[row, col];
+            }
+        }
     }
 
     public override void WhenSampleDone(MultiCore exp, long j, TimeSpan sampleTime)
@@ -131,7 +153,9 @@ public class MultiCoreDataset : BatchExperiment<MultiCore>, IDisposable
             Latency = exp.Latency,
             NrHops = exp.Routers.Cast<XYRouter>().Sum(r => r.nrHops),
             NrSOPs = exp.Cores.Where(c => c is CoreV1).Cast<CoreV1>().Sum(c => c.nrSOPs),
-            RunningTime = sampleTime.TotalMilliseconds
+            RunningTime = sampleTime.TotalMilliseconds,
+            CoreEnergy = exp.Cores.Sum(c => c.Energy(exp.Latency)),
+            ComEnergy = Flatten(exp?.Routers).Sum(r => r.Energy(exp.Latency))
         };
 
         UpdateProgressBar();

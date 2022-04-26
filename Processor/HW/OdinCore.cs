@@ -154,6 +154,11 @@ public sealed class OdinCore : Actor, ICore
     public OutPort Output() => output;
 
     public InPort Input() => input;
+
+    public double Energy(long now)
+    {
+        return 0.0;
+    }
 }
 
 

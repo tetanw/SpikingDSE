@@ -80,7 +80,7 @@ public class MultiCoreTrace
                     timeBusy = core.lastSpike - (time - interval);
                 }
                 double util = (double)timeBusy / interval;
-                coreStats.ReportLine($"{c.Name()},{myTS},{util},{core.nrSpikesProduced},{core.nrSpikesConsumed},{core.nrSpikesReceived},{core.nrSOPs},{core.nrSpikesDroppedCore},{core.nrSpikesDroppedInput},{core.nrEarlySpikes},{core.nrLateSpikes},{core.energySpent},{core.receiverBusy},{core.ALUBusy},{core.senderBusy}");
+                coreStats.ReportLine($"{c.Name()},{myTS},{util},{core.nrSpikesProduced},{core.nrSpikesConsumed},{core.nrSpikesReceived},{core.nrSOPs},{core.nrSpikesDroppedCore},{core.nrSpikesDroppedInput},{core.nrEarlySpikes},{core.nrLateSpikes},{core.dynamicEnergy},{core.receiverBusy},{core.ALUBusy},{core.senderBusy}");
             }
 
             // Acounting to go to the next TS

@@ -32,7 +32,7 @@ public sealed class XYRouter : MeshRouter
         this.Name = $"router({x}_{y})";
     }
 
-    public double Energy(long now)
+    public override double Energy(long now)
     {
         double staticEnergy = spec.StaticPower * (now / spec.Frequency);
         double energy = dynamicEnergy + staticEnergy;

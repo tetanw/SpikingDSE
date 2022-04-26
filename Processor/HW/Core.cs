@@ -8,6 +8,7 @@ public interface ICore
     public string Name();
     public OutPort Output();
     public InPort Input();
+    public double Energy(long now);
 }
 
 public class CoreEvent { }

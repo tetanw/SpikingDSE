@@ -15,6 +15,8 @@ public sealed class SimpleXYRouter : MeshRouter
         this.processingDelay = processingDelay;
     }
 
+    public override double Energy(long now) => 0.0;
+
     public override IEnumerable<Event> Run(Simulator env)
     {
         var inputSelect = Any.AnyOf<Packet>(env, inNorth, inEast, inSouth, inWest, inLocal);

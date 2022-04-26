@@ -131,6 +131,7 @@ public class CoreV1Spec : CoreSpec
 {
     public int IntegrateDelay { get; set; }
     public int SyncDelay { get; set; }
+    public int Frequency { get; set; } = 100_000_000;
     public double IntegrateEnergy { get; set; }
     public double SyncEnergy { get; set; }
     public double StaticPower { get; set; }

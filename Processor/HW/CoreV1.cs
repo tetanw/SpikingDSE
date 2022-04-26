@@ -24,7 +24,7 @@ public sealed class CoreV1 : Actor, ICore
     public int nrSpikesDroppedInput = 0;
     public int nrLateSpikes = 0;
     public int nrEarlySpikes = 0;
-    public double energySpent = 0.0;
+    public double dynamicEnergy = 0.0;
     public int nrSpikesReceived = 0;
     public long receiverBusy;
     public long ALUBusy;
@@ -136,10 +136,12 @@ public sealed class CoreV1 : Actor, ICore
             if (spec.ReportSyncEnd)
             {
                 yield return outputBuffer.RequestWrite();
-                outputBuffer.Write(new Packet {
+                outputBuffer.Write(new Packet
+                {
                     Dest = mapping.ControllerCoord,
                     Src = loc,
-                    Message = new SyncDone {
+                    Message = new SyncDone
+                    {
                         TS = TS,
                         Core = this
                     }
@@ -190,7 +192,7 @@ public sealed class CoreV1 : Actor, ICore
             layer.Forward(spike.Neuron);
         nrSpikesConsumed++;
         nrSOPs += spike.Layer.Size;
-        energySpent += spec.IntegrateEnergy * spike.Layer.Size;
+        dynamicEnergy += spec.IntegrateEnergy * spike.Layer.Size;
         // Calculate amount of lines required, careful: trick to ceil divide
         int nrLines = (spike.Layer.Size + spec.NrParallel) / spec.NrParallel;
         yield return env.Delay(spec.IntegrateDelay * nrLines);
@@ -266,6 +268,7 @@ public sealed class CoreV1 : Actor, ICore
             }
             layer.FinishSync();
             OnSyncEnded?.Invoke(env.Now, sync.TS, layer);
+            dynamicEnergy += spec.SyncEnergy * layer.Size;
         }
     }
 
@@ -274,4 +277,10 @@ public sealed class CoreV1 : Actor, ICore
     public OutPort Output() => output;
 
     public InPort Input() => input;
+
+    public double Energy(long now)
+    {
+        double staticEnergy = spec.StaticPower * now / spec.Frequency;
+        return staticEnergy + dynamicEnergy;
+    }
 }

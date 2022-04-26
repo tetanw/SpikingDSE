@@ -74,7 +74,7 @@ public class SNN
             WeigthsUtil.Read1DFloat(biasPath, headers: true),
             alpha,
             rho,
-            0.5f,
+            0.01f,
             name: layer["Name"].GetString()
         );
         return hidden;

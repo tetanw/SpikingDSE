@@ -166,4 +166,6 @@ public sealed class ProtoXYRouter : MeshRouter
             return MeshDir.Local;
         }
     }
+
+    public override double Energy(long now) => 0.0;
 }

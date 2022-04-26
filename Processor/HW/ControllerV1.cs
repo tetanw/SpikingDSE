@@ -157,4 +157,9 @@ public sealed class ControllerV1 : Actor, ICore
     OutPort ICore.Output() => Output;
 
     InPort ICore.Input() => Input;
+
+    public double Energy(long now)
+    {
+        return 0.0;
+    }
 }

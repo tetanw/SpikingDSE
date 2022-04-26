@@ -17,5 +17,7 @@ public abstract class MeshRouter : Actor
     public OutPort outEast = new();
     public OutPort outWest = new();
     public OutPort outLocal = new();
+
+    public abstract double Energy(long now);
 }
 
