@@ -280,7 +280,7 @@ public sealed class CoreV1 : Actor, ICore
 
     public double Energy(long now)
     {
-        double staticEnergy = spec.StaticPower * now / spec.Frequency;
+        double staticEnergy = spec.StaticPower * now / spec.Global.Frequency;
         return staticEnergy + dynamicEnergy;
     }
 }

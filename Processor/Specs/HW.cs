@@ -3,28 +3,30 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace SpikingDSE;
 
 class HWFile
 {
+    public Dictionary<string, JsonElement> Global { get; set; }
     public Dictionary<string, JsonElement> NoC { get; set; }
     public List<Dictionary<string, JsonElement>> Cores { get; set; }
 }
 
 public class HWSpec
 {
+    public GlobalSpec Global { get; set; }
     public List<CoreSpec> Cores { get; set; }
     public NoCSpec NoC { get; set; }
 
-    private static CoreSpec CreateCoreSpec(Dictionary<string, JsonElement> instance)
+    private static CoreSpec CreateCoreSpec(Dictionary<string, JsonElement> instance, GlobalSpec global)
     {
         string type = instance["Type"].GetString();
         if (type == "controller-v1")
         {
             return new ControllerV1Spec
             {
+                Global = global,
                 Name = instance["Name"].GetString(),
                 Interval = instance["Interval"].GetInt64(),
                 ConnectsTo = instance["ConnectsTo"].GetString(),
@@ -35,6 +37,7 @@ public class HWSpec
         {
             return new CoreV1Spec
             {
+                Global = global,
                 Name = instance["Name"].GetString(),
                 IntegrateDelay = instance["IntegrateDelay"].GetInt32(),
                 SyncDelay = instance["SyncDelay"].GetInt32(),
@@ -54,13 +57,13 @@ public class HWSpec
         }
     }
 
-    private static MeshSpec BuildMesh(Dictionary<string, JsonElement> NoC)
+    private static MeshSpec CreateMesh(Dictionary<string, JsonElement> NoC, GlobalSpec global)
     {
         return new MeshSpec
         {
+            Global = global,
             Width = NoC["Width"].GetInt32(),
             Height = NoC["Height"].GetInt32(),
-            Frequency = NoC["Frequency"].GetDouble(),
             InputSize = NoC["InputSize"].GetInt32(),
             OutputSize = NoC["OutputSize"].GetInt32(),
             SwitchDelay = NoC["SwitchDelay"].GetInt32(),
@@ -72,10 +75,11 @@ public class HWSpec
         };
     }
 
-    private static BusSpec BuildBus(Dictionary<string, JsonElement> NoC)
+    private static BusSpec CreateBus(Dictionary<string, JsonElement> NoC, GlobalSpec global)
     {
         return new BusSpec
         {
+            Global = global,
             Ports = NoC["Ports"].GetInt32(),
             TransferDelay = NoC["TransferDelay"].GetInt32(),
             TransferEnergy = NoC["TransferEnergy"].GetDouble(),
@@ -83,21 +87,29 @@ public class HWSpec
         };
     }
 
+    private static GlobalSpec CreateGlobal(Dictionary<string, JsonElement> global)
+    {
+        return new GlobalSpec
+        {
+            Frequency = global["Frequency"].GetDouble()
+        };
+    }
+
     public static HWSpec Load(string path)
     {
         var hwFile = JsonSerializer.Deserialize<HWFile>(File.ReadAllText(path));
-
-        var cores = hwFile.Cores.Select(c => CreateCoreSpec(c)).ToList();
+        var global = CreateGlobal(hwFile.Global);
+        var cores = hwFile.Cores.Select(c => CreateCoreSpec(c, global)).ToList();
 
         var type = hwFile.NoC["Type"].GetString();
         NoCSpec noc;
         if (type == "Mesh")
         {
-            noc = BuildMesh(hwFile.NoC);
+            noc = CreateMesh(hwFile.NoC, global);
         }
         else if (type == "Bus")
         {
-            noc = BuildBus(hwFile.NoC);
+            noc = CreateBus(hwFile.NoC, global);
         }
         else
         {
@@ -106,6 +118,7 @@ public class HWSpec
 
         return new HWSpec()
         {
+            Global = global,
             Cores = cores,
             NoC = noc
         };
@@ -122,6 +135,7 @@ public class HWSpec
 
 public class CoreSpec
 {
+    public GlobalSpec Global { get; set; }
     public string Name { get; set; }
     public int MaxNeurons { get; set; }
     public string ConnectsTo { get; set; }
@@ -131,7 +145,6 @@ public class CoreV1Spec : CoreSpec
 {
     public int IntegrateDelay { get; set; }
     public int SyncDelay { get; set; }
-    public int Frequency { get; set; } = 100_000_000;
     public double IntegrateEnergy { get; set; }
     public double SyncEnergy { get; set; }
     public double StaticPower { get; set; }
@@ -149,6 +162,7 @@ public class ControllerV1Spec : CoreSpec
 
 public class NoCSpec
 {
+    public GlobalSpec Global { get; set; }
 }
 
 public class MeshSpec : NoCSpec
@@ -161,7 +175,6 @@ public class MeshSpec : NoCSpec
     public int SwitchDelay { get; set; }
     public double TransferEnergy { get; set; }
     public double StaticPower { get; set; }
-    public double Frequency { get; set; } = 100_000_000.0;
     public int InputDelay { get; set; }
     public int OutputDelay { get; set; }
 }
@@ -176,5 +189,5 @@ public class BusSpec : NoCSpec
 
 public class GlobalSpec
 {
-    public long Frequency { get; set; }
+    public double Frequency { get; set; }
 }
