@@ -62,6 +62,8 @@ public class SNN
         string inWeightsPath = path + layer["InWeights"].GetString();
         string recWeightsPath = path + layer["RecWeights"].GetString();
         string biasPath = path + layer["Bias"].GetString();
+        float vth = (float)layer["Vth"].GetDouble();
+        float beta = (float)layer["Beta"].GetDouble();
 
         float[] tau_m = WeigthsUtil.Read1DFloat(tauMPath, headers: true);
         float[] tau_adp = WeigthsUtil.Read1DFloat(tauAdpPath, headers: true);
@@ -74,7 +76,8 @@ public class SNN
             WeigthsUtil.Read1DFloat(biasPath, headers: true),
             alpha,
             rho,
-            0.01f,
+            beta,
+            vth,
             name: layer["Name"].GetString()
         );
         return hidden;
@@ -82,13 +85,14 @@ public class SNN
 
     private static ALIFQLayer CreateALIFQLayer(string path, Dictionary<string, JsonElement> layer)
     {
-        float scale = 16_384.0f;
-
         string tauMPath = path + layer["TauM"].GetString();
         string tauAdpPath = path + layer["TauAdp"].GetString();
         string inWeightsPath = path + layer["InWeights"].GetString();
         string recWeightsPath = path + layer["RecWeights"].GetString();
         string biasPath = path + layer["Bias"].GetString();
+        float vth = (float)layer["Vth"].GetDouble();
+        float beta = (float)layer["Beta"].GetDouble();
+        float scale = (float)layer["Scale"].GetDouble();
 
         var scale1D = (int i, float v) => (long)(v * scale);
         var scale2D = (int x, int y, float v) => (long)(v * scale);
@@ -97,8 +101,8 @@ public class SNN
         float[] alpha = tau_m.Transform(WeigthsUtil.Exp);
         float[] rho = tau_adp.Transform(WeigthsUtil.Exp);
         float[] alphaComp = alpha.Transform((_, a) => 1 - a);
-        int vth = (int)(0.5 * scale);
-        int beta = (int)(1.8f * scale);
+        int vthQ = (int)(vth * scale);
+        int betaQ = (int)(beta * scale);
         var hidden = new ALIFQLayer(
             (int)scale,
             WeigthsUtil.Read2DFloat(inWeightsPath, headers: true).Transform(WeigthsUtil.ScaleWeights(alphaComp)).Transform(scale2D),
@@ -106,8 +110,8 @@ public class SNN
             WeigthsUtil.Read1DFloat(biasPath, headers: true).Transform(scale1D),
             alpha.Transform(scale1D),
             rho.Transform(scale1D),
-            vth,
-            beta,
+            vthQ,
+            betaQ,
             name: layer["Name"].GetString()
         );
         return hidden;
@@ -117,6 +121,7 @@ public class SNN
     {
         string tauMPath = path + layer["TauM"].GetString();
         string inWeightsPath = path + layer["InWeights"].GetString();
+        float vth = (float) layer["Vth"].GetDouble();
 
         float[] tau_m = WeigthsUtil.Read1DFloat(tauMPath, headers: true);
         float[] alpha = tau_m.Transform(WeigthsUtil.Exp);
@@ -124,7 +129,7 @@ public class SNN
         var output = new OutputLayer(
             WeigthsUtil.Read2DFloat(inWeightsPath, headers: true).Transform(WeigthsUtil.ScaleWeights(alphaComp)),
             alpha,
-            threshold: 0.01f,
+            threshold: vth,
             name: layer["Name"].GetString()
         );
         return output;

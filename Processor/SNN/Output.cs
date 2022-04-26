@@ -16,15 +16,15 @@ public class OutputLayer : HiddenLayer
 
     public OutputLayer(float[,] weights, float[] alpha, float threshold = 0.01f, string name = "")
     {
-        this.InputSize = weights.GetLength(0);
-        this.Size = weights.GetLength(1);
-        this.Weights = weights;
-        this.Pots = new float[Size];
-        this.ReadoutArr = new float[Size];
-        this.Output = new float[Size];
-        this.Thr = threshold;
-        this.Alpha = alpha;
-        this.Name = name;
+        InputSize = weights.GetLength(0);
+        Size = weights.GetLength(1);
+        Weights = weights;
+        Pots = new float[Size];
+        ReadoutArr = new float[Size];
+        Output = new float[Size];
+        Thr = threshold;
+        Alpha = alpha;
+        Name = name;
     }
 
     public override void Forward(int neuron)
@@ -90,15 +90,15 @@ public class OutputLayer : HiddenLayer
     public override Layer Copy()
     {
         return new OutputLayer(
-            this.Weights,
-            this.Alpha,
-            name: this.Name
+            Weights,
+            Alpha,
+            name: Name
         );
     }
 
     public override Layer Slice(int start, int end, int partNr)
     {
-        throw new System.Exception("Can not slice output layer");
+        throw new Exception("Can not slice output layer");
     }
 
     public override bool IsRecurrent() => false;

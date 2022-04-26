@@ -19,7 +19,7 @@ public class ALIFLayer : HiddenLayer
     private readonly int offset;
     public int TS { get; private set; }
 
-    public ALIFLayer(float[,] inWeights, float[,] recWeights, float[] bias, float[] alpha, float[] rho, float VTh, string name, int offset = 0)
+    public ALIFLayer(float[,] inWeights, float[,] recWeights, float[] bias, float[] alpha, float[] rho, float beta, float VTh, string name, int offset = 0)
     {
         InputSize = inWeights.GetLength(0);
         Size = inWeights.GetLength(1);
@@ -35,7 +35,7 @@ public class ALIFLayer : HiddenLayer
         Alpha = alpha;
         Rho = rho;
         this.VTh = VTh;
-        Beta = 1.8f;
+        Beta = beta;
         this.offset = offset;
     }
 
@@ -103,20 +103,21 @@ public class ALIFLayer : HiddenLayer
 
     public override Layer Copy()
     {
-        return new ALIFLayer(this.InWeights, this.RecWeights, this.Bias, this.Alpha, this.Rho, this.VTh, this.Name, offset: this.offset);
+        return new ALIFLayer(InWeights, RecWeights, Bias, Alpha, Rho, Beta, VTh, Name, offset: offset);
     }
 
     public override Layer Slice(int start, int end, int partNr)
     {
         var sliceSize = end - start;
         var slice = new ALIFLayer(
-            WeigthsUtil.Slice(this.InWeights, start, 0, sliceSize, this.InputSize),
-            WeigthsUtil.Slice(this.RecWeights, start, 0, sliceSize, Size),
-            WeigthsUtil.Slice(this.Bias, start, sliceSize),
-            WeigthsUtil.Slice(this.Alpha, start, sliceSize),
-            WeigthsUtil.Slice(this.Rho, start, sliceSize),
-            this.VTh,
-            $"{this.Name}-{partNr}",
+            WeigthsUtil.Slice(InWeights, start, 0, sliceSize, InputSize),
+            WeigthsUtil.Slice(RecWeights, start, 0, sliceSize, Size),
+            WeigthsUtil.Slice(Bias, start, sliceSize),
+            WeigthsUtil.Slice(Alpha, start, sliceSize),
+            WeigthsUtil.Slice(Rho, start, sliceSize),
+            Beta,
+            VTh,
+            $"{Name}-{partNr}",
             offset: start
         );
 
