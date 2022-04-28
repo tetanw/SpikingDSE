@@ -28,7 +28,8 @@ public class HWSpec
             {
                 Global = global,
                 Name = instance["Name"].GetString(),
-                Interval = instance["Interval"].GetInt64(),
+                Interval = instance.GetOptional("Interval")?.GetInt64() ?? -1,
+                GlobalSync = instance.GetOptional("")?.GetBoolean() ?? false,
                 ConnectsTo = instance["ConnectsTo"].GetString(),
                 MaxNeurons = int.MaxValue
             };
@@ -157,7 +158,7 @@ public class ControllerV1Spec : CoreSpec
 {
     public long StartTime { get; set; } = 0;
     public long Interval { get; set; }
-    public bool DoGlobalSync { get; set; } = false;
+    public bool GlobalSync { get; set; }
 }
 
 public class NoCSpec

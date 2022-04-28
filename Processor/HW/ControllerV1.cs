@@ -79,7 +79,7 @@ public sealed class ControllerV1 : Actor, ICore
             }
 
             // Wait until sync
-            if (spec.DoGlobalSync)
+            if (spec.GlobalSync)
             {
                 var nextSync = spec.StartTime + spec.Interval * (TS + 1);
                 yield return env.SleepUntil(Math.Max(nextSync, env.Now));
@@ -100,7 +100,7 @@ public sealed class ControllerV1 : Actor, ICore
             }
         }
 
-        if (!spec.DoGlobalSync)
+        if (!spec.GlobalSync)
         {
             // Sync
             foreach (var ev in Sync(env, TS))
