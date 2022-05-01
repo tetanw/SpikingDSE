@@ -13,3 +13,16 @@ def run_experiments(runs, models):
                 f" -o \"res/results/{dsName}-{expNr}"
             print(f">> {command}")
             process = subprocess.run(command)
+
+def run_mappings(runs, models, mapper):
+    subprocess.run(['dotnet', 'build', '--configuration', 'Release'])
+
+    for hwName, mappingName in runs:
+        for dsName in models:
+            command = f"bin\Release\\net6.0\SpikingDSE.exe mapping"\
+                f" -s \"res/exp/snn-{dsName}.json\""\
+                f" -h \"res/exp/{hwName}.json\""\
+                f" -m {mapper}"\
+                f" -o \"res/exp/{mappingName}-{dsName}.json"
+            print(f">> {command}")
+            process = subprocess.run(command)

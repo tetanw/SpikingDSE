@@ -104,11 +104,10 @@ public class HWSpec
         };
     }
 
-    private static GlobalSpec CreateGlobal(Dictionary<string, JsonElement> global)
+    private static GlobalSpec CreateGlobal(Dictionary<string, JsonElement> _)
     {
         return new GlobalSpec
         {
-            Frequency = global["Frequency"].GetDouble()
         };
     }
 
@@ -209,5 +208,5 @@ public class BusSpec : NoCSpec
 
 public class GlobalSpec
 {
-    public double Frequency { get; set; }
+    public double Frequency { get; set; } = 10_000_000.0;
 }
