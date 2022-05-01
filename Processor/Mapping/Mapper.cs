@@ -83,13 +83,49 @@ public class FirstFitMapper : Mapper
         public int NrNeurons { get; set; }
         public int NrSynapses { get; set; }
         public int NrLayers { get; set; }
+        public int NrFanIn { get; set; }
+
+        public CoreData(CoreSpec spec)
+        {
+            Spec = spec;
+            NrNeurons = 0;
+            NrSynapses = 0;
+            NrLayers = 0;
+            NrFanIn = 0;
+        }
 
         public bool FitsLayer(Layer layer)
         {
             return NrNeurons + layer.Size <= Spec.MaxNeurons &&
                             NrSynapses + layer.InputSize * layer.Size <= Spec.MaxSynapses &&
                             NrLayers < Spec.MaxLayers &&
+                            NrFanIn + layer.InputSize <= Spec.MaxFanIn &&
                             Spec.AcceptedTypes.Contains(layer.TypeName);
+        }
+
+        public int MaximumCut(Layer layer, int neuronsToMap)
+        {
+            // Not a valid to core to use as target
+            if (!Spec.AcceptedTypes.Contains(layer.TypeName))
+                return 0;
+
+            // If the maximum amount of layers is reached then also continue
+            if (NrLayers == Spec.MaxLayers)
+                return 0;
+
+            if (NrFanIn + layer.InputSize > Spec.MaxFanIn)
+                return 0;
+
+            // What is the maximum amount of neurons that can be mapped 
+            // according to neuron memory? 
+            int limitedByNeuron = Spec.MaxNeurons - NrNeurons;
+
+            // What is the maximum amount of neurons that can be mapped
+            // according to synapse memory
+            int freeSynapses = Spec.MaxSynapses - NrSynapses;
+            int limitedBySynapse = freeSynapses / layer.InputSize;
+
+            return Math.Min(Math.Min(limitedByNeuron, limitedBySynapse), neuronsToMap);
         }
     }
 
@@ -104,7 +140,7 @@ public class FirstFitMapper : Mapper
 
         // Do the actual mapping
         var unmapped = new Queue<Layer>(layers);
-        var sortedCores = hw.Cores.Select(c => new CoreData { Spec = c, NrNeurons = 0, NrSynapses = 0 }).ToList();
+        var sortedCores = hw.Cores.Select(c => new CoreData(c)).ToList();
         sortedCores.Sort((c1, c2) => c1.Spec.Priority < c2.Spec.Priority ? 1 : -1);
         while (unmapped.Count > 0)
         {
@@ -115,6 +151,7 @@ public class FirstFitMapper : Mapper
             {
                 core.NrNeurons += layer.Size;
                 core.NrSynapses += layer.InputSize * layer.Size;
+                core.NrFanIn += layer.InputSize;
                 core.NrLayers++;
                 mapping.Mapped.Add(new MappedLayer
                 {
@@ -141,25 +178,8 @@ public class FirstFitMapper : Mapper
             int mappedNeurons = 0;
             foreach (var c in sortedCores)
             {
-                // Not a valid to core to use as target
-                if (!c.Spec.AcceptedTypes.Contains(layer.TypeName))
-                    continue;
-
-                // If the maximum amount of layers is reached then also continue
-                if (c.NrLayers == c.Spec.MaxLayers)
-                    continue;
-
-                // What is the maximum amount of neurons that can be mapped 
-                // according to neuron memory? 
-                int limitedByNeuron = c.Spec.MaxNeurons - c.NrNeurons;
-
-                // What is the maximum amount of neurons that can be mapped
-                // according to synapse memory
-                int freeSynapses = c.Spec.MaxSynapses - c.NrSynapses;
-                int limitedBySynapse = freeSynapses / layer.InputSize;
-
                 int neuronsToMap = layer.Size - mappedNeurons;
-                int toMap = Math.Min(Math.Min(limitedByNeuron, limitedBySynapse), neuronsToMap);
+                int toMap = c.MaximumCut(layer, neuronsToMap);
                 if (toMap == 0)
                     continue;
 
@@ -194,6 +214,7 @@ public class FirstFitMapper : Mapper
                 var sliceSize = l.End - l.Start;
                 c.NrNeurons += sliceSize;
                 c.NrSynapses += layer.InputSize * sliceSize;
+                c.NrFanIn += layer.InputSize;
                 c.NrLayers++;
             }
         }
