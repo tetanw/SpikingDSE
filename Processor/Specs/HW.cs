@@ -70,6 +70,7 @@ public class HWSpec
         core.Priority = instance.GetOptional("Priority")?.GetInt32() ?? int.MaxValue;
         core.MaxSynapses = instance.GetOptional("MaxSynapses")?.GetInt32() ?? int.MaxValue;
         core.MaxNeurons = instance.GetOptional("MaxNeurons")?.GetInt32() ?? int.MaxValue;
+        core.MaxLayers = instance.GetOptional("MaxLayers")?.GetInt32() ?? int.MaxValue;
 
         return core;
     }
@@ -156,6 +157,7 @@ public class CoreSpec
     public int Priority { get; set; }
     public int MaxNeurons { get; set; }
     public int MaxSynapses { get; set; }
+    public int MaxLayers { get; set; }
     public string ConnectsTo { get; set; }
     public string[] AcceptedTypes { get; set; }
 }

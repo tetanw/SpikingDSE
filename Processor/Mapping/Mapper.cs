@@ -82,11 +82,13 @@ public class FirstFitMapper : Mapper
         public CoreSpec Spec { get; set; }
         public int NrNeurons { get; set; }
         public int NrSynapses { get; set; }
+        public int NrLayers { get; set; }
 
         public bool FitsLayer(Layer layer)
         {
             return NrNeurons + layer.Size <= Spec.MaxNeurons &&
                             NrSynapses + layer.InputSize * layer.Size <= Spec.MaxSynapses &&
+                            NrLayers < Spec.MaxLayers &&
                             Spec.AcceptedTypes.Contains(layer.TypeName);
         }
     }
@@ -113,6 +115,7 @@ public class FirstFitMapper : Mapper
             {
                 core.NrNeurons += layer.Size;
                 core.NrSynapses += layer.InputSize * layer.Size;
+                core.NrLayers++;
                 mapping.Mapped.Add(new MappedLayer
                 {
                     Layer = layer.Name,
@@ -142,6 +145,10 @@ public class FirstFitMapper : Mapper
                 if (!c.Spec.AcceptedTypes.Contains(layer.TypeName))
                     continue;
 
+                // If the maximum amount of layers is reached then also continue
+                if (c.NrLayers == c.Spec.MaxLayers)
+                    continue;
+
                 // What is the maximum amount of neurons that can be mapped 
                 // according to neuron memory? 
                 int limitedByNeuron = c.Spec.MaxNeurons - c.NrNeurons;
@@ -150,7 +157,6 @@ public class FirstFitMapper : Mapper
                 // according to synapse memory
                 int freeSynapses = c.Spec.MaxSynapses - c.NrSynapses;
                 int limitedBySynapse = freeSynapses / layer.InputSize;
-
 
                 int neuronsToMap = layer.Size - mappedNeurons;
                 int toMap = Math.Min(Math.Min(limitedByNeuron, limitedBySynapse), neuronsToMap);
@@ -188,6 +194,7 @@ public class FirstFitMapper : Mapper
                 var sliceSize = l.End - l.Start;
                 c.NrNeurons += sliceSize;
                 c.NrSynapses += layer.InputSize * sliceSize;
+                c.NrLayers++;
             }
         }
         return mapping;
