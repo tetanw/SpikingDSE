@@ -174,8 +174,10 @@ public class SNN
         var input = snn.GetInputLayer().Copy();
         var output = snn.GetOutputLayer().Copy();
 
-        List<List<Layer>> hiddenLayers = new();
-        hiddenLayers.Add(new List<Layer>() { input });
+        List<List<Layer>> hiddenLayers = new()
+        {
+            new List<Layer>() { input }
+        };
         var hiddens = snn.layers.Where((l, i) => i != 0 && i != snn.layers.Count - 1).ToList();
         foreach (var hidden in hiddens)
         {

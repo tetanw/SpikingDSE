@@ -10,6 +10,7 @@ class HWFile
 {
     public Dictionary<string, JsonElement> Global { get; set; }
     public Dictionary<string, JsonElement> NoC { get; set; }
+    public Dictionary<string, JsonElement> CoreTemplates { get; set; }
     public List<Dictionary<string, JsonElement>> Cores { get; set; }
 }
 
@@ -19,27 +20,33 @@ public class HWSpec
     public List<CoreSpec> Cores { get; set; }
     public NoCSpec NoC { get; set; }
 
-    private static CoreSpec CreateCoreSpec(Dictionary<string, JsonElement> instance, GlobalSpec global)
+    private static CoreSpec CreateCoreSpec(Dictionary<string, JsonElement> instance, Dictionary<string, JsonElement> templates, GlobalSpec global)
     {
+        var templateName = instance.GetOptional("$Template")?.GetString();
+        if (templateName != null)
+        {
+            var template = templates[templateName];
+            foreach (var property in template.EnumerateObject())
+            {
+                instance[property.Name] = property.Value;
+            }
+        }
+
         string type = instance["Type"].GetString();
+        CoreSpec core;
         if (type == "controller-v1")
         {
-            return new ControllerV1Spec
+            core = new ControllerV1Spec
             {
-                Global = global,
-                Name = instance["Name"].GetString(),
                 Interval = instance.GetOptional("Interval")?.GetInt64() ?? -1,
-                GlobalSync = instance.GetOptional("")?.GetBoolean() ?? false,
+                GlobalSync = instance.GetOptional("GlobalSync")?.GetBoolean() ?? false,
                 ConnectsTo = instance["ConnectsTo"].GetString(),
-                MaxNeurons = int.MaxValue
             };
         }
         else if (type == "core-v1")
         {
-            return new CoreV1Spec
+            core = new CoreV1Spec
             {
-                Global = global,
-                Name = instance["Name"].GetString(),
                 IntegrateDelay = instance["IntegrateDelay"].GetInt32(),
                 SyncDelay = instance["SyncDelay"].GetInt32(),
                 ConnectsTo = instance["ConnectsTo"].GetString(),
@@ -49,13 +56,22 @@ public class HWSpec
                 StaticPower = instance["StaticPower"].GetDouble(),
                 OutputBufferSize = instance["OutputBufferSize"].GetInt32(),
                 NrParallel = instance["NrParallel"].GetInt32(),
-                ReportSyncEnd = instance["ReportSyncEnd"].GetBoolean()
+                ReportSyncEnd = instance["ReportSyncEnd"].GetBoolean(),
             };
         }
         else
         {
             throw new Exception($"Invalid instance type: {type}");
         }
+
+        core.Global = global;
+        core.Name = instance["Name"].GetString();
+        core.AcceptedTypes = instance.GetOptional("Accepts")?.GetStringArray() ?? Array.Empty<string>();
+        core.Priority = instance.GetOptional("Priority")?.GetInt32() ?? int.MaxValue;
+        core.MaxSynapses = instance.GetOptional("MaxSynapses")?.GetInt32() ?? int.MaxValue;
+        core.MaxNeurons = instance.GetOptional("MaxNeurons")?.GetInt32() ?? int.MaxValue;
+
+        return core;
     }
 
     private static MeshSpec CreateMesh(Dictionary<string, JsonElement> NoC, GlobalSpec global)
@@ -100,7 +116,7 @@ public class HWSpec
     {
         var hwFile = JsonSerializer.Deserialize<HWFile>(File.ReadAllText(path));
         var global = CreateGlobal(hwFile.Global);
-        var cores = hwFile.Cores.Select(c => CreateCoreSpec(c, global)).ToList();
+        var cores = hwFile.Cores.Select(c => CreateCoreSpec(c, hwFile.CoreTemplates, global)).ToList();
 
         var type = hwFile.NoC["Type"].GetString();
         NoCSpec noc;
@@ -138,8 +154,11 @@ public class CoreSpec
 {
     public GlobalSpec Global { get; set; }
     public string Name { get; set; }
+    public int Priority { get; set; }
     public int MaxNeurons { get; set; }
+    public int MaxSynapses { get; set; }
     public string ConnectsTo { get; set; }
+    public string[] AcceptedTypes { get; set; }
 }
 
 public class CoreV1Spec : CoreSpec

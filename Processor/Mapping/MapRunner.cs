@@ -18,19 +18,19 @@ public class MapRunner
     {
         var hw = HWSpec.Load(opts.HW);
         var snn = SNN.Load(opts.SNN);
-        IMapper mapper;
+        Mapper mapper;
         if (opts.Mapper == "FirstFit")
         {
-            mapper = new FirstFitMapper();
+            mapper = new FirstFitMapper(hw, snn);
         }
         else
         {
             throw new Exception($"Unknown mapper: {opts.Mapper}");
         }
-        var mapping = MultiCoreMapping.CreateMapping(mapper, hw, snn);
+        var mapping = mapper.Run();
         if (mapping.Unmapped.Count > 0)
         {
-            var layerNames = string.Join(',', mapping.Unmapped.Select(l => l.Name).ToArray());
+            var layerNames = string.Join(',', mapping.Unmapped);
             throw new Exception($"Could not map: {layerNames}");
         }   
         mapping.Save(opts.Mapping);

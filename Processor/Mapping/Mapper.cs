@@ -7,7 +7,7 @@ using System.Text.Json;
 
 namespace SpikingDSE;
 
-public class MapEntry
+public class MappedLayer
 {
     public string Layer { get; set; }
     public string Core { get; set; }
@@ -19,8 +19,8 @@ public class MapEntry
 
 public class Mapping
 {
-    public List<MapEntry> Mapped { get; set; } = new();
-    public List<MapLayer> Unmapped { get; set; } = new();
+    public List<MappedLayer> Mapped { get; set; } = new();
+    public List<string> Unmapped { get; set; } = new();
 
     public void PrintReport()
     {
@@ -37,13 +37,13 @@ public class Mapping
             }
         }
         Console.WriteLine("Unmapped:");
-        foreach (var layer in Unmapped)
+        foreach (var layerName in Unmapped)
         {
-            Console.WriteLine($"  {layer.Name}");
+            Console.WriteLine($"  {layerName}");
         }
     }
 
-    public IEnumerable<MapEntry> GetAllSplits(string name)
+    public IEnumerable<MappedLayer> GetAllSplits(string name)
     {
         return Mapped.FindAll((m) => m.Layer == name);
     }
@@ -61,52 +61,65 @@ public class Mapping
     }
 }
 
-public interface IMapper
+public abstract class Mapper
 {
-    public Mapping Run();
-    public void AddCore(MapCore core);
-    public void AddLayer(MapLayer layer);
+    protected readonly HWSpec hw;
+    protected readonly SNN snn;
+
+    public Mapper(HWSpec hw, SNN snn)
+    {
+        this.hw = hw;
+        this.snn = snn;
+    }
+
+    public abstract Mapping Run();
 }
 
-public class FirstFitMapper : IMapper
+public class FirstFitMapper : Mapper
 {
-    private readonly List<MapCore> cores = new();
-    private readonly List<MapLayer> layers = new();
-
-
-    public void AddCore(MapCore core)
+    record class CoreData
     {
-        // Adding a core that a layer can be mapped to
-        cores.Add(core);
+        public CoreSpec Spec { get; set; }
+        public int NrNeurons { get; set; }
+        public int NrSynapses { get; set; }
+
+        public bool FitsLayer(Layer layer)
+        {
+            return NrNeurons + layer.Size <= Spec.MaxNeurons &&
+                            NrSynapses + layer.InputSize * layer.Size <= Spec.MaxSynapses &&
+                            Spec.AcceptedTypes.Contains(layer.TypeName);
+        }
     }
 
-    public void AddLayer(MapLayer layer)
+    public FirstFitMapper(HWSpec hw, SNN snn) : base(hw, snn)
     {
-        // Add a SNN layer that needs to be mapped
-        layers.Add(layer);
     }
 
-    public Mapping Run()
+    public override Mapping Run()
     {
         var mapping = new Mapping();
+        var layers = snn.GetAllLayers();
 
         // Do the actual mapping
-        Queue<MapLayer> ready = new(layers);
-        while (ready.Count > 0)
+        var unmapped = new Queue<Layer>(layers);
+        var sortedCores = hw.Cores.Select(c => new CoreData { Spec = c, NrNeurons = 0, NrSynapses = 0 }).ToList();
+        sortedCores.Sort((c1, c2) => c1.Spec.Priority < c2.Spec.Priority ? 1 : -1);
+        while (unmapped.Count > 0)
         {
-            var layer = ready.Dequeue();
+            var layer = unmapped.Dequeue();
 
-            var core = cores.Find(c => c.NrNeurons + layer.NrNeurons <= c.MaxNrNeurons && c.AcceptedTypes.Contains(layer.Type));
+            var core = sortedCores.Find(c => c.FitsLayer(layer));
             if (core != null)
             {
-                core.NrNeurons += layer.NrNeurons;
-                mapping.Mapped.Add(new MapEntry
+                core.NrNeurons += layer.Size;
+                core.NrSynapses += layer.InputSize * layer.Size;
+                mapping.Mapped.Add(new MappedLayer
                 {
                     Layer = layer.Name,
-                    Core = core.Name,
+                    Core = core.Spec.Name,
                     Partial = false,
                     Start = 0,
-                    End = layer.NrNeurons,
+                    End = layer.Size,
                     Index = 0
                 });
                 continue;
@@ -116,80 +129,67 @@ public class FirstFitMapper : IMapper
             // the layer to a core
             if (!layer.Splittable)
             {
-                mapping.Unmapped.Add(layer);
+                mapping.Unmapped.Add(layer.Name);
                 continue;
             }
 
-            List<MapCore> splitSet = new();
-            int neuronsToMap = layer.NrNeurons;
-            foreach (var c in cores)
+            Dictionary<CoreData, MappedLayer> splitSet = new();
+            int i = 1;
+            int mappedNeurons = 0;
+            foreach (var c in sortedCores)
             {
-                if (!c.AcceptedTypes.Contains(layer.Type))
+                // Not a valid to core to use as target
+                if (!c.Spec.AcceptedTypes.Contains(layer.TypeName))
                     continue;
 
-                int freeNeurons = c.MaxNrNeurons - c.NrNeurons;
-                if (freeNeurons == 0)
+                // What is the maximum amount of neurons that can be mapped 
+                // according to neuron memory? 
+                int limitedByNeuron = c.Spec.MaxNeurons - c.NrNeurons;
+
+                // What is the maximum amount of neurons that can be mapped
+                // according to synapse memory
+                int freeSynapses = c.Spec.MaxSynapses - c.NrSynapses;
+                int limitedBySynapse = freeSynapses / layer.InputSize;
+
+
+                int neuronsToMap = layer.Size - mappedNeurons;
+                int toMap = Math.Min(Math.Min(limitedByNeuron, limitedBySynapse), neuronsToMap);
+                if (toMap == 0)
                     continue;
 
-                splitSet.Add(c);
-                neuronsToMap -= freeNeurons;
-                if (neuronsToMap <= 0)
+                splitSet.Add(c, new MappedLayer
+                {
+                    Layer = layer.Name,
+                    Core = c.Spec.Name,
+                    Partial = true,
+                    Start = mappedNeurons,
+                    End = mappedNeurons + toMap,
+                    Index = i++
+                });
+                mappedNeurons += toMap;
+                if (mappedNeurons == layer.Size)
                 {
                     break;
                 }
             }
-            if (neuronsToMap > 0)
+            if (mappedNeurons != layer.Size)
             {
                 // the layer is too big to be mapped even though it is splittable
-                mapping.Unmapped.Add(layer);
+                mapping.Unmapped.Add(layer.Name);
                 continue;
             }
             Debug.Assert(splitSet.Count > 0);
+            Debug.Assert(mappedNeurons == layer.Size);
 
             // actually assign the splits to each core
-            int neuronsMapped = 0;
-            neuronsToMap = layer.NrNeurons;
-            int i = 1;
-            foreach (var c in splitSet)
+            foreach (var (c, l) in splitSet)
             {
-                int freeNeurons = c.MaxNrNeurons - c.NrNeurons;
-                int sliceSize = Math.Min(freeNeurons, neuronsToMap);
-                mapping.Mapped.Add(new MapEntry
-                {
-                    Layer = layer.Name,
-                    Core = c.Name,
-                    Partial = true,
-                    Start = neuronsMapped,
-                    End = neuronsMapped + sliceSize,
-                    Index = i++
-                });
+                mapping.Mapped.Add(l);
+                var sliceSize = l.End - l.Start;
                 c.NrNeurons += sliceSize;
-                neuronsMapped += sliceSize;
-                neuronsToMap -= sliceSize;
+                c.NrSynapses += layer.InputSize * sliceSize;
             }
-            Debug.Assert(neuronsMapped == layer.NrNeurons);
         }
         return mapping;
     }
-}
-
-public class MapCore
-{
-    // Params
-    public object Value;
-    public string Name;
-    public int MaxNrNeurons;
-    public List<object> AcceptedTypes;
-
-    // Variables
-    public int NrNeurons = 0;
-}
-
-public class MapLayer
-{
-    public object Value { get; set; }
-    public string Name { get; set; }
-    public int NrNeurons { get; set; }
-    public bool Splittable { get; set; }
-    public object Type { get; set; }
 }

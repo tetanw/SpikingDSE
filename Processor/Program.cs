@@ -147,10 +147,6 @@ namespace SpikingDSE
                     {
                         new XYRouterTest().Run();
                     }
-                    else if (opts.Name.Equals("MapperTest"))
-                    {
-                        MapperTest.Run();
-                    }
                     else if (opts.Name.Equals("XYRouterValidation"))
                     {
                         new XYRouterValidation().Run();

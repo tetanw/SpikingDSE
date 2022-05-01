@@ -5,44 +5,6 @@ using System.Linq;
 
 namespace SpikingDSE;
 
-public class MultiCoreMapping
-{
-    public static Mapping CreateMapping(IMapper mapper, HWSpec spec, SNN snn)
-    {
-        foreach (var coreSpec in spec.Cores)
-        {
-            if (coreSpec is not CoreV1Spec) continue;
-
-            mapper.AddCore(new MapCore
-            {
-                Name = coreSpec.Name,
-                AcceptedTypes = new() { typeof(ALIFLayer), typeof(OutputLayer) },
-                MaxNrNeurons = coreSpec.MaxNeurons
-            });
-        }
-        var controllerSpec = spec.FindByType<ControllerV1Spec>();
-        mapper.AddCore(new MapCore
-        {
-            Name = controllerSpec.Name,
-            AcceptedTypes = new() { typeof(InputLayer) },
-            MaxNrNeurons = controllerSpec.MaxNeurons
-        });
-
-        foreach (var layer in snn.GetAllLayers())
-        {
-            mapper.AddLayer(new MapLayer
-            {
-                Name = layer.Name,
-                NrNeurons = layer.Size,
-                Splittable = layer is ALIFLayer,
-                Type = layer.GetType()
-            });
-        }
-
-        return mapper.Run();
-    }
-}
-
 public class MultiCore : Experiment
 {
     public Action SetupDone;

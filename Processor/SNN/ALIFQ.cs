@@ -39,6 +39,8 @@ public class ALIFQLayer : HiddenLayer
         this.VTh = VTh;
         this.Beta = Beta;
         this.offset = offset;
+        Splittable = true;
+        TypeName = "ALIFQ";
     }
 
     public override void Forward(int neuron)

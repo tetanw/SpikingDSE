@@ -25,6 +25,8 @@ public class OutputLayer : HiddenLayer
         Thr = threshold;
         Alpha = alpha;
         Name = name;
+        TypeName = "output";
+        Splittable = false;
     }
 
     public override void Forward(int neuron)

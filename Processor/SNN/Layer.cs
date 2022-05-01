@@ -8,6 +8,8 @@ public class Layer
     public int InputSize { get; protected set; }
     public int Size { get; protected set; }
     public string Name { get; protected set; }
+    public string TypeName { get; protected set; }
+    public bool Splittable { get; protected set; }
 
     public virtual Layer Slice(int start, int end, int partNr)
     {
@@ -24,19 +26,21 @@ public class InputLayer : Layer
 {
     public InputLayer(int size, string name = null)
     {
-        this.Name = name;
-        this.InputSize = -1;
-        this.Size = size;
+        Name = name;
+        InputSize = -1;
+        Size = size;
+        TypeName = "input";
+        Splittable = false;
     }
 
     public override Layer Copy()
     {
-        return new InputLayer(this.Size, name: this.Name);
+        return new InputLayer(Size, name: Name);
     }
 
     public override string ToString()
     {
-        return $"Input - \"{this.Name}\"";
+        return $"Input - \"{Name}\"";
     }
 }
 

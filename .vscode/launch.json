@@ -1,0 +1,27 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Trace sim - HW mesh 1 and best SNN",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "bin/Debug/net6.0/SpikingDSE.dll",
+            "args": ["trace-sim", "-s", "res/exp/snn-best.json", "-h", "res/exp/hw-mesh1.json", "-m", "res/exp/mapping1-best.json", "-t", "res/dataset/shd-10.zip;input_0.trace", "-o", "res/results/test"],
+            "cwd": "${workspaceFolder}/Processor",
+            "stopAtEntry": false,
+            "console": "internalConsole"
+        },
+        {
+            "name": "Mapping - HW mesh 1 and best SNN",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "bin/Debug/net6.0/SpikingDSE.dll",
+            "args": ["mapping", "-s", "res/exp/snn-best.json", "-h", "res/exp/hw-mesh1.json", "-m", "FirstFit", "-o", "res/exp/mapping1-best.json"],
+            "cwd": "${workspaceFolder}/Processor",
+            "stopAtEntry": false,
+            "console": "internalConsole"
+        },
+    ]
+}

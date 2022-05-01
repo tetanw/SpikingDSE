@@ -1,14 +1,24 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json;
 
 namespace SpikingDSE;
+
+public static class JSONUtils
+{
+    public static string[] GetStringArray(this JsonElement el)
+    {
+        var array = el.EnumerateArray().Select(el => el.GetString()).ToArray();
+        return array;
+    }
+}
+
 public static class DicUtils
 {
-    public static V? GetOptional<K, V>(this Dictionary<K, V> me, K key) where V: struct
+    public static V? GetOptional<K, V>(this Dictionary<K, V> dict, K key) where V : struct
     {
-        me.TryGetValue(key, out V value);
-        return value;
+        return dict.TryGetValue(key, out V value) ? value : null;
     }
 }
 
