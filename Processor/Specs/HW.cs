@@ -84,34 +84,52 @@ public class HWSpec
         return core;
     }
 
-    private static MeshSpec CreateMesh(Dictionary<string, JsonElement> NoC, GlobalSpec global)
+    private static NoCSpec CreateNoCSpec(Dictionary<string, JsonElement> instance, GlobalSpec global)
     {
-        return new MeshSpec
+        string type = "Mesh";
+        NoCSpec noc;
+        if (type == "Mesh")
         {
-            Global = global,
-            Width = NoC["Width"].GetInt32(),
-            Height = NoC["Height"].GetInt32(),
-            InputSize = NoC["InputSize"].GetInt32(),
-            OutputSize = NoC["OutputSize"].GetInt32(),
-            SwitchDelay = NoC["SwitchDelay"].GetInt32(),
-            TransferDelay = NoC["TransferDelay"].GetInt32(),
-            TransferEnergy = NoC["TransferEnergy"].GetDouble(),
-            StaticPower = NoC["StaticPower"].GetDouble(),
-            InputDelay = NoC["InputDelay"].GetInt32(),
-            OutputDelay = NoC["OutputDelay"].GetInt32(),
-        };
-    }
+            noc = new MeshSpec
+            {
+                Width = instance["Width"].GetInt32(),
+                Height = instance["Height"].GetInt32(),
+                InputSize = instance["InputSize"].GetInt32(),
+                OutputSize = instance["OutputSize"].GetInt32(),
+                SwitchDelay = instance["SwitchDelay"].GetInt32(),
+                TransferDelay = instance["TransferDelay"].GetInt32(),
+                TransferEnergy = instance["TransferEnergy"].GetDouble(),
+                StaticPower = instance["StaticPower"].GetDouble(),
+                InputDelay = instance["InputDelay"].GetInt32(),
+                OutputDelay = instance["OutputDelay"].GetInt32(),
+            };
+        }
+        else if (type == "Bus")
+        {
+            noc = new BusSpec
+            {
+                Ports = instance["Ports"].GetInt32(),
+                TransferDelay = instance["TransferDelay"].GetInt32(),
+                TransferEnergy = instance["TransferEnergy"].GetDouble(),
+                StaticPower = instance["StaticPower"].GetDouble()
+            };
+        }
+        else
+        {
+            throw new Exception($"Unknown NoC type: {type}");
+        }
 
-    private static BusSpec CreateBus(Dictionary<string, JsonElement> NoC, GlobalSpec global)
-    {
-        return new BusSpec
+        noc.Global = global;
+        noc.Cost = new();
+        if (instance.ContainsKey("Cost"))
         {
-            Global = global,
-            Ports = NoC["Ports"].GetInt32(),
-            TransferDelay = NoC["TransferDelay"].GetInt32(),
-            TransferEnergy = NoC["TransferEnergy"].GetDouble(),
-            StaticPower = NoC["StaticPower"].GetDouble()
-        };
+            foreach (var pair in instance["Cost"].EnumerateObject())
+            {
+                noc.Cost[pair.Name] = pair.Value.GetDouble();
+            }
+        }
+
+        return noc;
     }
 
     private static GlobalSpec CreateGlobal(Dictionary<string, JsonElement> _)
@@ -128,20 +146,7 @@ public class HWSpec
         var cores = hwFile.Cores.Select(c => CreateCoreSpec(c, hwFile.CoreTemplates, global)).ToList();
 
         var type = hwFile.NoC["Type"].GetString();
-        NoCSpec noc;
-        if (type == "Mesh")
-        {
-            noc = CreateMesh(hwFile.NoC, global);
-        }
-        else if (type == "Bus")
-        {
-            noc = CreateBus(hwFile.NoC, global);
-        }
-        else
-        {
-            throw new Exception($"Unknown NoC type: {type}");
-        }
-
+        var noc = CreateNoCSpec(hwFile.NoC, global);
         return new HWSpec()
         {
             Global = global,
@@ -195,6 +200,7 @@ public class ControllerV1Spec : CoreSpec
 public class NoCSpec
 {
     public GlobalSpec Global { get; set; }
+    public Dictionary<string, double> Cost { get; set; }
 }
 
 public class MeshSpec : NoCSpec

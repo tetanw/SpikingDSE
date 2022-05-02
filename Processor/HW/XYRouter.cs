@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace SpikingDSE;
 
@@ -23,20 +24,24 @@ public sealed class XYRouter : MeshRouter
     public long[] outBusy = new long[5];
     public long switchBusy = 0;
     public long nrHops = 0;
+    private readonly Dictionary<string, int> Operations = new();
 
     public XYRouter(int x, int y, MeshSpec spec)
     {
         this.x = x;
         this.y = y;
         this.spec = spec;
-        this.Name = $"router({x}_{y})";
+        Name = $"router({x}_{y})";
     }
 
     public override double Energy(long now)
     {
-        double staticEnergy = spec.StaticPower * (now / spec.Global.Frequency);
-        double energy = dynamicEnergy + staticEnergy;
-        return energy;
+        double opEnergies = Operations.Sum((kv) => {
+            if (!spec.Cost.ContainsKey(kv.Key))
+                throw new Exception($"Could not find cost of operation `{kv.Value}`");
+            return kv.Value * spec.Cost[kv.Key];
+        });
+        return opEnergies;
     }
 
     public override IEnumerable<Event> Run(Simulator env)
@@ -118,6 +123,8 @@ public sealed class XYRouter : MeshRouter
                         yield return env.Delay(spec.SwitchDelay);
                         OnTransfer?.Invoke(env.Now, inDir, outDir);
                         outBuffers[outDir].Push(inBuffers[inDir].Pop());
+                        Operations.AddCount("Sub", 2);
+                        Operations.AddCount("Cmp", 2);
                         break;
                     }
                 }
