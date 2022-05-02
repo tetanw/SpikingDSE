@@ -27,6 +27,8 @@ public class OutputLayer : HiddenLayer
         Name = name;
         TypeName = "output";
         Splittable = false;
+        Recurrent = false;
+        NrSynapses = Size * InputSize;
     }
 
     public override void Forward(int neuron)
@@ -107,8 +109,6 @@ public class OutputLayer : HiddenLayer
     {
         throw new Exception("Can not slice output layer");
     }
-
-    public override bool IsRecurrent() => false;
 
     public override int Offset() => 0;
 

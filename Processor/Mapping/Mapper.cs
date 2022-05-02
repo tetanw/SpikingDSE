@@ -150,7 +150,7 @@ public class FirstFitMapper : Mapper
             if (core != null)
             {
                 core.NrNeurons += layer.Size;
-                core.NrSynapses += layer.InputSize * layer.Size;
+                core.NrSynapses += layer.InputSize * layer.Size + (layer.Recurrent ? layer.Size * layer.Size : 0);
                 core.NrFanIn += layer.InputSize;
                 core.NrLayers++;
                 mapping.Mapped.Add(new MappedLayer
@@ -215,7 +215,7 @@ public class FirstFitMapper : Mapper
                 mapping.Mapped.Add(l);
                 var sliceSize = l.End - l.Start;
                 c.NrNeurons += sliceSize;
-                c.NrSynapses += layer.InputSize * sliceSize;
+                c.NrSynapses += layer.NrSynapses;
                 c.NrFanIn += layer.InputSize;
                 c.NrLayers++;
             }

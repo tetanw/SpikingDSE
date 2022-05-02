@@ -10,6 +10,8 @@ public class Layer
     public string Name { get; protected set; }
     public string TypeName { get; protected set; }
     public bool Splittable { get; protected set; }
+    public bool Recurrent { get; protected set; }
+    public int NrSynapses { get; protected set; }
 
     public virtual Layer Slice(int start, int end, int partNr)
     {
@@ -71,6 +73,5 @@ public abstract class HiddenLayer : Layer
     public abstract bool Sync(int neuron);
     public virtual void StartSync() {}
     public virtual void FinishSync() {}
-    public abstract bool IsRecurrent();
     public abstract int Offset();
 }

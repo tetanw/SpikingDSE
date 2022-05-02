@@ -41,6 +41,8 @@ public class ALIFQLayer : HiddenLayer
         this.offset = offset;
         Splittable = true;
         TypeName = "ALIFQ";
+        Recurrent = true;
+        NrSynapses = Size * InputSize + Size * Size;
     }
 
     public override void Forward(int neuron)
@@ -130,9 +132,7 @@ public class ALIFQLayer : HiddenLayer
         return slice;
     }
 
-    public override bool IsRecurrent() => true;
-
-    public override int Offset() => this.offset;
+    public override int Offset() => offset;
 
     public override void Feedback(int neuron)
     {

@@ -213,7 +213,7 @@ public sealed class CoreV1 : Actor, ICore
     {
         foreach (var (layer, neuron) in pendingSpikes)
         {
-            if (layer.IsRecurrent())
+            if (layer.Recurrent)
                 foreach (var ev in SendSpikes(env, mapping.GetSiblings(layer).Cast<HiddenLayer>(), true, TS, layer.Offset() + neuron))
                     yield return ev;
 
