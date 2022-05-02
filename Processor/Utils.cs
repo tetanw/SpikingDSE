@@ -20,6 +20,24 @@ public static class DicUtils
     {
         return dict.TryGetValue(key, out V value) ? value : null;
     }
+
+    public static V Optional<K, V>(this Dictionary<K, V> dict, K key) where V : class
+    {
+        return dict.TryGetValue(key, out V value) ? value : null;
+    }
+
+    public static void AddCount<K>(this Dictionary<K, int> dict, K key, int amount)
+    {
+        bool found = dict.ContainsKey(key);
+        if (found)
+        {
+            dict[key] += amount;
+        }
+        else
+        {
+            dict[key] = amount;
+        }
+    }
 }
 
 public class Measurements

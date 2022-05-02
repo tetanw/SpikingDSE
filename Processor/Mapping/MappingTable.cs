@@ -72,6 +72,6 @@ public class MappingTable
 
     public List<Layer> GetAllLayers(ICore core)
     {
-        return coreToLayer.GetValueOrDefault(core);
+        return coreToLayer.Optional(core) ?? new List<Layer>();
     }
 }

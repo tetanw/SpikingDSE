@@ -256,7 +256,7 @@ public sealed class CoreV1 : Actor, ICore
         }
     }
 
-    string ICore.Name() => this.Name;
+    string ICore.Name() => Name;
 
     public OutPort Output() => output;
 
@@ -264,7 +264,19 @@ public sealed class CoreV1 : Actor, ICore
 
     public double Energy(long now)
     {
-        double staticEnergy = spec.StaticPower * now / spec.Global.Frequency;
-        return staticEnergy + dynamicEnergy;
+        var layerEnergies = mapping.GetAllLayers(this).Select(l =>
+        {
+            var ll = (HiddenLayer)l;
+
+            return ll.Operations.AsEnumerable().Sum((kv) =>
+            {
+                if (!spec.Cost.ContainsKey(kv.Key))
+                    throw new Exception($"Cost for key `{kv.Key}` not configured");
+                return spec.Cost[kv.Key] * kv.Value;
+            });
+        });
+
+        return layerEnergies.Sum();
+        // return 0.0;
     }
 }

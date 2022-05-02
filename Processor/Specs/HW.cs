@@ -65,6 +65,14 @@ public class HWSpec
         }
 
         core.Global = global;
+        core.Cost = new();
+        if (instance.ContainsKey("Cost"))
+        {
+            foreach (var pair in instance["Cost"].EnumerateObject())
+            {
+                core.Cost[pair.Name] = pair.Value.GetDouble();
+            }
+        }
         core.Name = instance["Name"].GetString();
         core.AcceptedTypes = instance.GetOptional("Accepts")?.GetStringArray() ?? Array.Empty<string>();
         core.Priority = instance.GetOptional("Priority")?.GetInt32() ?? int.MaxValue;
@@ -162,6 +170,7 @@ public class CoreSpec
     public int MaxFanIn { get; set; }
     public string ConnectsTo { get; set; }
     public string[] AcceptedTypes { get; set; }
+    public Dictionary<string, double> Cost { get; set; }
 }
 
 public class CoreV1Spec : CoreSpec

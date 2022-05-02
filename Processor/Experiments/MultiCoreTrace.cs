@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace SpikingDSE;
 
@@ -41,6 +42,8 @@ public class MultiCoreTrace
         exp.Run();
         Console.WriteLine($"Predicted: {exp.Predict()}, Truth: {correct}");
         CleanupReporters();
+        double coreEnergies = exp.Cores.Sum(c => c.Energy(1));
+        Console.WriteLine("Energy: " + coreEnergies);
     }
 
     private void SetupReporters(MultiCore multi, string resultsFolder)

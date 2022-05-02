@@ -48,8 +48,9 @@ public class ALIFLayer : HiddenLayer
 
         for (int dst = 0; dst < Size; dst++)
         {
-            Pots[dst] += InWeights[neuron, dst];
+            Pots[dst] += InWeights[neuron, dst]; // +
         }
+        Operations.AddCount("Add-f32", Size);
     }
 
     public override bool Sync(int dst)
@@ -57,25 +58,25 @@ public class ALIFLayer : HiddenLayer
         float pot = Pots[dst];
 
         // Adapt
-        AdaptThr[dst] = AdaptThr[dst] * Rho[dst];
-        if (Spiked[dst])
+        AdaptThr[dst] = AdaptThr[dst] * Rho[dst]; // *
+        if (Spiked[dst]) // cmp
         {
-            AdaptThr[dst] += 1 - Rho[dst];
+            AdaptThr[dst] += 1 - Rho[dst]; // +, -
         }
 
         // Reset potential
-        float resetPot = Beta * AdaptThr[dst] + VTh;
+        float resetPot = Beta * AdaptThr[dst] + VTh; // *, +
 
         // Reset
-        if (Spiked[dst])
-            pot -= resetPot;
+        if (Spiked[dst]) // cmp
+            pot -= resetPot; // -
 
         // Readout
         ReadoutArr[dst] = pot;
 
         // Threshold
-        float thrPot = resetPot - Bias[dst];
-        if (pot >= thrPot)
+        float thrPot = resetPot - Bias[dst]; // -
+        if (pot >= thrPot) // cmp
         {
             Spiked[dst] = true;
         }
@@ -85,7 +86,7 @@ public class ALIFLayer : HiddenLayer
         }
 
         // Leakage for next ts
-        pot *= Alpha[dst];
+        pot *= Alpha[dst]; // *
 
         // Writeback
         Pots[dst] = pot;
@@ -96,11 +97,15 @@ public class ALIFLayer : HiddenLayer
     public override void FinishSync()
     {
         TS++;
+        Operations.AddCount("Cmp-f32", Size * 3);
+        Operations.AddCount("Add-f32", Size * 2);
+        Operations.AddCount("Sub-f32", Size * 3);
+        Operations.AddCount("Mul-f32", Size * 3);
     }
 
     public override string ToString()
     {
-        return $"ALIF - \"{this.Name}\"";
+        return $"ALIF - \"{Name}\"";
     }
 
     public override Layer Copy()

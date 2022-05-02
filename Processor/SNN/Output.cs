@@ -35,6 +35,7 @@ public class OutputLayer : HiddenLayer
         {
             Pots[dst] += Weights[neuron, dst];
         }
+        Operations.AddCount("Add-f32", Size);
     }
 
     public override bool Sync(int dst)
@@ -45,7 +46,7 @@ public class OutputLayer : HiddenLayer
         ReadoutArr[dst] = pot;
 
         // Leakage for next ts
-        pot *= Alpha[dst];
+        pot *= Alpha[dst]; // *
 
         // Writeback
         Pots[dst] = pot;
@@ -66,6 +67,10 @@ public class OutputLayer : HiddenLayer
         {
             Output[i] += softmax[i];
         }
+        Operations.AddCount("Mul-f32", Size);
+        Operations.AddCount("Exp-f32", Size);
+        Operations.AddCount("Div-f32", Size);
+        Operations.AddCount("Add-f32", 2 * Size);
     }
 
     private static float[] Softmax(float[] vector)
