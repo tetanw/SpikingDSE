@@ -198,9 +198,11 @@ public class FirstFitMapper : Mapper
                     break;
                 }
             }
-            if (mappedNeurons != layer.Size)
+            int maxSplits = splitSet.Min(c => c.Key.Spec.MaxSplits);
+            if (mappedNeurons != layer.Size || splitSet.Count > maxSplits)
             {
                 // the layer is too big to be mapped even though it is splittable
+                // or too many splits
                 mapping.Unmapped.Add(layer.Name);
                 continue;
             }
