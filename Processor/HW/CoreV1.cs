@@ -8,6 +8,8 @@ namespace SpikingDSE;
 
 public sealed class CoreV1 : Actor, ICore
 {
+    record struct ComputeElement(bool IsLast, SpikeEvent Spike);
+
     public delegate void SpikeReceived(long time, Layer layer, int neuron, bool feedback, SpikeEvent spike, int nrHopsTravelled);
     public delegate void SpikeSent(long time, Layer from, int neuron);
     public delegate void SyncStarted(long time, int ts, HiddenLayer layer);
@@ -44,10 +46,8 @@ public sealed class CoreV1 : Actor, ICore
     private MappingTable mapping;
     private Buffer<Packet> outputBuffer;
 
-    private Queue<SpikeEvent>[] forwardSpikes;
-    private Queue<SpikeEvent>[] feedbackSpikes;
-    private Signal syncSignal;
-    private SyncEvent lastSyncEv;
+    private Queue<ComputeElement> computeBuffer;
+    private Buffer<SyncEvent> syncs;
 
     public CoreV1(object location, CoreV1Spec spec)
     {
@@ -75,9 +75,9 @@ public sealed class CoreV1 : Actor, ICore
 
             if (@event is SyncEvent sync)
             {
-                lastSyncEv = sync;
                 TS = sync.TS + 1;
-                syncSignal.Notify();
+                computeBuffer.Enqueue(new ComputeElement(true, null));
+                syncs.Push(sync);
             }
             else if (@event is SpikeEvent spike)
             {
@@ -95,14 +95,7 @@ public sealed class CoreV1 : Actor, ICore
                 }
                 else
                 {
-                    if (spike.Feedback)
-                    {
-                        feedbackSpikes[TS % 2].Enqueue(spike);
-                    }
-                    else
-                    {
-                        forwardSpikes[TS % 2].Enqueue(spike);
-                    }
+                    computeBuffer.Enqueue(new(false, spike));
                 }
             }
         }
@@ -112,25 +105,21 @@ public sealed class CoreV1 : Actor, ICore
     {
         while (true)
         {
-            yield return syncSignal.Wait();
+            yield return syncs.RequestRead();
+            var sync = syncs.Read();
+            syncs.ReleaseRead();
             long before = env.Now;
 
-            int TS = lastSyncEv.TS;
-            while (feedbackSpikes[TS % 2].Count > 0)
+            while (true)
             {
-                var spike = feedbackSpikes[TS % 2].Dequeue();
+                var (isDone, spike) = computeBuffer.Dequeue();
+                if (isDone)
+                    break;
                 foreach (var ev in Compute(env, spike))
                     yield return ev;
             }
 
-            while (forwardSpikes[TS % 2].Count > 0)
-            {
-                var spike = forwardSpikes[TS % 2].Dequeue();
-                foreach (var ev in Compute(env, spike))
-                    yield return ev;
-            }
-
-            foreach (var ev in Sync(env, lastSyncEv))
+            foreach (var ev in Sync(env, sync))
                 yield return ev;
 
             if (spec.ReportSyncEnd)
@@ -142,7 +131,7 @@ public sealed class CoreV1 : Actor, ICore
                     Src = loc,
                     Message = new SyncDone
                     {
-                        TS = TS,
+                        TS = sync.TS,
                         Core = this
                     }
                 });
@@ -169,13 +158,8 @@ public sealed class CoreV1 : Actor, ICore
     public override IEnumerable<Event> Run(Simulator env)
     {
         outputBuffer = new(env, spec.OutputBufferSize);
-        forwardSpikes = new Queue<SpikeEvent>[2];
-        forwardSpikes[0] = new();
-        forwardSpikes[1] = new();
-        feedbackSpikes = new Queue<SpikeEvent>[2];
-        feedbackSpikes[0] = new();
-        feedbackSpikes[1] = new();
-        syncSignal = new(env);
+        computeBuffer = new();
+        syncs = new(env, 1);
         env.Process(Receiver(env));
         env.Process(ALU(env));
         env.Process(Sender(env));
