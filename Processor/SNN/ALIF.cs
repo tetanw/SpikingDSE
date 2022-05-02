@@ -60,7 +60,7 @@ public class ALIFLayer : HiddenLayer
         AdaptThr[dst] = AdaptThr[dst] * Rho[dst];
         if (Spiked[dst])
         {
-            AdaptThr[dst] += (1 - Rho[dst]);
+            AdaptThr[dst] += 1 - Rho[dst];
         }
 
         // Reset potential
