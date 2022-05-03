@@ -16,4 +16,4 @@ models = [
     "ssc3"
 ]
 
-run_mappings(runs, models, "FirstFit2")
+run_mappings(runs, models, "FirstFit1")
