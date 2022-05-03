@@ -17,6 +17,8 @@ public sealed class SimpleXYRouter : MeshRouter
 
     public override double Energy(long now) => 0.0;
 
+    public override double Memory() => 0.0;
+
     public override IEnumerable<Event> Run(Simulator env)
     {
         var inputSelect = Any.AnyOf<Packet>(env, inNorth, inEast, inSouth, inWest, inLocal);

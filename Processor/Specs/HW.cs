@@ -50,13 +50,19 @@ public class HWSpec
                 ConnectsTo = instance["ConnectsTo"].GetString(),
                 MaxNeurons = instance["MaxNeurons"].GetInt32(),
                 StaticPower = instance["StaticPower"].GetDouble(),
-                OutputBufferSize = instance["OutputBufferSize"].GetInt32(),
                 NrParallel = instance["NrParallel"].GetInt32(),
                 ReportSyncEnd = instance["ReportSyncEnd"].GetBoolean(),
                 IntegrateII = instance["IntegrateII"].GetInt32(),
                 IntegrateLat = instance["IntegrateLat"].GetInt32(),
                 SyncII = instance["SyncII"].GetInt32(),
-                SyncLat = instance["SyncLat"].GetInt32()
+                SyncLat = instance["SyncLat"].GetInt32(),
+                OutputBufferDepth = instance["OutputBufferDepth"].GetInt32(),
+                OutputBufferWidth = instance["OutputBufferWidth"].GetInt32(),
+                ComputeBufferWidth = instance["ComputeBufferWidth"].GetInt32(),
+                SynapseSize = instance["SynapseSize"].GetInt32(),
+                NeuronSize = instance["NeuronSize"].GetInt32(),
+                BaseLayerSize = instance["BaseLayerSize"].GetInt32(),
+                FanoutSize = instance["FanoutSize"].GetInt32()
             };
         }
         else
@@ -103,6 +109,7 @@ public class HWSpec
                 StaticPower = instance["StaticPower"].GetDouble(),
                 InputDelay = instance["InputDelay"].GetInt32(),
                 OutputDelay = instance["OutputDelay"].GetInt32(),
+                PacketSize = instance["PacketSize"].GetInt32()
             };
         }
         else if (type == "Bus")
@@ -180,8 +187,14 @@ public class CoreV1Spec : CoreSpec
     public int SyncLat { get; set; }
     public double StaticPower { get; set; }
     public int NrParallel { get; set; }
-    public int OutputBufferSize { get; set; }
+    public int OutputBufferDepth { get; set; }
     public bool ReportSyncEnd { get; set; }
+    public int ComputeBufferWidth { get; set; }
+    public int OutputBufferWidth { get; set; }
+    public int SynapseSize { get; set; }
+    public int NeuronSize { get; set; }
+    public int BaseLayerSize { get; set; }
+    public int FanoutSize { get; set; }
 }
 
 public class ControllerV1Spec : CoreSpec
@@ -208,6 +221,7 @@ public class MeshSpec : NoCSpec
     public double StaticPower { get; set; }
     public int InputDelay { get; set; }
     public int OutputDelay { get; set; }
+    public int PacketSize { get; set; }
 }
 
 public class BusSpec : NoCSpec

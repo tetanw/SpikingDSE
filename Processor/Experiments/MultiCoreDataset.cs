@@ -6,21 +6,24 @@ using System.Linq;
 
 namespace SpikingDSE;
 
-struct ExpRes
-{
-    public int ExpNr;
-    public long Latency;
-    public long NrHops;
-    public long NrSOPs;
-    public int Correct;
-    public int Predicted;
-    public double RunningTime;
-    public double CoreEnergy;
-    public double ComEnergy;
-}
-
 public class MultiCoreDataset : BatchExperiment<MultiCore>, IDisposable
 {
+    struct ExpRes
+    {
+        public int ExpNr;
+        public long Latency;
+        public long NrHops;
+        public long NrSOPs;
+        public int Correct;
+        public int Predicted;
+        public double RunningTime;
+        public double CoreEnergy;
+        public double ComEnergy;
+        public List<MemoryEntry> Memories;
+    }
+
+    record struct MemoryEntry(string Name, double NrBits);
+
     private readonly Mapping mapping;
     private readonly HWSpec hw;
     private readonly SNN snn;
@@ -89,6 +92,14 @@ public class MultiCoreDataset : BatchExperiment<MultiCore>, IDisposable
         Report($"Samples: {maxSamples}");
         Report($"Accuracy: {acc}");
         Report($"Running time: {(int)runningTime.TotalMilliseconds:n}ms");
+        Report($"Memory:");
+        double totalBits = 0;
+        foreach (var (Name, Bits) in expResList[0].Memories)
+        {
+            Report($"  {Name}: {Bits:n} bits");
+            totalBits += Bits;   
+        }
+        Console.WriteLine($"  Total: {totalBits:n} bits");
         List<long> latencies = expResList.Select(res => res.Latency).ToList();
         double avgLat = latencies.Sum() / maxSamples;
         double maxLat = latencies.Max();
@@ -155,8 +166,14 @@ public class MultiCoreDataset : BatchExperiment<MultiCore>, IDisposable
             NrSOPs = exp.Cores.Where(c => c is CoreV1).Cast<CoreV1>().Sum(c => c.nrSOPs),
             RunningTime = sampleTime.TotalMilliseconds,
             CoreEnergy = exp.Cores.Sum(c => c.Energy(exp.Latency)),
-            ComEnergy = Flatten(exp?.Routers).Sum(r => r.Energy(exp.Latency))
+            ComEnergy = Flatten(exp?.Routers).Sum(r => r.Energy(exp.Latency)),
         };
+        if (j == 0)
+        {
+             var memories = exp.Cores.Select(c => new MemoryEntry(c.Name(), c.Memory())).ToList();
+             memories.AddRange(Flatten(exp.Routers).Select(r => new MemoryEntry(r.Name, r.Memory())));
+             expResList[j].Memories = memories;
+        }
 
         UpdateProgressBar();
     }

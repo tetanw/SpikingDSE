@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace SpikingDSE;
 
-public abstract class MeshRouter : Actor
+public abstract class MeshRouter : Comm
 {
     public int x, y;
 

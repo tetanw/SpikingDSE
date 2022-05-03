@@ -206,4 +206,12 @@ public sealed class XYRouter : MeshRouter
             return MeshDir.Local;
         }
     }
+
+    public override double Memory()
+    {
+        double inputBuffers = spec.PacketSize * spec.InputSize * 5;
+        double outputBuffers = spec.PacketSize * spec.OutputSize * 5;
+
+        return inputBuffers + outputBuffers;
+    }
 }

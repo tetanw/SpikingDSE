@@ -9,6 +9,7 @@ public interface ICore
     public OutPort Output();
     public InPort Input();
     public double Energy(long now);
+    public double Memory();
 }
 
 public class CoreEvent { }

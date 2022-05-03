@@ -159,6 +159,8 @@ public sealed class OdinCore : Actor, ICore
     {
         return 0.0;
     }
+
+    public double Memory() => 0.0;
 }
 
 

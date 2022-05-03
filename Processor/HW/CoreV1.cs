@@ -156,7 +156,7 @@ public sealed class CoreV1 : Actor, ICore
 
     public override IEnumerable<Event> Run(Simulator env)
     {
-        outputBuffer = new(env, spec.OutputBufferSize);
+        outputBuffer = new(env, spec.OutputBufferDepth);
         computeBuffer = new();
         syncs = new(env, 1);
         env.Process(Receiver(env));
@@ -283,5 +283,16 @@ public sealed class CoreV1 : Actor, ICore
 
         return layerEnergies.Sum();
         // return 0.0;
+    }
+
+    public double Memory()
+    {
+        double layerMem = spec.MaxLayers * (spec.BaseLayerSize + spec.MaxSplits * spec.FanoutSize);
+        double synMem = spec.MaxSynapses * spec.SynapseSize;
+        double neuronMem = spec.MaxNeurons * spec.NeuronSize;
+        double computeBuffer = spec.ComputeBufferWidth * (spec.MaxFanIn + spec.MaxNeurons + 1);
+        double outputBuffer = spec.OutputBufferWidth * spec.OutputBufferDepth;
+
+        return layerMem + synMem + neuronMem + computeBuffer + outputBuffer;
     }
 }
