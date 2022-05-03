@@ -26,7 +26,6 @@ public sealed class CoreV1 : Actor, ICore
     public int nrSpikesDroppedInput = 0;
     public int nrLateSpikes = 0;
     public int nrEarlySpikes = 0;
-    public double dynamicEnergy = 0.0;
     public int nrSpikesReceived = 0;
     public long receiverBusy;
     public long ALUBusy;
@@ -176,10 +175,10 @@ public sealed class CoreV1 : Actor, ICore
             layer.Forward(spike.Neuron);
         nrSpikesConsumed++;
         nrSOPs += spike.Layer.Size;
-        dynamicEnergy += spec.IntegrateEnergy * spike.Layer.Size;
         // Calculate amount of lines required, careful: trick to ceil divide
-        int nrLines = (spike.Layer.Size + spec.NrParallel) / spec.NrParallel;
-        yield return env.Delay(spec.IntegrateDelay * nrLines);
+        int nrLines = MathUtils.CeilDivide(layer.Size, spec.NrParallel);
+        long integrateDelay = spec.IntegrateLat + (nrLines - 1) * spec.IntegrateII;
+        yield return env.Delay(integrateDelay);
     }
 
     public IEnumerable<Event> SendSpikes(Simulator env, IEnumerable<HiddenLayer> dests, bool feedback, int TS, int spikingNeuron)
@@ -235,6 +234,7 @@ public sealed class CoreV1 : Actor, ICore
         {
             OnSyncStarted?.Invoke(env.Now, sync.TS, layer);
             layer.StartSync();
+            long startTime = env.Now;
             for (int line = 0; line < layer.Size; line += spec.NrParallel)
             {
                 int spikesLeft = spec.NrParallel - nrSpikesProcessed;
@@ -245,14 +245,19 @@ public sealed class CoreV1 : Actor, ICore
                     nrSpikesProcessed++;
                 }
 
-                yield return env.Delay(spec.SyncDelay);
+                // the first line comes in at latency after that every
+                // initiation interval
+                if (line == 0)
+                    yield return env.Delay(spec.SyncLat);
+                else
+                    yield return env.Delay(spec.SyncII);
                 foreach (var ev in SendPendingSpikes(env, sync.TS, pendingSpikes))
                     yield return ev;
                 nrSpikesProcessed = 0;
             }
+
             layer.FinishSync();
             OnSyncEnded?.Invoke(env.Now, sync.TS, layer);
-            dynamicEnergy += spec.SyncEnergy * layer.Size;
         }
     }
 

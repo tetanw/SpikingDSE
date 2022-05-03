@@ -47,16 +47,16 @@ public class HWSpec
         {
             core = new CoreV1Spec
             {
-                IntegrateDelay = instance["IntegrateDelay"].GetInt32(),
-                SyncDelay = instance["SyncDelay"].GetInt32(),
                 ConnectsTo = instance["ConnectsTo"].GetString(),
                 MaxNeurons = instance["MaxNeurons"].GetInt32(),
-                IntegrateEnergy = instance["IntegrateEnergy"].GetDouble(),
-                SyncEnergy = instance["SyncEnergy"].GetDouble(),
                 StaticPower = instance["StaticPower"].GetDouble(),
                 OutputBufferSize = instance["OutputBufferSize"].GetInt32(),
                 NrParallel = instance["NrParallel"].GetInt32(),
                 ReportSyncEnd = instance["ReportSyncEnd"].GetBoolean(),
+                IntegrateII = instance["IntegrateII"].GetInt32(),
+                IntegrateLat = instance["IntegrateLat"].GetInt32(),
+                SyncII = instance["SyncII"].GetInt32(),
+                SyncLat = instance["SyncLat"].GetInt32()
             };
         }
         else
@@ -174,10 +174,10 @@ public class CoreSpec
 
 public class CoreV1Spec : CoreSpec
 {
-    public int IntegrateDelay { get; set; }
-    public int SyncDelay { get; set; }
-    public double IntegrateEnergy { get; set; }
-    public double SyncEnergy { get; set; }
+    public int IntegrateII { get; set; }
+    public int IntegrateLat { get; set; }
+    public int SyncII { get; set; }
+    public int SyncLat { get; set; }
     public double StaticPower { get; set; }
     public int NrParallel { get; set; }
     public int OutputBufferSize { get; set; }

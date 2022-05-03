@@ -5,6 +5,14 @@ using System.Text.Json;
 
 namespace SpikingDSE;
 
+public static class MathUtils
+{
+    public static int CeilDivide(int numerator, int denumerator)
+    {
+        return (numerator + denumerator - 1) / denumerator;
+    }
+}
+
 public static class JSONUtils
 {
     public static string[] GetStringArray(this JsonElement el)
