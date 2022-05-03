@@ -129,6 +129,14 @@ public class FirstFitMapper : Mapper
         }
     }
 
+    record class LayerData
+    {
+        public Layer Layer { get; set; }
+        public int Start { get; set; }
+        public int End { get; set; }
+        public int Index { get; set; }
+    }
+
     public FirstFitMapper(HWSpec hw, SNN snn) : base(hw, snn)
     {
     }
@@ -173,7 +181,7 @@ public class FirstFitMapper : Mapper
                 continue;
             }
 
-            Dictionary<CoreData, MappedLayer> splitSet = new();
+            Dictionary<CoreData, LayerData> splitSet = new();
             int i = 1;
             int mappedNeurons = 0;
             foreach (var c in sortedCores)
@@ -183,11 +191,9 @@ public class FirstFitMapper : Mapper
                 if (toMap == 0)
                     continue;
 
-                splitSet.Add(c, new MappedLayer
+                splitSet.Add(c, new LayerData
                 {
-                    Layer = layer.Name,
-                    Core = c.Spec.Name,
-                    Partial = true,
+                    Layer = layer,
                     Start = mappedNeurons,
                     End = mappedNeurons + toMap,
                     Index = i++
@@ -198,11 +204,16 @@ public class FirstFitMapper : Mapper
                     break;
                 }
             }
-            int maxSplits = splitSet.Min(c => c.Key.Spec.MaxSplits);
-            if (mappedNeurons != layer.Size || splitSet.Count > maxSplits)
+            if (mappedNeurons != layer.Size)
             {
                 // the layer is too big to be mapped even though it is splittable
-                // or too many splits
+                mapping.Unmapped.Add(layer.Name);
+                continue;
+            }
+            int maxSplits = splitSet.Min(c => c.Key.Spec.MaxSplits);
+            if (splitSet.Count >= maxSplits)
+            {
+                // the layer is splitted in too many parts
                 mapping.Unmapped.Add(layer.Name);
                 continue;
             }
@@ -212,10 +223,18 @@ public class FirstFitMapper : Mapper
             // actually assign the splits to each core
             foreach (var (c, l) in splitSet)
             {
-                mapping.Mapped.Add(l);
+                mapping.Mapped.Add(new MappedLayer
+                {
+                    Layer = layer.Name,
+                    Core = c.Spec.Name,
+                    Partial = true,
+                    Start = l.Start,
+                    End = l.End,
+                    Index = l.Index
+                });
                 var sliceSize = l.End - l.Start;
                 c.NrNeurons += sliceSize;
-                c.NrSynapses += layer.NrSynapses;
+                c.NrSynapses += sliceSize * sliceSize + sliceSize * l.Layer.InputSize;
                 c.NrFanIn += layer.InputSize;
                 c.NrLayers++;
             }

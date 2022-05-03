@@ -36,12 +36,7 @@ public sealed class XYRouter : MeshRouter
 
     public override double Energy(long now)
     {
-        double opEnergies = Operations.Sum((kv) => {
-            if (!spec.Cost.ContainsKey(kv.Key))
-                throw new Exception($"Could not find cost of operation `{kv.Value}`");
-            return kv.Value * spec.Cost[kv.Key];
-        });
-        return opEnergies;
+        return 0.0;
     }
 
     public override IEnumerable<Event> Run(Simulator env)

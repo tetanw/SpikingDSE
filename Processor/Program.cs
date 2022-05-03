@@ -179,8 +179,7 @@ namespace SpikingDSE
                 },
                 (MappingOptions opts) =>
                 {
-                    new MapRunner(opts).Run();
-                    return 0;
+                    return new MapRunner(opts).Run();
                 },
                 _ => 1
             );

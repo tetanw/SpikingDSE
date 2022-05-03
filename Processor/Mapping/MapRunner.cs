@@ -1,7 +1,7 @@
-using System.Text.Json;
+using System;
 using System.IO;
 using System.Linq;
-using System;
+using System.Text.Json;
 
 namespace SpikingDSE;
 
@@ -14,7 +14,7 @@ public class MapRunner
         this.opts = opts;
     }
 
-    public void Run()
+    public int Run()
     {
         var hw = HWSpec.Load(opts.HW);
         var snn = SNN.Load(opts.SNN);
@@ -31,8 +31,20 @@ public class MapRunner
         if (mapping.Unmapped.Count > 0)
         {
             var layerNames = string.Join(',', mapping.Unmapped);
-            throw new Exception($"Could not map: {layerNames}");
-        }   
-        mapping.Save(opts.Mapping);
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine($"Failed");
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.WriteLine($"Could not map: {layerNames}");
+            return 1;
+        }
+        else
+        {
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.WriteLine($"Success");
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.WriteLine($"Saving to: `{opts.Mapping}`");
+            mapping.Save(opts.Mapping);
+            return 0;
+        }
     }
 }

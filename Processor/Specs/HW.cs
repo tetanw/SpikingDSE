@@ -65,12 +65,12 @@ public class HWSpec
         }
 
         core.Global = global;
-        core.Cost = new();
-        if (instance.ContainsKey("Cost"))
+        core.LayerCosts = new();
+        if (instance.ContainsKey("LayerCosts"))
         {
-            foreach (var pair in instance["Cost"].EnumerateObject())
+            foreach (var pair in instance["LayerCosts"].EnumerateObject())
             {
-                core.Cost[pair.Name] = pair.Value.GetDouble();
+                core.LayerCosts[pair.Name] = pair.Value.GetDouble();
             }
         }
         core.Name = instance["Name"].GetString();
@@ -121,14 +121,6 @@ public class HWSpec
         }
 
         noc.Global = global;
-        noc.Cost = new();
-        if (instance.ContainsKey("Cost"))
-        {
-            foreach (var pair in instance["Cost"].EnumerateObject())
-            {
-                noc.Cost[pair.Name] = pair.Value.GetDouble();
-            }
-        }
 
         return noc;
     }
@@ -177,7 +169,7 @@ public class CoreSpec
     public int MaxSplits { get; set; }
     public string ConnectsTo { get; set; }
     public string[] AcceptedTypes { get; set; }
-    public Dictionary<string, double> Cost { get; set; }
+    public Dictionary<string, double> LayerCosts { get; set; }
 }
 
 public class CoreV1Spec : CoreSpec
@@ -202,7 +194,6 @@ public class ControllerV1Spec : CoreSpec
 public class NoCSpec
 {
     public GlobalSpec Global { get; set; }
-    public Dictionary<string, double> Cost { get; set; }
 }
 
 public class MeshSpec : NoCSpec

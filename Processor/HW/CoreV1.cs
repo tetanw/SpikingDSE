@@ -270,9 +270,9 @@ public sealed class CoreV1 : Actor, ICore
 
             return ll.Operations.AsEnumerable().Sum((kv) =>
             {
-                if (!spec.Cost.ContainsKey(kv.Key))
+                if (!spec.LayerCosts.ContainsKey(kv.Key))
                     throw new Exception($"Cost for key `{kv.Key}` not configured");
-                return spec.Cost[kv.Key] * kv.Value;
+                return spec.LayerCosts[kv.Key] * kv.Value;
             });
         });
 
