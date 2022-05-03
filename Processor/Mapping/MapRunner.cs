@@ -19,9 +19,13 @@ public class MapRunner
         var hw = HWSpec.Load(opts.HW);
         var snn = SNN.Load(opts.SNN);
         Mapper mapper;
-        if (opts.Mapper == "FirstFit")
+        if (opts.Mapper == "FirstFit1")
         {
-            mapper = new FirstFitMapper(hw, snn);
+            mapper = new FirstFitMapper1(hw, snn);
+        }
+        else if (opts.Mapper == "FirstFit2")
+        {
+            mapper = new FirstFitMapper2(hw, snn);
         }
         else
         {

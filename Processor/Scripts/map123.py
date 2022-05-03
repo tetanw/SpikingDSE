@@ -1,8 +1,8 @@
 from exp import run_mappings
 
 runs = [
-    # ("hw-mesh1", "mapping1"),
-    # ("hw-mesh2", "mapping2"),
+    ("hw-mesh1", "mapping1"),
+    ("hw-mesh2", "mapping2"),
     ("hw-mesh3", "mapping3"),
 ]
 models = [
@@ -16,4 +16,4 @@ models = [
     "ssc3"
 ]
 
-run_mappings(runs, models, "FirstFit")
+run_mappings(runs, models, "FirstFit2")
