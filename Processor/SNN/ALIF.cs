@@ -60,7 +60,7 @@ public class ALIFLayer : HiddenLayer
 
         // Adapt
         AdaptThr[dst] = AdaptThr[dst] * Rho[dst]; // *
-        if (Spiked[dst]) // cmp
+        if (Spiked[dst])
         {
             AdaptThr[dst] += 1 - Rho[dst]; // +, -
         }
@@ -69,7 +69,7 @@ public class ALIFLayer : HiddenLayer
         float resetPot = Beta * AdaptThr[dst] + VTh; // *, +
 
         // Reset
-        if (Spiked[dst]) // cmp
+        if (Spiked[dst])
             pot -= resetPot; // -
 
         // Readout
@@ -77,7 +77,7 @@ public class ALIFLayer : HiddenLayer
 
         // Threshold
         float thrPot = resetPot - Bias[dst]; // -
-        if (pot >= thrPot) // cmp
+        if (pot >= thrPot) // Sub
         {
             Spiked[dst] = true;
         }

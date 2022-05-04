@@ -58,7 +58,8 @@ public class HWSpec
                 SynapseSize = instance["SynapseSize"].GetInt32(),
                 NeuronSize = instance["NeuronSize"].GetInt32(),
                 BaseLayerSize = instance["BaseLayerSize"].GetInt32(),
-                FanoutSize = instance["FanoutSize"].GetInt32()
+                FanoutSize = instance["FanoutSize"].GetInt32(),
+                OverheadMem = instance["OverheadMem"].GetInt32()
             };
             coreV1Spec.LayerCosts = new();
             if (instance.ContainsKey("LayerCosts"))
@@ -208,6 +209,7 @@ public class CoreV1Spec : CoreSpec
     public int NeuronSize { get; set; }
     public int BaseLayerSize { get; set; }
     public int FanoutSize { get; set; }
+    public int OverheadMem { get; set; }
     public Dictionary<string, LayerCost> LayerCosts { get; set; }
 }
 

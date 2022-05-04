@@ -282,6 +282,6 @@ public sealed class CoreV1 : Actor, ICore
         double computeBuffer = spec.ComputeBufferWidth * (spec.MaxFanIn + spec.MaxNeurons + 1);
         double outputBuffer = spec.OutputBufferWidth * spec.OutputBufferDepth;
 
-        return layerMem + synMem + neuronMem + computeBuffer + outputBuffer;
+        return layerMem + synMem + neuronMem + computeBuffer + outputBuffer + spec.OverheadMem;
     }
 }
