@@ -45,17 +45,13 @@ public class HWSpec
         }
         else if (type == "core-v1")
         {
-            core = new CoreV1Spec
+            var coreV1Spec = new CoreV1Spec
             {
                 ConnectsTo = instance["ConnectsTo"].GetString(),
                 MaxNeurons = instance["MaxNeurons"].GetInt32(),
                 StaticPower = instance["StaticPower"].GetDouble(),
                 NrParallel = instance["NrParallel"].GetInt32(),
                 ReportSyncEnd = instance["ReportSyncEnd"].GetBoolean(),
-                IntegrateII = instance["IntegrateII"].GetInt32(),
-                IntegrateLat = instance["IntegrateLat"].GetInt32(),
-                SyncII = instance["SyncII"].GetInt32(),
-                SyncLat = instance["SyncLat"].GetInt32(),
                 OutputBufferDepth = instance["OutputBufferDepth"].GetInt32(),
                 OutputBufferWidth = instance["OutputBufferWidth"].GetInt32(),
                 ComputeBufferWidth = instance["ComputeBufferWidth"].GetInt32(),
@@ -64,6 +60,26 @@ public class HWSpec
                 BaseLayerSize = instance["BaseLayerSize"].GetInt32(),
                 FanoutSize = instance["FanoutSize"].GetInt32()
             };
+            coreV1Spec.LayerCosts = new();
+            if (instance.ContainsKey("LayerCosts"))
+            {
+                foreach (var pair in instance["LayerCosts"].EnumerateObject())
+                {
+                    string layerName = pair.Name;
+                    var values = pair.Value;
+                    var costs = new LayerCost
+                    {
+                        IntegrateEnergy = values.GetProperty("IntegrateEnergy").GetDouble(),
+                        IntegrateLat = values.GetProperty("IntegrateLat").GetInt32(),
+                        IntegrateII = values.GetProperty("IntegrateII").GetInt32(),
+                        SyncEnergy = values.GetProperty("SyncEnergy").GetDouble(),
+                        SyncLat = values.GetProperty("SyncLat").GetInt32(),
+                        SyncII = values.GetProperty("SyncII").GetInt32()
+                    };
+                    coreV1Spec.LayerCosts[layerName] = costs;
+                }
+            }
+            core = coreV1Spec;
         }
         else
         {
@@ -71,14 +87,6 @@ public class HWSpec
         }
 
         core.Global = global;
-        core.LayerCosts = new();
-        if (instance.ContainsKey("LayerCosts"))
-        {
-            foreach (var pair in instance["LayerCosts"].EnumerateObject())
-            {
-                core.LayerCosts[pair.Name] = pair.Value.GetDouble();
-            }
-        }
         core.Name = instance["Name"].GetString();
         core.AcceptedTypes = instance.GetOptional("Accepts")?.GetStringArray() ?? Array.Empty<string>();
         core.Priority = instance.GetOptional("Priority")?.GetInt32() ?? int.MaxValue;
@@ -176,15 +184,20 @@ public class CoreSpec
     public int MaxSplits { get; set; }
     public string ConnectsTo { get; set; }
     public string[] AcceptedTypes { get; set; }
-    public Dictionary<string, double> LayerCosts { get; set; }
+}
+
+public class LayerCost
+{
+    public int SyncII { get; set; }
+    public int SyncLat { get; set; }
+    public int IntegrateII { get; set; }
+    public int IntegrateLat { get; set; }
+    public double SyncEnergy { get; set; }
+    public double IntegrateEnergy { get; set; }
 }
 
 public class CoreV1Spec : CoreSpec
 {
-    public int IntegrateII { get; set; }
-    public int IntegrateLat { get; set; }
-    public int SyncII { get; set; }
-    public int SyncLat { get; set; }
     public double StaticPower { get; set; }
     public int NrParallel { get; set; }
     public int OutputBufferDepth { get; set; }
@@ -195,6 +208,7 @@ public class CoreV1Spec : CoreSpec
     public int NeuronSize { get; set; }
     public int BaseLayerSize { get; set; }
     public int FanoutSize { get; set; }
+    public Dictionary<string, LayerCost> LayerCosts { get; set; }
 }
 
 public class ControllerV1Spec : CoreSpec

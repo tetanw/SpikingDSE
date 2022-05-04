@@ -52,7 +52,6 @@ public class ALIFLayer : HiddenLayer
         {
             Pots[dst] += InWeights[neuron, dst]; // +
         }
-        Operations.AddCount("Add-f32", Size);
     }
 
     public override bool Sync(int dst)
@@ -99,10 +98,6 @@ public class ALIFLayer : HiddenLayer
     public override void FinishSync()
     {
         TS++;
-        Operations.AddCount("Cmp-f32", Size * 3);
-        Operations.AddCount("Add-f32", Size * 2);
-        Operations.AddCount("Sub-f32", Size * 3);
-        Operations.AddCount("Mul-f32", Size * 3);
     }
 
     public override string ToString()

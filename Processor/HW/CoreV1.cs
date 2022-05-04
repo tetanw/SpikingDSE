@@ -177,7 +177,8 @@ public sealed class CoreV1 : Actor, ICore
         nrSOPs += spike.Layer.Size;
         // Calculate amount of lines required, careful: trick to ceil divide
         int nrLines = MathUtils.CeilDivide(layer.Size, spec.NrParallel);
-        long integrateDelay = spec.IntegrateLat + (nrLines - 1) * spec.IntegrateII;
+        var costs = spec.LayerCosts[spike.Layer.TypeName];
+        long integrateDelay = costs.IntegrateLat + (nrLines - 1) * costs.IntegrateII;
         yield return env.Delay(integrateDelay);
     }
 
@@ -234,6 +235,7 @@ public sealed class CoreV1 : Actor, ICore
         {
             OnSyncStarted?.Invoke(env.Now, sync.TS, layer);
             layer.StartSync();
+            var costs = spec.LayerCosts[layer.TypeName];
             long startTime = env.Now;
             for (int line = 0; line < layer.Size; line += spec.NrParallel)
             {
@@ -248,9 +250,9 @@ public sealed class CoreV1 : Actor, ICore
                 // the first line comes in at latency after that every
                 // initiation interval
                 if (line == 0)
-                    yield return env.Delay(spec.SyncLat);
+                    yield return env.Delay(costs.SyncLat);
                 else
-                    yield return env.Delay(spec.SyncII);
+                    yield return env.Delay(costs.SyncII);
                 foreach (var ev in SendPendingSpikes(env, sync.TS, pendingSpikes))
                     yield return ev;
                 nrSpikesProcessed = 0;
@@ -269,20 +271,7 @@ public sealed class CoreV1 : Actor, ICore
 
     public double Energy(long now)
     {
-        var layerEnergies = mapping.GetAllLayers(this).Select(l =>
-        {
-            var ll = (HiddenLayer)l;
-
-            return ll.Operations.AsEnumerable().Sum((kv) =>
-            {
-                if (!spec.LayerCosts.ContainsKey(kv.Key))
-                    throw new Exception($"Cost for key `{kv.Key}` not configured");
-                return spec.LayerCosts[kv.Key] * kv.Value;
-            });
-        });
-
-        return layerEnergies.Sum();
-        // return 0.0;
+        return 0.0;
     }
 
     public double Memory()
