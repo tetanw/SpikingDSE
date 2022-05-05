@@ -41,6 +41,7 @@ public class HWSpec
                 Interval = instance.GetOptional("Interval")?.GetInt64() ?? -1,
                 GlobalSync = instance.GetOptional("GlobalSync")?.GetBoolean() ?? false,
                 ConnectsTo = instance["ConnectsTo"].GetString(),
+                IgnoreIdleCores = instance["IgnoreIdleCores"].GetBoolean()
             };
         }
         else if (type == "core-v1")
@@ -59,7 +60,8 @@ public class HWSpec
                 NeuronSize = instance["NeuronSize"].GetInt32(),
                 BaseLayerSize = instance["BaseLayerSize"].GetInt32(),
                 FanoutSize = instance["FanoutSize"].GetInt32(),
-                OverheadMem = instance["OverheadMem"].GetInt32()
+                OverheadMem = instance["OverheadMem"].GetInt32(),
+                DisableIfIdle = instance["DisableIfIdle"].GetBoolean()
             };
             coreV1Spec.LayerCosts = new();
             if (instance.ContainsKey("LayerCosts"))
@@ -210,6 +212,7 @@ public class CoreV1Spec : CoreSpec
     public int BaseLayerSize { get; set; }
     public int FanoutSize { get; set; }
     public int OverheadMem { get; set; }
+    public bool DisableIfIdle { get; set; }
     public Dictionary<string, LayerCost> LayerCosts { get; set; }
 }
 
@@ -218,6 +221,7 @@ public class ControllerV1Spec : CoreSpec
     public long StartTime { get; set; } = 0;
     public long Interval { get; set; }
     public bool GlobalSync { get; set; }
+    public bool IgnoreIdleCores { get; set; }
 }
 
 public class NoCSpec

@@ -115,6 +115,9 @@ public sealed class ControllerV1 : Actor, ICore
             if (core is ControllerV1)
                 continue;
 
+            if (spec.IgnoreIdleCores && mapping.GetAllLayers(core).Count == 0)
+                continue;
+
             var sync = new SyncEvent()
             {
                 TS = TS,
@@ -135,7 +138,11 @@ public sealed class ControllerV1 : Actor, ICore
     private IEnumerable<Event> Receiver(Simulator env)
     {
         var coresDone = new HashSet<object>();
-        int nrCores = mapping.Cores.Count - 1;
+        int nrCores;
+        if (spec.IgnoreIdleCores)
+            nrCores = mapping.Cores.Where(c => mapping.GetAllLayers(c).Count > 0 && c is not ControllerV1).Count();
+        else
+            nrCores = mapping.Cores.Count - 1;
 
         while (true)
         {
@@ -152,7 +159,7 @@ public sealed class ControllerV1 : Actor, ICore
         }
     }
 
-    string ICore.Name() => this.Name;
+    string ICore.Name() => Name;
 
     OutPort ICore.Output() => Output;
 

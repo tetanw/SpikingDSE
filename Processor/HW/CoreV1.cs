@@ -156,13 +156,16 @@ public sealed class CoreV1 : Actor, ICore
 
     public override IEnumerable<Event> Run(Simulator env)
     {
+        bool isEmpty = mapping.GetAllLayers(this).Count == 0;
+        if (isEmpty && spec.DisableIfIdle)
+            yield break;
+
         outputBuffer = new(env, spec.OutputBufferDepth);
         computeBuffer = new();
         syncs = new(env, 1);
         env.Process(Receiver(env));
         env.Process(ALU(env));
         env.Process(Sender(env));
-        yield break;
     }
 
     private IEnumerable<Event> Compute(Simulator env, SpikeEvent spike)
