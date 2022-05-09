@@ -65,6 +65,9 @@ public abstract class OdinHiddenLayer : Layer
 
 public abstract class HiddenLayer : Layer
 {
+    public int NrIntegrates { get; protected set; }
+    public int NrSyncs { get; protected set; }
+
     public abstract float[] Readout();
     public abstract void Forward(int neuron);
     public abstract void Feedback(int neuron);

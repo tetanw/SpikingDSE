@@ -37,6 +37,8 @@ public class OutputLayer : HiddenLayer
         {
             Pots[dst] += Weights[neuron, dst];
         }
+
+        NrIntegrates += Size;
     }
 
     public override bool Sync(int dst)
@@ -51,6 +53,8 @@ public class OutputLayer : HiddenLayer
 
         // Writeback
         Pots[dst] = pot;
+
+        NrSyncs++;
 
         return false;
     }

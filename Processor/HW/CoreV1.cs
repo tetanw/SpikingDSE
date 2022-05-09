@@ -309,14 +309,50 @@ public sealed class CoreV1 : Actor, ICore
     public string Report(bool header)
     {
         if (header)
-            return $"{Name}_sops," +
-                $"{Name}_layerReads,{Name}_layerWrites," +
-                $"{Name}_neuronReads,{Name}_neuronWrites," +
-                $"{Name}_synapseReads,{Name}_synapseWrites";
+        {
+            var layers = mapping.GetAllLayers(this)
+                .Where(l => l is HiddenLayer)
+                .Cast<HiddenLayer>()
+                .DistinctBy(l => l.TypeName)
+                .Select(l => $"{Name}_{l.TypeName}_NrIntegrates,{Name}_{l.TypeName}_NrSyncs");
+            var layerStr = string.Join(",", layers);
+
+            var coreStr = string.Join(",", $"{Name}_sops",
+                $"{Name}_layerReads,{Name}_layerWrites",
+                $"{Name}_neuronReads,{Name}_neuronWrites",
+                $"{Name}_synapseReads,{Name}_synapseWrites");
+
+            return string.Join(",", layerStr, coreStr);
+        }
         else
-            return $"{nrSOPs}," +
-                $"{layerReads},{layerWrites}," +
-                $"{neuronReads},{neuronWrites}," +
-                $"{synapseReads},{synapseWrites}";
+        {
+            var layerIntegrates = mapping.GetAllLayers(this)
+                .Where(l => l is HiddenLayer)
+                .Cast<HiddenLayer>()
+                .Aggregate(new Dictionary<string, int>(), (stats, l) =>
+                {
+                    stats.AddCount(l.TypeName, l.NrIntegrates);
+                    return stats;
+                })
+                .Select((kv) => kv.Value);
+            var layerSyncs = mapping.GetAllLayers(this)
+                .Where(l => l is HiddenLayer)
+                .Cast<HiddenLayer>()
+                .Aggregate(new Dictionary<string, int>(), (stats, l) =>
+                {
+                    stats.AddCount(l.TypeName, l.NrSyncs);
+                    return stats;
+                })
+                .Select((kv) => kv.Value);
+            var layers = Enumerable.Zip(layerIntegrates, layerSyncs).SelectMany(x => new List<string>() { x.First.ToString(), x.Second.ToString() });
+            var layerStr = string.Join(",", layers);
+
+            var coreStr = string.Join(",", $"{nrSOPs}",
+                $"{layerReads},{layerWrites}",
+                $"{neuronReads},{neuronWrites}",
+                $"{synapseReads},{synapseWrites}");
+
+            return string.Join(",", layerStr, coreStr);
+        }
     }
 }
