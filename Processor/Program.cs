@@ -115,10 +115,6 @@ namespace SpikingDSE
                     {
                         new PC().Run();
                     }
-                    else if (opts.Name.Equals("MeshTest"))
-                    {
-                        new MeshTest().Run();
-                    }
                     else if (opts.Name.Equals("ForkJoin"))
                     {
                         new ForkJoin().Run();
@@ -142,10 +138,6 @@ namespace SpikingDSE
                     else if (opts.Name.Equals("SingleOdin"))
                     {
                         new SingleOdin().Run();
-                    }
-                    else if (opts.Name.Equals("XYRouterTest"))
-                    {
-                        new XYRouterTest().Run();
                     }
                     else if (opts.Name.Equals("XYRouterValidation"))
                     {
