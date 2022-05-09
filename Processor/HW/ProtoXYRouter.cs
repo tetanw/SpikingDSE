@@ -170,4 +170,6 @@ public sealed class ProtoXYRouter : MeshRouter
     public override double Energy(long now) => 0.0;
 
     public override double Memory() => 0.0;
+
+    public override string Report(bool header) => string.Empty;
 }

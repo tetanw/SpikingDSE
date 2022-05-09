@@ -214,4 +214,16 @@ public sealed class XYRouter : MeshRouter
 
         return inputBuffers + outputBuffers;
     }
+
+    public override string Report(bool header)
+    {
+        if (header)
+        {
+            return $"{Name}_nrHops";
+        }
+        else
+        {
+            return $"{nrHops}";
+        }
+    }
 }

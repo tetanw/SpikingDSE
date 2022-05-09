@@ -154,6 +154,12 @@ public class MultiCoreDataset : BatchExperiment<MultiCore>, IDisposable
                 if (coreStr != string.Empty)
                     reportString += $",{coreStr}";
             }
+            foreach (var routers in Flatten(exp.Routers))
+            {
+                var routerStr = routers.Report(true);
+                if (routerStr != string.Empty)
+                    reportString += $",{routerStr}";
+            }
             expRep.ReportLine(reportString);
         }
         else
@@ -164,6 +170,12 @@ public class MultiCoreDataset : BatchExperiment<MultiCore>, IDisposable
                 var coreStr = core.Report(false);
                 if (coreStr != string.Empty)
                     reportString += $",{coreStr}";
+            }
+            foreach (var routers in Flatten(exp.Routers))
+            {
+                var routerStr = routers.Report(false);
+                if (routerStr != string.Empty)
+                    reportString += $",{routerStr}";
             }
             expRep.ReportLine(reportString);
         }

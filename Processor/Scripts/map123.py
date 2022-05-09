@@ -2,8 +2,8 @@ from exp import run_mappings
 
 runs = [
     ("hw-mesh1", "mapping1"),
-    ("hw-mesh2", "mapping2"),
-    ("hw-mesh3", "mapping3"),
+    # ("hw-mesh2", "mapping2"),
+    # ("hw-mesh3", "mapping3"),
 ]
 models = [
     "shd1",
