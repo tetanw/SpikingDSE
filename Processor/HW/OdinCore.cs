@@ -161,6 +161,8 @@ public sealed class OdinCore : Actor, ICore
     }
 
     public double Memory() => 0.0;
+
+    public string Report(bool header) => string.Empty;
 }
 
 

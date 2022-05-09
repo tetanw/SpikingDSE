@@ -10,15 +10,8 @@ public class MultiCoreDataset : BatchExperiment<MultiCore>, IDisposable
 {
     struct ExpRes
     {
-        public int ExpNr;
         public long Latency;
-        public long NrHops;
-        public long NrSOPs;
-        public int Correct;
-        public int Predicted;
-        public double RunningTime;
-        public double CoreEnergy;
-        public double ComEnergy;
+        public double Energy;
         public List<MemoryEntry> Memories;
     }
 
@@ -36,9 +29,11 @@ public class MultiCoreDataset : BatchExperiment<MultiCore>, IDisposable
     private int sampleCounter = 0;
     private readonly Stopwatch sampleCounterSw;
     private readonly Stopwatch lastProgress;
+    private bool first = true;
 
     private readonly ExpRes[] expResList;
     private readonly StreamWriter logFile;
+    private readonly FileReporter expRep;
 
     public MultiCoreDataset(string snnPath, string hwPath, string mappingPath, string datasetPath, string outputDir, int maxSamples)
     {
@@ -55,6 +50,8 @@ public class MultiCoreDataset : BatchExperiment<MultiCore>, IDisposable
         if (!Directory.Exists(outputDir))
             Directory.CreateDirectory(outputDir);
         logFile = new StreamWriter(File.Create($"{outputDir}/summary.log"));
+
+        expRep = new FileReporter($"{outputDir}/experiments.csv");
 
         Report($"Input files:");
         Report($"  SNN: {snnPath}");
@@ -97,7 +94,7 @@ public class MultiCoreDataset : BatchExperiment<MultiCore>, IDisposable
         foreach (var (Name, Bits) in expResList[0].Memories)
         {
             Report($"  {Name}: {Bits:n} bits");
-            totalBits += Bits;   
+            totalBits += Bits;
         }
         Console.WriteLine($"  Total: {totalBits:n} bits");
         List<long> latencies = expResList.Select(res => res.Latency).ToList();
@@ -108,7 +105,7 @@ public class MultiCoreDataset : BatchExperiment<MultiCore>, IDisposable
         Report($"  Avg: {avgLat:n} cycles");
         Report($"  Min: {minLat:n} cycles");
         Report($"  Max: {maxLat:n} cycles");
-        List<double> energies = expResList.Select(res => res.CoreEnergy + res.ComEnergy).ToList();
+        List<double> energies = expResList.Select(res => res.Energy).ToList();
         double avgEnergy = energies.Sum() / maxSamples;
         double maxEnergy = energies.Max();
         double minEnergy = energies.Min();
@@ -116,16 +113,6 @@ public class MultiCoreDataset : BatchExperiment<MultiCore>, IDisposable
         Report($"  Avg: {Measurements.FormatSI(avgEnergy, "J")}");
         Report($"  Min: {Measurements.FormatSI(minEnergy, "J")}");
         Report($"  Max: {Measurements.FormatSI(maxEnergy, "J")}");
-
-
-        var expRep = new FileReporter($"{outputDir}/experiments.csv");
-        expRep.ReportLine("exp,latency,correct,predicted,nrHops,nrSOPs,runningTime,coreEnergy,comEnergy");
-        for (int i = 0; i < maxSamples; i++)
-        {
-            var res = expResList[i];
-            expRep.ReportLine($"{res.ExpNr},{res.Latency},{res.Correct},{res.Predicted},{res.NrHops},{res.NrSOPs},{res.RunningTime},{res.CoreEnergy},{res.ComEnergy}");
-        }
-        expRep.Finish();
 
         logFile.Dispose();
     }
@@ -147,7 +134,7 @@ public class MultiCoreDataset : BatchExperiment<MultiCore>, IDisposable
         }
     }
 
-    public override void WhenSampleDone(MultiCore exp, long j, TimeSpan sampleTime)
+    public override void WhenSampleDone(MultiCore exp, long expNr, TimeSpan sampleTime)
     {
         int correct = (int)exp.Context;
         if (exp.Predict() == correct)
@@ -155,24 +142,42 @@ public class MultiCoreDataset : BatchExperiment<MultiCore>, IDisposable
             nrCorrect++;
         }
         nrDone++;
+        var runningTime = sampleTime.TotalMilliseconds;
 
-        expResList[j] = new ExpRes
+        if (first)
         {
-            ExpNr = (int)j,
-            Correct = correct,
-            Predicted = exp.Predict(),
+            first = false;
+            string reportString = $"expNr,runningTime,correct,predicted";
+            foreach (var core in exp.Cores)
+            {
+                var coreStr = core.Report(true);
+                if (coreStr != string.Empty)
+                    reportString += $",{coreStr}";
+            }
+            expRep.ReportLine(reportString);
+        }
+        else
+        {
+            string reportString = $"{expNr},{runningTime},{correct},{exp.Predict()}";
+            foreach (var core in exp.Cores)
+            {
+                var coreStr = core.Report(false);
+                if (coreStr != string.Empty)
+                    reportString += $",{coreStr}";
+            }
+            expRep.ReportLine(reportString);
+        }
+
+        expResList[expNr] = new ExpRes
+        {
             Latency = exp.Latency,
-            NrHops = exp.Routers.Cast<XYRouter>().Sum(r => r.nrHops),
-            NrSOPs = exp.Cores.Where(c => c is CoreV1).Cast<CoreV1>().Sum(c => c.nrSOPs),
-            RunningTime = sampleTime.TotalMilliseconds,
-            CoreEnergy = exp.Cores.Sum(c => c.Energy(exp.Latency)),
-            ComEnergy = Flatten(exp?.Routers).Sum(r => r.Energy(exp.Latency)),
+            Energy = exp.Cores.Sum(c => c.Energy(exp.Latency))
         };
-        if (j == 0)
+        if (expNr == 0)
         {
-             var memories = exp.Cores.Select(c => new MemoryEntry(c.Name(), c.Memory())).ToList();
-             memories.AddRange(Flatten(exp.Routers).Select(r => new MemoryEntry(r.Name, r.Memory())));
-             expResList[j].Memories = memories;
+            var memories = exp.Cores.Select(c => new MemoryEntry(c.Name(), c.Memory())).ToList();
+            memories.AddRange(Flatten(exp.Routers).Select(r => new MemoryEntry(r.Name, r.Memory())));
+            expResList[expNr].Memories = memories;
         }
 
         UpdateProgressBar();
@@ -187,7 +192,7 @@ public class MultiCoreDataset : BatchExperiment<MultiCore>, IDisposable
         }
 
         sampleCounter++;
-        if (lastProgress.ElapsedMilliseconds > 3000)
+        if (lastProgress.ElapsedMilliseconds > 1000)
         {
 
             ClearCurrentConsoleLine();
@@ -217,6 +222,7 @@ public class MultiCoreDataset : BatchExperiment<MultiCore>, IDisposable
     public void Dispose()
     {
         dataset.Dispose();
+        expRep.Finish();
         GC.SuppressFinalize(this);
     }
 }

@@ -10,6 +10,7 @@ public interface ICore
     public InPort Input();
     public double Energy(long now);
     public double Memory();
+    public string Report(bool header);
 }
 
 public class CoreEvent { }

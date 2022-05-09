@@ -22,14 +22,20 @@ public sealed class CoreV1 : Actor, ICore
     public int nrSpikesProduced = 0;
     public int nrSpikesConsumed = 0;
     public int nrSOPs = 0;
-    public int nrSpikesDroppedCore = 0;
-    public int nrSpikesDroppedInput = 0;
     public int nrLateSpikes = 0;
     public int nrEarlySpikes = 0;
     public int nrSpikesReceived = 0;
     public long receiverBusy;
     public long ALUBusy;
     public long senderBusy;
+
+    public int layerReads, layerWrites = 0;
+    public int neuronReads, neuronWrites = 0;
+    public int synapseReads, synapseWrites = 0;
+    public int computePushes, computePops = 0;
+    public int outputPushes, outputPops = 0;
+
+    // Layer update & integrate stats
 
     public SpikeReceived OnSpikeReceived;
     public SpikeSent OnSpikeSent;
@@ -75,6 +81,7 @@ public sealed class CoreV1 : Actor, ICore
             if (@event is SyncEvent sync)
             {
                 TS = sync.TS + 1;
+                computePushes++;
                 computeBuffer.Enqueue(new ComputeElement(true, null));
                 syncs.Push(sync);
             }
@@ -94,6 +101,7 @@ public sealed class CoreV1 : Actor, ICore
                 }
                 else
                 {
+                    computePushes++;
                     computeBuffer.Enqueue(new(false, spike));
                 }
             }
@@ -112,6 +120,7 @@ public sealed class CoreV1 : Actor, ICore
             while (true)
             {
                 var (isDone, spike) = computeBuffer.Dequeue();
+                computePops++;
                 if (isDone)
                     break;
                 foreach (var ev in Compute(env, spike))
@@ -135,6 +144,7 @@ public sealed class CoreV1 : Actor, ICore
                     }
                 });
                 outputBuffer.ReleaseWrite();
+                outputPushes++;
             }
 
             ALUBusy += env.Now - before;
@@ -148,6 +158,7 @@ public sealed class CoreV1 : Actor, ICore
             yield return outputBuffer.RequestRead();
             long before = env.Now;
             var packet = outputBuffer.Read();
+            outputPops++;
             yield return env.Send(output, packet);
             outputBuffer.ReleaseRead();
             senderBusy += env.Now - before;
@@ -177,7 +188,11 @@ public sealed class CoreV1 : Actor, ICore
         else
             layer.Forward(spike.Neuron);
         nrSpikesConsumed++;
-        nrSOPs += spike.Layer.Size;
+        nrSOPs += layer.Size;
+        layerReads++;
+        neuronReads += layer.Size;
+        neuronWrites += layer.Size;
+        synapseReads += layer.Size;
         // Calculate amount of lines required, careful: trick to ceil divide
         int nrLines = MathUtils.CeilDivide(layer.Size, spec.NrParallel);
         var costs = spec.LayerCosts[spike.Layer.TypeName];
@@ -261,6 +276,9 @@ public sealed class CoreV1 : Actor, ICore
                 nrSpikesProcessed = 0;
             }
 
+            layerReads++;
+            neuronReads += layer.Size;
+            neuronWrites += layer.Size;
             layer.FinishSync();
             OnSyncEnded?.Invoke(env.Now, sync.TS, layer);
         }
@@ -286,5 +304,19 @@ public sealed class CoreV1 : Actor, ICore
         double outputBuffer = spec.OutputBufferWidth * spec.OutputBufferDepth;
 
         return layerMem + synMem + neuronMem + computeBuffer + outputBuffer + spec.OverheadMem;
+    }
+
+    public string Report(bool header)
+    {
+        if (header)
+            return $"{Name}_sops," +
+                $"{Name}_layerReads,{Name}_layerWrites," +
+                $"{Name}_neuronReads,{Name}_neuronWrites," +
+                $"{Name}_synapseReads,{Name}_synapseWrites";
+        else
+            return $"{nrSOPs}," +
+                $"{layerReads},{layerWrites}," +
+                $"{neuronReads},{neuronWrites}," +
+                $"{synapseReads},{synapseWrites}";
     }
 }
