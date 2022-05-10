@@ -49,10 +49,12 @@ public class AnalyzeMapping
         {
             layerSplits.AddCount(snn.FindLayer(entry.Layer), 1);
         }
+        int maxSplits = hw.Cores.Min(c => c.MaxSplits);
         foreach (var (layer, splits) in layerSplits)
         {
             Console.WriteLine($"Layer \"{layer.Name}\": ");
-            Console.WriteLine($"  Splits: {splits}");
+            double maxSplitsPer = (double) splits / maxSplits * 100.0;
+            Console.WriteLine($"  Splits: {splits} / {maxSplits} ({maxSplitsPer:0.00}%)");
         }
 
         if (mapping.Unmapped.Count > 0)
