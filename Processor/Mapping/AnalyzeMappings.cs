@@ -32,13 +32,14 @@ public class AnalyzeMappings
         foreach (var entry in mapping.Mapped)
         {
             var core = cores[entry.Core];
-            int neurons = entry.End - entry.Start;
-            core.Neurons += neurons;
+            int slice = entry.End - entry.Start;
+            core.Neurons += slice;
             core.Layers++;
             var layer = snn.FindLayer(entry.Layer);
-            core.Synapses += layer.InputSize * neurons;
+            core.Synapses += layer.InputSize * slice;
+            Console.WriteLine($"{entry.Layer}: {layer.InputSize}, {layer.InputSize * slice}, {layer.Size * slice}");
             if (layer.Recurrent)
-                core.Synapses += layer.Size * neurons;
+                core.Synapses += layer.Size * slice;
         }
 
         foreach (var core in hw.Cores)

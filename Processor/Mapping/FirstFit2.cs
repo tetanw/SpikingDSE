@@ -55,9 +55,14 @@ public class FirstFitMapper2 : Mapper
             // What is the maximum amount of neurons that can be mapped
             // according to synapse memory
             int freeSynapses = Spec.MaxSynapses - NrSynapses;
-            int limitedBySynapse = freeSynapses / layer.InputSize;
+            int limitedBySynapse;
+            if (layer.Recurrent)
+                limitedBySynapse = freeSynapses / (layer.InputSize + layer.Size); // should be rounded down which int already does luckily
+            else
+                limitedBySynapse = freeSynapses / layer.InputSize;
 
-            return Math.Max(Math.Min(Math.Min(limitedByNeuron, limitedBySynapse), neuronsToMap), 0);
+            int maxCut = Math.Max(Math.Min(Math.Min(limitedByNeuron, limitedBySynapse), neuronsToMap), 0);
+            return maxCut;
         }
     }
 
