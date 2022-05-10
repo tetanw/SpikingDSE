@@ -5,11 +5,11 @@ using System.Text.Json;
 
 namespace SpikingDSE;
 
-public class MapRunner
+public class CreateMappings
 {
-    private readonly MappingOptions opts;
+    private readonly CreateMappingOptions opts;
 
-    public MapRunner(MappingOptions opts)
+    public CreateMappings(CreateMappingOptions opts)
     {
         this.opts = opts;
     }

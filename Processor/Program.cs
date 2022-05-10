@@ -41,7 +41,7 @@ namespace SpikingDSE
     }
 
     [Verb("mapping", HelpText = "Maps a SNN on HW")]
-    public class MappingOptions
+    public class CreateMappingOptions
     {
         [Option('s', "snn-path", Required = true, HelpText = "SNN specification")]
         public string SNN { get; set; }
@@ -53,6 +53,19 @@ namespace SpikingDSE
         public string Mapper { get; set; }
 
         [Option('o', "mapping", Required = true, HelpText = "File to save the mapping in")]
+        public string Mapping { get; set; }
+    }
+
+    [Verb("analyze-mapping", HelpText = "Maps a SNN on HW")]
+    public class AnalyzeMappingOptions
+    {
+        [Option('s', "snn-path", Required = true, HelpText = "SNN specification")]
+        public string SNN { get; set; }
+
+        [Option('h', "hw-path", Required = true, HelpText = "HW specification")]
+        public string HW { get; set; }
+
+        [Option('m', "mapping", Required = true, HelpText = "Mapping to analyze")]
         public string Mapping { get; set; }
     }
 
@@ -101,7 +114,7 @@ namespace SpikingDSE
     {
         static int Main(string[] args)
         {
-            var result = Parser.Default.ParseArguments<SimOptions, SimTestOptions, SimDSEOptions, VCDOptions, ToTensorOptions, MappingOptions>(args);
+            var result = Parser.Default.ParseArguments<SimOptions, SimTestOptions, SimDSEOptions, VCDOptions, ToTensorOptions, CreateMappingOptions, AnalyzeMappingOptions>(args);
             var ret = result.MapResult(
                 (VCDOptions opts) =>
                 {
@@ -169,10 +182,8 @@ namespace SpikingDSE
                     converter.Run();
                     return 0;
                 },
-                (MappingOptions opts) =>
-                {
-                    return new MapRunner(opts).Run();
-                },
+                (CreateMappingOptions opts) => new CreateMappings(opts).Run(),
+                (AnalyzeMappingOptions opts) => new AnalyzeMappings(opts).Run(),
                 _ => 1
             );
 

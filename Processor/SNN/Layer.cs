@@ -29,7 +29,7 @@ public class InputLayer : Layer
     public InputLayer(int size, string name = null)
     {
         Name = name;
-        InputSize = -1;
+        InputSize = 0;
         Size = size;
         TypeName = "input";
         Splittable = false;
