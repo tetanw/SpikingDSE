@@ -3,26 +3,26 @@ import subprocess
 def run_experiments(runs, models):
     subprocess.run(['dotnet', 'build', '--configuration', 'Release'])
 
-    for hwName, mappingName, expNr in runs:
+    for expName in runs:
         for dsName, dsFile in models:
             command = f"bin\Release\\net6.0\SpikingDSE.exe dataset-sim"\
-                f" -s \"res/exp/snn-{dsName}.json\""\
-                f" -h \"res/exp/{hwName}.json\""\
-                f" -m \"res/exp/{mappingName}-{dsName}.json\""\
+                f" -s \"res/snn/snn-{dsName}.json\""\
+                f" -h \"res/exp/{expName}/hw.json\""\
+                f" -m \"res/exp/{expName}/mappings/{dsName}.json\""\
                 f" -d \"res/dataset/{dsFile}.zip\""\
-                f" -o \"res/results/{dsName}-{expNr}"
+                f" -o \"res/exp/{expName}/results/{dsName}"
             print(f">> {command}")
             process = subprocess.run(command)
 
 def run_mappings(runs, models, mapper):
     subprocess.run(['dotnet', 'build', '--configuration', 'Release'])
 
-    for hwName, mappingName in runs:
+    for expName in runs:
         for dsName in models:
             command = f"bin\Release\\net6.0\SpikingDSE.exe mapping"\
-                f" -s \"res/exp/snn-{dsName}.json\""\
-                f" -h \"res/exp/{hwName}.json\""\
+                f" -s \"res/snn/snn-{dsName}.json\""\
+                f" -h \"res/exp/{expName}/hw.json\""\
                 f" -m {mapper}"\
-                f" -o \"res/exp/{mappingName}-{dsName}.json"
+                f" -o \"res/exp/{expName}/mappings/{dsName}.json"
             print(f">> {command}")
             process = subprocess.run(command)

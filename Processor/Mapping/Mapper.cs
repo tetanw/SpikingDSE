@@ -50,6 +50,9 @@ public class Mapping
 
     public void Save(string path)
     {
+        if (!Directory.Exists(path))
+            Directory.CreateDirectory(Path.GetDirectoryName(path));
+
         using var fileStream = File.Create(path);
         JsonSerializer.Serialize(fileStream, this, new JsonSerializerOptions { WriteIndented = true });
     }
