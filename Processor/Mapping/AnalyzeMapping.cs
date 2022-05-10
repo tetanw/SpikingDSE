@@ -55,6 +55,16 @@ public class AnalyzeMapping
             Console.WriteLine($"  Splits: {splits}");
         }
 
+        if (mapping.Unmapped.Count > 0)
+        {
+            Console.WriteLine("Unmapped:");
+            foreach (var layerName in mapping.Unmapped)
+            {
+                var layer = snn.FindLayer(layerName);
+                Console.WriteLine($"  - {layer.Name}, Size: {layer.Size}, InputSize: {layer.InputSize}");
+            }
+        }
+
         return 0;
     }
 }
