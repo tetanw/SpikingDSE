@@ -52,8 +52,6 @@ public class ALIFLayer : HiddenLayer
         {
             Pots[dst] += InWeights[neuron, dst]; // +
         }
-
-        NrIntegrates += Size;
     }
 
     public override void Feedback(int neuron)
@@ -62,8 +60,6 @@ public class ALIFLayer : HiddenLayer
         {
             Pots[dst] += RecWeights[neuron, dst]; // +
         }
-
-        NrIntegrates += Size;
     }
 
     public override bool Sync(int dst)
@@ -103,8 +99,6 @@ public class ALIFLayer : HiddenLayer
 
         // Writeback
         Pots[dst] = pot;
-
-        NrSyncs++;
 
         return Spiked[dst];
     }

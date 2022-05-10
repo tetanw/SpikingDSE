@@ -217,6 +217,9 @@ public sealed class XYRouter : MeshRouter
 
     public override string Report(bool header)
     {
+        if (nrHops == 0)
+            return string.Empty;
+
         if (header)
         {
             return $"{Name}_nrHops";

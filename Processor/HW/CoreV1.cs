@@ -34,8 +34,9 @@ public sealed class CoreV1 : Actor, ICore
     public int synapseReads, synapseWrites = 0;
     public int computePushes, computePops = 0;
     public int outputPushes, outputPops = 0;
-
     // Layer update & integrate stats
+    private Dictionary<string, int> layerIntegrates = new();
+    private Dictionary<string, int> layerSyncs = new();
 
     public SpikeReceived OnSpikeReceived;
     public SpikeSent OnSpikeSent;
@@ -187,6 +188,7 @@ public sealed class CoreV1 : Actor, ICore
             layer.Feedback(spike.Neuron);
         else
             layer.Forward(spike.Neuron);
+        layerIntegrates.AddCount(layer.TypeName, layer.Size);
         nrSpikesConsumed++;
         nrSOPs += layer.Size;
         layerReads++;
@@ -276,6 +278,7 @@ public sealed class CoreV1 : Actor, ICore
                 nrSpikesProcessed = 0;
             }
 
+            layerSyncs.AddCount(layer.TypeName, layer.Size);
             layerReads++;
             neuronReads += layer.Size;
             neuronWrites += layer.Size;
@@ -308,13 +311,13 @@ public sealed class CoreV1 : Actor, ICore
 
     public string Report(bool header)
     {
+        // Cores that do not have any layers should just stay silent
+        if (mapping.GetAllLayers(this).Count == 0)
+            return string.Empty;
+
         if (header)
         {
-            var layers = mapping.GetAllLayers(this)
-                .Where(l => l is HiddenLayer)
-                .Cast<HiddenLayer>()
-                .DistinctBy(l => l.TypeName)
-                .Select(l => $"{Name}_{l.TypeName}_NrIntegrates,{Name}_{l.TypeName}_NrSyncs");
+            var layers = layerSyncs.Keys.SelectMany((layer) => new string[] { $"{Name}_{layer}_integrates", $"{Name}_{layer}_syncs" });
             var layerStr = string.Join(",", layers);
 
             var coreStr = string.Join(",", $"{Name}_sops",
@@ -326,25 +329,12 @@ public sealed class CoreV1 : Actor, ICore
         }
         else
         {
-            var layerIntegrates = mapping.GetAllLayers(this)
-                .Where(l => l is HiddenLayer)
-                .Cast<HiddenLayer>()
-                .Aggregate(new Dictionary<string, int>(), (stats, l) =>
-                {
-                    stats.AddCount(l.TypeName, l.NrIntegrates);
-                    return stats;
-                })
-                .Select((kv) => kv.Value);
-            var layerSyncs = mapping.GetAllLayers(this)
-                .Where(l => l is HiddenLayer)
-                .Cast<HiddenLayer>()
-                .Aggregate(new Dictionary<string, int>(), (stats, l) =>
-                {
-                    stats.AddCount(l.TypeName, l.NrSyncs);
-                    return stats;
-                })
-                .Select((kv) => kv.Value);
-            var layers = Enumerable.Zip(layerIntegrates, layerSyncs).SelectMany(x => new List<string>() { x.First.ToString(), x.Second.ToString() });
+            var layers = new List<string>();
+            foreach (var name in layerSyncs.Keys)
+            {
+                layers.Add(layerIntegrates[name].ToString());
+                layers.Add(layerSyncs[name].ToString());
+            }
             var layerStr = string.Join(",", layers);
 
             var coreStr = string.Join(",", $"{nrSOPs}",

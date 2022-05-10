@@ -6,7 +6,7 @@ using System.Linq;
 
 namespace SpikingDSE;
 
-public class MultiCoreDataset : BatchExperiment<MultiCore>, IDisposable
+public class MultiCoreDataset : BatchExperiment<MultiCore>
 {
     struct ExpRes
     {
@@ -115,6 +115,8 @@ public class MultiCoreDataset : BatchExperiment<MultiCore>, IDisposable
         Report($"  Max: {Measurements.FormatSI(maxEnergy, "J")}");
 
         logFile.Dispose();
+        dataset.Dispose();
+        expRep.Finish();
     }
 
     private void Report(string line)
@@ -144,41 +146,19 @@ public class MultiCoreDataset : BatchExperiment<MultiCore>, IDisposable
         nrDone++;
         var runningTime = sampleTime.TotalMilliseconds;
 
+        var parts = new List<string>();
         if (first)
         {
-            first = false;
-            string reportString = $"expNr,runningTime,correct,predicted";
-            foreach (var core in exp.Cores)
-            {
-                var coreStr = core.Report(true);
-                if (coreStr != string.Empty)
-                    reportString += $",{coreStr}";
-            }
-            foreach (var routers in Flatten(exp.Routers))
-            {
-                var routerStr = routers.Report(true);
-                if (routerStr != string.Empty)
-                    reportString += $",{routerStr}";
-            }
-            expRep.ReportLine(reportString);
+            parts.Add($"expNr,runningTime,correct,predicted");
         }
         else
         {
-            string reportString = $"{expNr},{runningTime},{correct},{exp.Predict()}";
-            foreach (var core in exp.Cores)
-            {
-                var coreStr = core.Report(false);
-                if (coreStr != string.Empty)
-                    reportString += $",{coreStr}";
-            }
-            foreach (var routers in Flatten(exp.Routers))
-            {
-                var routerStr = routers.Report(false);
-                if (routerStr != string.Empty)
-                    reportString += $",{routerStr}";
-            }
-            expRep.ReportLine(reportString);
+            parts.Add($"{expNr},{runningTime},{correct},{exp.Predict()}");
         }
+        parts.AddRange(exp.Cores.Select(c => c.Report(first)).Where(s => !string.IsNullOrEmpty(s)));
+        parts.AddRange(Flatten(exp.Routers).Select(c => c.Report(first)).Where(s => !string.IsNullOrEmpty(s)));
+        first = false;
+        expRep.ReportLine(string.Join(",", parts));
 
         expResList[expNr] = new ExpRes
         {
@@ -229,12 +209,5 @@ public class MultiCoreDataset : BatchExperiment<MultiCore>, IDisposable
         Console.SetCursorPosition(0, Console.CursorTop);
         Console.Write(new string(' ', Console.WindowWidth));
         Console.SetCursorPosition(0, currentLineCursor);
-    }
-
-    public void Dispose()
-    {
-        dataset.Dispose();
-        expRep.Finish();
-        GC.SuppressFinalize(this);
     }
 }
