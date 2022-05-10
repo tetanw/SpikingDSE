@@ -99,11 +99,7 @@ public abstract class ConstraintMapper : Mapper
                 End = l.End,
                 Index = l.Index
             });
-            var sliceSize = l.End - l.Start;
-            c.NrNeurons += sliceSize;
-            c.NrSynapses += sliceSize * l.Layer.Size + sliceSize * l.Layer.InputSize;
-            c.NrFanIn += layer.InputSize;
-            c.NrLayers++;
+            c.AddLayer(l.Layer, l.End - l.Start);
         }
     }
 

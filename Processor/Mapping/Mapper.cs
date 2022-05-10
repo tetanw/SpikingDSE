@@ -120,10 +120,12 @@ public class CoreData
         return maxCut;
     }
 
-    public void AddLayer(Layer layer)
+    public void AddLayer(Layer layer, int sliceSize)
     {
-        NrNeurons += layer.Size;
-        NrSynapses += layer.InputSize * layer.Size + (layer.Recurrent ? layer.Size * layer.Size : 0);
+        NrNeurons += sliceSize;
+        NrSynapses += layer.InputSize * sliceSize;
+        if (layer.Recurrent)
+            NrSynapses += layer.Size * sliceSize;
         NrFanIn += layer.InputSize;
         NrLayers++;
     }

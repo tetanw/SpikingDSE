@@ -23,5 +23,16 @@
             "stopAtEntry": false,
             "console": "internalConsole"
         },
+        {
+            "name": "Analyze mapping - Exp 1 hw and shd1",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "bin/Debug/net6.0/SpikingDSE.dll",
+            "args": ["analyze-mapping", "-s", "res/snn/snn-shd1.json", "-h", "res/exp/exp1/hw.json", "-m", "res/exp/exp1/mappings/shd1.json"],
+            "cwd": "${workspaceFolder}/Processor",
+            "stopAtEntry": false,
+            "console": "internalConsole"
+        },
     ]
 }

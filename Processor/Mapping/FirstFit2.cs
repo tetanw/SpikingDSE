@@ -32,7 +32,7 @@ public class FirstFitMapper2 : ConstraintMapper
                 var (core, mappedLayer) = FindWholeFit(sortedCores, layer);
                 if (core != null)
                 {
-                    core.AddLayer(layer);
+                    core.AddLayer(layer, layer.Size);
                     mapping.Mapped.Add(mappedLayer);
                     continue;
                 }

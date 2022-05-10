@@ -25,7 +25,7 @@ public class AnalyzeMapping
         {
             var layer = snn.FindLayer(entry.Layer);
             var core = cores[entry.Core];
-            core.AddLayer(layer);
+            core.AddLayer(layer, entry.End - entry.Start);
         }
 
         foreach (var core in hw.Cores)
