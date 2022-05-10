@@ -39,6 +39,7 @@ public class CreateMapping
             Console.WriteLine($"Failed");
             Console.ForegroundColor = ConsoleColor.White;
             Console.WriteLine($"Could not map: {layerNames}");
+            mapping.Save(opts.Mapping);
             return 1;
         }
         else
