@@ -149,11 +149,11 @@ public class MultiCoreDataset : BatchExperiment<MultiCore>
         var parts = new List<string>();
         if (first)
         {
-            parts.Add($"expNr,runningTime,correct,predicted");
+            parts.Add($"expNr,runningTime,latency,correct,predicted");
         }
         else
         {
-            parts.Add($"{expNr},{runningTime},{correct},{exp.Predict()}");
+            parts.Add($"{expNr},{runningTime},{exp.Latency},{correct},{exp.Predict()}");
         }
         parts.AddRange(exp.Cores.Select(c => c.Report(first)).Where(s => !string.IsNullOrEmpty(s)));
         parts.AddRange(Flatten(exp.Routers).Select(c => c.Report(first)).Where(s => !string.IsNullOrEmpty(s)));
