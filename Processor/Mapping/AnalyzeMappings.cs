@@ -6,14 +6,6 @@ namespace SpikingDSE;
 
 public class AnalyzeMappings
 {
-    class CoreData
-    {
-        public string Name;
-        public int Neurons = 0;
-        public int Synapses = 0;
-        public int Layers = 0;
-    }
-
     private readonly AnalyzeMappingOptions opts;
 
     public AnalyzeMappings(AnalyzeMappingOptions opts)
@@ -27,31 +19,40 @@ public class AnalyzeMappings
         var hw = HWSpec.Load(opts.HW);
         var mapping = Mapping.Load(opts.Mapping);
 
-        var cores = hw.Cores.Select(c => new CoreData { Name = c.Name }).ToDictionary(c => c.Name);
+        var cores = hw.Cores.Select(c => new CoreData(c)).ToDictionary(c => c.Spec.Name);
 
         foreach (var entry in mapping.Mapped)
         {
-            var core = cores[entry.Core];
-            int slice = entry.End - entry.Start;
-            core.Neurons += slice;
-            core.Layers++;
             var layer = snn.FindLayer(entry.Layer);
-            core.Synapses += layer.InputSize * slice;
-            Console.WriteLine($"{entry.Layer}: {layer.InputSize}, {layer.InputSize * slice}, {layer.Size * slice}");
-            if (layer.Recurrent)
-                core.Synapses += layer.Size * slice;
+            var core = cores[entry.Core];
+            core.AddLayer(layer);
         }
 
         foreach (var core in hw.Cores)
         {
             var data = cores[core.Name];
             Console.WriteLine($"Core \"{core.Name}\":");
-            double neuronPer = (double)data.Neurons / core.MaxNeurons * 100.0;
-            Console.WriteLine($"  Neurons: {data.Neurons} / {core.MaxNeurons} ({neuronPer:0.00}%)");
-            double layerPer = (double)data.Layers / core.MaxLayers * 100.0;
-            Console.WriteLine($"  Layers: {data.Layers} / {core.MaxLayers} ({layerPer:0.00}%)");
-            double synPer = (double)data.Synapses / core.MaxSynapses * 100.0;
-            Console.WriteLine($"  Synapses: {data.Synapses} / {core.MaxSynapses} ({synPer:0.00}%)");
+            double neuronPer = (double)data.NrNeurons / core.MaxNeurons * 100.0;
+            Console.WriteLine($"  Neurons: {data.NrNeurons} / {core.MaxNeurons} ({neuronPer:0.00}%)");
+            double layerPer = (double)data.NrLayers / core.MaxLayers * 100.0;
+            Console.WriteLine($"  Layers: {data.NrLayers} / {core.MaxLayers} ({layerPer:0.00}%)");
+            double synPer = (double)data.NrSynapses / core.MaxSynapses * 100.0;
+            Console.WriteLine($"  Synapses: {data.NrSynapses} / {core.MaxSynapses} ({synPer:0.00}%)");
+            double fanInPer = (double)data.NrFanIn / core.MaxFanIn * 100.0;
+            Console.WriteLine($"  FanIn: {data.NrFanIn} / {core.MaxFanIn} ({fanInPer:0.00}%)");
+        }
+
+        // FIXME: The accounting should actually keep track of the max splits per core
+        // but that is difficult, maybe later
+        var layerSplits = snn.GetAllLayers().ToDictionary(l => l, l => 0);
+        foreach (var entry in mapping.Mapped)
+        {
+            layerSplits.AddCount(snn.FindLayer(entry.Layer), 1);
+        }
+        foreach (var (layer, splits) in layerSplits)
+        {
+            Console.WriteLine($"Layer \"{layer.Name}\": ");
+            Console.WriteLine($"  Splits: {splits}");
         }
 
         return 0;
