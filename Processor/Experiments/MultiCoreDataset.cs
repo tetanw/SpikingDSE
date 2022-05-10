@@ -41,7 +41,7 @@ public class MultiCoreDataset : BatchExperiment<MultiCore>
         snn = SNN.SplitSNN(SNN.Load(snnPath), mapping);
         hw = HWSpec.Load(hwPath);
         dataset = new ZipDataset(datasetPath);
-        this.maxSamples = maxSamples == -1 ? dataset.NrSamples : maxSamples;
+        this.maxSamples = Math.Min(maxSamples, dataset.NrSamples);
         sampleCounterSw = new Stopwatch();
         sampleCounterSw.Start();
         expResList = new ExpRes[this.maxSamples];

@@ -10,6 +10,7 @@ def run_experiments(runs, models):
                 f" -h \"res/exp/{expName}/hw.json\""\
                 f" -m \"res/exp/{expName}/mappings/{dsName}.json\""\
                 f" -d \"res/dataset/{dsFile}.zip\""\
+                f" --max-samples 10"\
                 f" -o \"res/exp/{expName}/results/{dsName}"
             print(f">> {command}")
             process = subprocess.run(command)

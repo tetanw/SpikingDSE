@@ -13,12 +13,12 @@
             "console": "internalConsole"
         },
         {
-            "name": "Mapping - HW mesh 1 and best SNN",
+            "name": "Mapping - Exp 1 hw and ssc2",
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
             "program": "bin/Debug/net6.0/SpikingDSE.dll",
-            "args": ["mapping", "-s", "res/exp/snn-best.json", "-h", "res/exp/hw-mesh1.json", "-m", "FirstFit", "-o", "res/exp/mapping1-best.json"],
+            "args": ["mapping", "-s", "res/snn/snn-ssc2.json", "-h", "res/exp/exp1/hw.json", "-m", "FirstFit1", "-o", "res/exp/mappings/ssc2.json"],
             "cwd": "${workspaceFolder}/Processor",
             "stopAtEntry": false,
             "console": "internalConsole"

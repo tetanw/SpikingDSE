@@ -91,7 +91,7 @@ namespace SpikingDSE
         public string Dataset { get; set; }
 
         [Option("max-samples", Required = false, HelpText = "Max samples to run through")]
-        public int MaxSamples { get; set; } = -1;
+        public int MaxSamples { get; set; } = int.MaxValue;
 
         [Option('o', "output-dir", Required = true, HelpText = "Director to place results")]
         public string OutputDir { get; set; }

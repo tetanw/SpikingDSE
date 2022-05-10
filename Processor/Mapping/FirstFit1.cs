@@ -57,7 +57,7 @@ public class FirstFitMapper1 : Mapper
             int freeSynapses = Spec.MaxSynapses - NrSynapses;
             int limitedBySynapse = freeSynapses / layer.InputSize;
 
-            return Math.Min(Math.Min(limitedByNeuron, limitedBySynapse), neuronsToMap);
+            return Math.Max(Math.Min(Math.Min(limitedByNeuron, limitedBySynapse), neuronsToMap), 0);
         }
     }
 
