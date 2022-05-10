@@ -182,8 +182,8 @@ namespace SpikingDSE
                     converter.Run();
                     return 0;
                 },
-                (CreateMappingOptions opts) => new CreateMappings(opts).Run(),
-                (AnalyzeMappingOptions opts) => new AnalyzeMappings(opts).Run(),
+                (CreateMappingOptions opts) => new CreateMapping(opts).Run(),
+                (AnalyzeMappingOptions opts) => new AnalyzeMapping(opts).Run(),
                 _ => 1
             );
 

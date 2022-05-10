@@ -5,11 +5,11 @@ using System.Text.Json;
 
 namespace SpikingDSE;
 
-public class CreateMappings
+public class CreateMapping
 {
     private readonly CreateMappingOptions opts;
 
-    public CreateMappings(CreateMappingOptions opts)
+    public CreateMapping(CreateMappingOptions opts)
     {
         this.opts = opts;
     }

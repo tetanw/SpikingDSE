@@ -4,11 +4,11 @@ using System.Linq;
 
 namespace SpikingDSE;
 
-public class AnalyzeMappings
+public class AnalyzeMapping
 {
     private readonly AnalyzeMappingOptions opts;
 
-    public AnalyzeMappings(AnalyzeMappingOptions opts)
+    public AnalyzeMapping(AnalyzeMappingOptions opts)
     {
         this.opts = opts;
     }
