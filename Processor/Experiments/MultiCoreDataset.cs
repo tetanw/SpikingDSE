@@ -136,6 +136,15 @@ public class MultiCoreDataset : BatchExperiment<MultiCore>
         }
     }
 
+    private string ConstructHeader(MultiCore exp)
+    {
+        var parts = new List<string>();
+        parts.Add($"expNr,runningTime,latency,correct,predicted");
+        parts.AddRange(exp.Cores.Select(c => c.Report(first)).Where(s => !string.IsNullOrEmpty(s)));
+        parts.AddRange(Flatten(exp.Routers).Select(c => c.Report(first)).Where(s => !string.IsNullOrEmpty(s)));
+        return string.Join(',', parts);
+    }
+
     public override void WhenSampleDone(MultiCore exp, long expNr, TimeSpan sampleTime)
     {
         int correct = (int)exp.Context;
@@ -146,19 +155,18 @@ public class MultiCoreDataset : BatchExperiment<MultiCore>
         nrDone++;
         var runningTime = sampleTime.TotalMilliseconds;
 
-        var parts = new List<string>();
         if (first)
         {
-            parts.Add($"expNr,runningTime,latency,correct,predicted");
+            string header = ConstructHeader(exp);
+            expRep.ReportLine(header);
+            first = false;
         }
-        else
-        {
-            parts.Add($"{expNr},{runningTime},{exp.Latency},{correct},{exp.Predict()}");
-        }
+
+        var parts = new List<string>();
+        parts.Add($"{expNr},{runningTime},{exp.Latency},{correct},{exp.Predict()}");
         parts.AddRange(exp.Cores.Select(c => c.Report(first)).Where(s => !string.IsNullOrEmpty(s)));
         parts.AddRange(Flatten(exp.Routers).Select(c => c.Report(first)).Where(s => !string.IsNullOrEmpty(s)));
-        first = false;
-        expRep.ReportLine(string.Join(",", parts));
+        expRep.ReportLine(string.Join(',', parts));
 
         expResList[expNr] = new ExpRes
         {
