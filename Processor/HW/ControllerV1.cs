@@ -165,12 +165,5 @@ public sealed class ControllerV1 : Actor, ICore
 
     InPort ICore.Input() => Input;
 
-    public double Energy(long now)
-    {
-        return 0.0;
-    }
-
-    public double Memory() => 0.0;
-
     public string Report(bool header) => string.Empty;
 }

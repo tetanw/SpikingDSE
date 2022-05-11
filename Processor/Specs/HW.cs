@@ -50,17 +50,9 @@ public class HWSpec
             {
                 ConnectsTo = instance["ConnectsTo"].GetString(),
                 MaxNeurons = instance["MaxNeurons"].GetInt32(),
-                StaticPower = instance["StaticPower"].GetDouble(),
                 NrParallel = instance["NrParallel"].GetInt32(),
                 ReportSyncEnd = instance["ReportSyncEnd"].GetBoolean(),
                 OutputBufferDepth = instance["OutputBufferDepth"].GetInt32(),
-                OutputBufferWidth = instance["OutputBufferWidth"].GetInt32(),
-                ComputeBufferWidth = instance["ComputeBufferWidth"].GetInt32(),
-                SynapseSize = instance["SynapseSize"].GetInt32(),
-                NeuronSize = instance["NeuronSize"].GetInt32(),
-                BaseLayerSize = instance["BaseLayerSize"].GetInt32(),
-                FanoutSize = instance["FanoutSize"].GetInt32(),
-                OverheadMem = instance["OverheadMem"].GetInt32(),
                 DisableIfIdle = instance["DisableIfIdle"].GetBoolean()
             };
             coreV1Spec.LayerCosts = new();
@@ -72,10 +64,8 @@ public class HWSpec
                     var values = pair.Value;
                     var costs = new LayerCost
                     {
-                        IntegrateEnergy = values.GetProperty("IntegrateEnergy").GetDouble(),
                         IntegrateLat = values.GetProperty("IntegrateLat").GetInt32(),
                         IntegrateII = values.GetProperty("IntegrateII").GetInt32(),
-                        SyncEnergy = values.GetProperty("SyncEnergy").GetDouble(),
                         SyncLat = values.GetProperty("SyncLat").GetInt32(),
                         SyncII = values.GetProperty("SyncII").GetInt32()
                     };
@@ -116,11 +106,8 @@ public class HWSpec
                 OutputSize = instance["OutputSize"].GetInt32(),
                 SwitchDelay = instance["SwitchDelay"].GetInt32(),
                 TransferDelay = instance["TransferDelay"].GetInt32(),
-                TransferEnergy = instance["TransferEnergy"].GetDouble(),
-                StaticPower = instance["StaticPower"].GetDouble(),
                 InputDelay = instance["InputDelay"].GetInt32(),
                 OutputDelay = instance["OutputDelay"].GetInt32(),
-                PacketSize = instance["PacketSize"].GetInt32()
             };
         }
         else if (type == "Bus")
@@ -129,8 +116,6 @@ public class HWSpec
             {
                 Ports = instance["Ports"].GetInt32(),
                 TransferDelay = instance["TransferDelay"].GetInt32(),
-                TransferEnergy = instance["TransferEnergy"].GetDouble(),
-                StaticPower = instance["StaticPower"].GetDouble()
             };
         }
         else
@@ -201,17 +186,9 @@ public class LayerCost
 
 public class CoreV1Spec : CoreSpec
 {
-    public double StaticPower { get; set; }
     public int NrParallel { get; set; }
     public int OutputBufferDepth { get; set; }
     public bool ReportSyncEnd { get; set; }
-    public int ComputeBufferWidth { get; set; }
-    public int OutputBufferWidth { get; set; }
-    public int SynapseSize { get; set; }
-    public int NeuronSize { get; set; }
-    public int BaseLayerSize { get; set; }
-    public int FanoutSize { get; set; }
-    public int OverheadMem { get; set; }
     public bool DisableIfIdle { get; set; }
     public Dictionary<string, LayerCost> LayerCosts { get; set; }
 }
@@ -237,19 +214,14 @@ public class MeshSpec : NoCSpec
     public int OutputSize { get; set; }
     public int TransferDelay { get; set; }
     public int SwitchDelay { get; set; }
-    public double TransferEnergy { get; set; }
-    public double StaticPower { get; set; }
     public int InputDelay { get; set; }
     public int OutputDelay { get; set; }
-    public int PacketSize { get; set; }
 }
 
 public class BusSpec : NoCSpec
 {
     public int Ports { get; set; }
     public int TransferDelay { get; set; }
-    public double TransferEnergy { get; set; }
-    public double StaticPower { get; set; }
 }
 
 public class GlobalSpec

@@ -155,13 +155,6 @@ public sealed class OdinCore : Actor, ICore
 
     public InPort Input() => input;
 
-    public double Energy(long now)
-    {
-        return 0.0;
-    }
-
-    public double Memory() => 0.0;
-
     public string Report(bool header) => string.Empty;
 }
 

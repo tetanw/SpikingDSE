@@ -11,8 +11,6 @@ public class MultiCoreDataset : BatchExperiment<MultiCore>
     struct ExpRes
     {
         public long Latency;
-        public double Energy;
-        public List<MemoryEntry> Memories;
     }
 
     record struct MemoryEntry(string Name, double NrBits);
@@ -89,14 +87,6 @@ public class MultiCoreDataset : BatchExperiment<MultiCore>
         Report($"Samples: {maxSamples}");
         Report($"Accuracy: {acc}");
         Report($"Running time: {(int)runningTime.TotalMilliseconds:n}ms");
-        Report($"Memory:");
-        double totalBits = 0;
-        foreach (var (Name, Bits) in expResList[0].Memories)
-        {
-            Report($"  {Name}: {Bits:n} bits");
-            totalBits += Bits;
-        }
-        Console.WriteLine($"  Total: {totalBits:n} bits");
         List<long> latencies = expResList.Select(res => res.Latency).ToList();
         double avgLat = latencies.Sum() / maxSamples;
         double maxLat = latencies.Max();
@@ -105,14 +95,6 @@ public class MultiCoreDataset : BatchExperiment<MultiCore>
         Report($"  Avg: {avgLat:n} cycles");
         Report($"  Min: {minLat:n} cycles");
         Report($"  Max: {maxLat:n} cycles");
-        List<double> energies = expResList.Select(res => res.Energy).ToList();
-        double avgEnergy = energies.Sum() / maxSamples;
-        double maxEnergy = energies.Max();
-        double minEnergy = energies.Min();
-        Report($"Energy:");
-        Report($"  Avg: {Measurements.FormatSI(avgEnergy, "J")}");
-        Report($"  Min: {Measurements.FormatSI(minEnergy, "J")}");
-        Report($"  Max: {Measurements.FormatSI(maxEnergy, "J")}");
 
         logFile.Dispose();
         dataset.Dispose();
@@ -171,14 +153,7 @@ public class MultiCoreDataset : BatchExperiment<MultiCore>
         expResList[expNr] = new ExpRes
         {
             Latency = exp.Latency,
-            Energy = exp.Cores.Sum(c => c.Energy(exp.Latency))
         };
-        if (expNr == 0)
-        {
-            var memories = exp.Cores.Select(c => new MemoryEntry(c.Name(), c.Memory())).ToList();
-            memories.AddRange(Flatten(exp.Routers).Select(r => new MemoryEntry(r.Name, r.Memory())));
-            expResList[expNr].Memories = memories;
-        }
 
         UpdateProgressBar();
     }

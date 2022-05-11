@@ -8,8 +8,6 @@ public interface ICore
     public string Name();
     public OutPort Output();
     public InPort Input();
-    public double Energy(long now);
-    public double Memory();
     public string Report(bool header);
 }
 

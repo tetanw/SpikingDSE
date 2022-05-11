@@ -19,7 +19,6 @@ public sealed class XYRouter : MeshRouter
     private Condition anEventReady;
 
     // Stats
-    private double dynamicEnergy = 0.0;
     public long[] inBusy = new long[5];
     public long[] outBusy = new long[5];
     public long switchBusy = 0;
@@ -32,11 +31,6 @@ public sealed class XYRouter : MeshRouter
         this.y = y;
         this.spec = spec;
         Name = $"router({x}_{y})";
-    }
-
-    public override double Energy(long now)
-    {
-        return 0.0;
     }
 
     public override IEnumerable<Event> Run(Simulator env)
@@ -166,7 +160,6 @@ public sealed class XYRouter : MeshRouter
             inBusy[dir] += env.Now - rcv.StartedReceiving;
             var packet = (Packet)rcv.Message;
             packet.NrHops++;
-            dynamicEnergy += spec.TransferEnergy;
             buffer.Write(packet);
             buffer.ReleaseWrite();
 
@@ -205,14 +198,6 @@ public sealed class XYRouter : MeshRouter
             // Chip
             return MeshDir.Local;
         }
-    }
-
-    public override double Memory()
-    {
-        double inputBuffers = spec.PacketSize * spec.InputSize * 5;
-        double outputBuffers = spec.PacketSize * spec.OutputSize * 5;
-
-        return inputBuffers + outputBuffers;
     }
 
     public override string Report(bool header)

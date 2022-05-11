@@ -29,11 +29,13 @@ public sealed class CoreV1 : Actor, ICore
     public long ALUBusy;
     public long senderBusy;
 
+    // Memory stats
     public int layerReads, layerWrites = 0;
     public int neuronReads, neuronWrites = 0;
     public int synapseReads, synapseWrites = 0;
     public int computePushes, computePops = 0;
     public int outputPushes, outputPops = 0;
+
     // Layer update & integrate stats
     private Dictionary<string, int> layerIntegrates = new();
     private Dictionary<string, int> layerSyncs = new();
@@ -292,22 +294,6 @@ public sealed class CoreV1 : Actor, ICore
     public OutPort Output() => output;
 
     public InPort Input() => input;
-
-    public double Energy(long now)
-    {
-        return 0.0;
-    }
-
-    public double Memory()
-    {
-        double layerMem = spec.MaxLayers * (spec.BaseLayerSize + spec.MaxSplits * spec.FanoutSize);
-        double synMem = spec.MaxSynapses * spec.SynapseSize;
-        double neuronMem = spec.MaxNeurons * spec.NeuronSize;
-        double computeBuffer = spec.ComputeBufferWidth * (spec.MaxFanIn + spec.MaxNeurons + 1);
-        double outputBuffer = spec.OutputBufferWidth * spec.OutputBufferDepth;
-
-        return layerMem + synMem + neuronMem + computeBuffer + outputBuffer + spec.OverheadMem;
-    }
 
     public string Report(bool header)
     {
