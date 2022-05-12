@@ -309,7 +309,10 @@ public sealed class CoreV1 : Actor, ICore
             var coreStr = string.Join(",", $"{Name}_sops",
                 $"{Name}_layerReads,{Name}_layerWrites",
                 $"{Name}_neuronReads,{Name}_neuronWrites",
-                $"{Name}_synapseReads,{Name}_synapseWrites");
+                $"{Name}_synapseReads,{Name}_synapseWrites",
+                $"{Name}_computePops,{Name}_computePushes",
+                $"{Name}_outputPops,{Name}_outputPushes");
+
 
             return string.Join(",", layerStr, coreStr);
         }
@@ -326,7 +329,9 @@ public sealed class CoreV1 : Actor, ICore
             var coreStr = string.Join(",", $"{nrSOPs}",
                 $"{layerReads},{layerWrites}",
                 $"{neuronReads},{neuronWrites}",
-                $"{synapseReads},{synapseWrites}");
+                $"{synapseReads},{synapseWrites}",
+                $"{computePushes},{computePops}",
+                $"{outputPushes},{outputPops}");
 
             return string.Join(",", layerStr, coreStr);
         }
