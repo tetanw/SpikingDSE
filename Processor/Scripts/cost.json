@@ -1,0 +1,25 @@
+{
+    "ALU": {
+        "Addf32": {
+            "Static": 15,
+            "Area": 2060,
+            "Dynamic": 7.701
+        },
+        "Multf32": {
+            "Static": 44.8,
+            "Area": 2060,
+            "Dynamic": 26.6
+        },
+        "Counter": {
+            "Static": 0,
+            "Area": 214.5,
+            "Dynamic": 0.20678
+        },
+        "Comparator": {
+            "Static": 0,
+            "Area": 70,
+            "Dynamic": 0.02898
+        }
+    }
+
+}

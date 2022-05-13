@@ -2,36 +2,15 @@ import json
 import math
 import pandas
 
-# parse x:
-f = open("res/exp/exp1/model.json")
-m = json.load(f)
+# parse model
+m = json.load(open("res/exp/exp1/model.json"))
 
+# parse costs
+cost = json.load(open("Scripts/cost.json"))
+alu_costs = cost["ALU"]
 
 def addr(x):
     return math.ceil(math.log2(x))
-
-alu_costs = {
-    "Addf32": {
-        "Static": 15,
-        "Area": 2060,
-        "Dynamic": 7.701
-    },
-    "Multf32": {
-        "Static": 44.8,
-        "Area": 2060,
-        "Dynamic": 26.6
-    },
-    "Counter": {
-        "Static": 0,
-        "Area": 214.5,
-        "Dynamic": 0.20678
-    },
-    "Comparator": {
-        "Static": 0, # uW
-        "Area": 70, #um2
-        "Dynamic": 0.02898, #pJ
-    }
-}
 
 width = m["NoC"]["Width"]
 height = m["NoC"]["Height"]
@@ -91,21 +70,9 @@ router_output_area = calc_area(output_mem)
 router_area = 5 * router_input_area + 5 * router_output_area
 chip_area = core_area * size + router_area * size
 
-exp = pandas.read_csv("res/exp/exp1/results/shd1/experiments.csv")
-accuracy = (exp["correct"] == exp["predicted"]).sum() / exp.shape[0]
-
-# router energy
-l = (core_area/1000000)**(0.5)  # calculate dimensions of meory
-technology = voltage**2 / 1.2**2
-wolkotte_mesh = (1.37 + 0.12 * l) * technology
-router_dyn = wolkotte_mesh  # Depends on formula from Wolkotte
-router_static = 0  # Depends on memory
-
 def mem_static(bits):
     return (8E-05 * bits + 1.6029) * 10E-6
 
-# core energy
-# Dynamic: Depends on memory + layer operations using Aladdin
 # Static: Depends on memory + layer units
 core_dynamic = mem_static(core_mem)  
 neuron_static = mem_static(neuron_mem)
@@ -122,74 +89,11 @@ for name, amount in m["CoreALU"].items():
 alu_static_total =  sum(v for _, v in alu_static.items())
 core_static = core_mem_static + alu_static_total
 
-hw = {"Global": {}, "CoreTemplates": {}}
-hw["NoC"] = {
-    "Type": "Mesh",
-    "Width": m["NoC"]["Width"],
-    "Height": m["NoC"]["Height"],
-    "InputSize": m["NoC"]["InputSize"],
-    "OutputSize": m["NoC"]["OutputSize"],
-    "SwitchDelay": m["NoC"]["SwitchDelay"],
-    "InputDelay": m["NoC"]["InputDelay"],
-    "OutputDelay": m["NoC"]["OutputDelay"]
-}
-hw["CoreTemplates"]["Core"] = {
-    "Type": "core-v1",
-    "Accepts": [
-        "ALIF",
-        "output"
-    ],
-    "MaxNeurons": m["MaxNeurons"],
-    "MaxSynapses": m["MaxSynapses"],
-    "MaxFanIn": m["MaxFanIn"],
-    "MaxLayers": m["MaxLayers"],
-    "MaxSplits": m["MaxSplits"],
-    "NrParallel": m["NrParallel"],
-    "ReportSyncEnd": True,
-    "OutputBufferDepth": m["OutputBufferDepth"],
-    "DisableIfIdle": True,
-    "LayerCosts": {
-        "ALIF": {
-            "SyncII": 2,
-            "SyncLat": 5,
-            "IntegrateII": 2,
-            "IntegrateLat": 5
-        },
-        "output": {
-            "SyncII": 2,
-            "SyncLat": 5,
-            "IntegrateII": 2,
-            "IntegrateLat": 5
-        }
-    }
-}
-hw["Cores"] = []
-prio = m["NoC"]["Width"]*m["NoC"]["Height"]
-coreNumber = 0
-for x in range(m["NoC"]["Width"]):
-    for y in range(m["NoC"]["Height"]):
-        if x == 0 and y == 0:
-            hw["Cores"].append({
-                "Name": "controller",
-                "Type": "controller-v1",
-                "Accepts": [
-                    "input"
-                ],
-                "Priority": prio,
-                "GlobalSync": False,
-                "ConnectsTo": f"mesh,{x},{y}",
-                "IgnoreIdleCores": True
-            })
-        else:
-            hw["Cores"].append({
-                "$Template": "Core",
-                "Name": f"core{coreNumber}",
-                "Priority": prio,
-                "ConnectsTo": f"mesh,{x},{y}"
-            })
-            coreNumber = coreNumber + 1
-        prio = prio - 1
-json.dump(hw, open("test.json", mode="w"), indent=4, sort_keys=False)
+# Dynamic: Depends on memory + layer operations using Aladdin
+l = (core_area/1000000)**(0.5)  # calculate dimensions of meory
+technology = voltage**2 / 1.2**2
+wolkotte_mesh = (1.37 + 0.12 * l) * technology
+router_dyn = wolkotte_mesh  # Depends on formula from Wolkotte
 
 print(f"Core memory:")
 print(f"  Neuron: {neuron_mem:,} bits")
@@ -224,11 +128,7 @@ print(f"    Input: {router_input_area:,} um^2 ({router_input_area / 1000000:,} m
 print(f"    Output: {router_output_area:,} um^2 ({router_output_area / 1000000:,} mm^2)")
 print(f"  Chip: {chip_area:,} um^2 ({chip_area / 1000000:,} mm^2)")
 
-print(f"Router energy:")
-print(f"  Hop per bit: {wolkotte_mesh} pJ")
-print(f"  Hop per packet: {wolkotte_mesh * packet_size} pJ")
-
-print(f"Static:")
+print(f"Static power:")
 print(f"  Chip: {chip_static*10E6:,} uW")
 print(f"    Core: {core_static*10E6:,} uW")
 print(f"      Mem: {core_mem_static*10E6:,} uW")
@@ -237,4 +137,14 @@ for name, power in alu_static.items():
     print(f"        {name}: {power*10E6} uW")
 print(f"    Router mem: {router_mem_static*10E6:,} uW")
 
-print(f"Accuracy: {accuracy}")
+print(f"Dynamic energy:")
+print(f"  Router:")
+print(f"    Hop: {wolkotte_mesh} pJ/b ({wolkotte_mesh * packet_size} pJ/packet)")
+print(f"  Core:")
+print(f"    Layer:")
+print(f"      ALIF:")
+print(f"        Integrate:")
+print(f"        Sync:")
+print(f"      output:")
+print(f"        Integrate:")
+print(f"        Sync:")
