@@ -19,6 +19,7 @@ height = m["NoC"]["Height"]
 size = width * height
 feedback = 1
 voltage = 1.1
+period = 10
 
 # address size calculations
 dx = addr(width)
@@ -136,6 +137,8 @@ for layer, layer_values in m["LayerOperations"].items():
         "Sync": sync
     }
 
+router_transfer_delay = packet_size / m["NoC"]["DataWires"]
+
 print(f"Core memory:")
 print(f"  Neuron: {neuron_mem:,} bits")
 print(f"  Syn: {syn_mem:,} bits")
@@ -202,3 +205,17 @@ for layer, values in layer_energies.items():
     print(f"      {layer}:")
     print(f"        Integrate: {values['Integrate']} pJ / Axon")
     print(f"        Sync: {values['Sync']} pJ / neuron")
+print(f"Delays:")
+print(f"  Packet transfer: {router_transfer_delay} cycles ({router_transfer_delay * period} ps)")
+for layer, values in m["LayerDelays"].items():
+    print(f"  {layer}:")
+    print(f"    Sync: {values['SyncII']} cycles II, {values['SyncLat']} cycles Lat")
+    print(f"    Integrate: {values['IntegrateII']} cycles II, {values['IntegrateLat']} cycles Lat")
+
+# TODO: Find timing for router transfers
+# TODO: Find timing for layer computations
+# TODO: Find dynamic energy for output
+# TODO: Find layer for dynamic values for SRAM read and write assuming
+# TODO: Add bus model
+# TODO: Add code for model_metrics analysis
+# TODO: Move more stuff to cost file
