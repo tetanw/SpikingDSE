@@ -58,7 +58,6 @@ class Stats():
         self.router_input_mem = m["NoC"]["InputSize"] * self.packet_size
         self.router_output_mem = m["NoC"]["OutputSize"] * self.packet_size
 
-
         def calc_area(bits):
             return 0.467 * bits + 16204
 
@@ -85,10 +84,10 @@ class Stats():
 
 
         def mem_static(bits):
-            return (8E-05 * bits + 1.6029) * 10E-6
+            return (8E-05 * bits + 1.6029) * 1E-6
 
 
-        # Static: Depends on memory + layer units
+        # Static: In watts
         self.core_dynamic = mem_static(self.core_mem)
         self.neuron_static = mem_static(self.neuron_mem)
         self.layer_static = mem_static(self.layer_mem)
@@ -97,9 +96,7 @@ class Stats():
         self.output_static = mem_static(self.output_mem)
         self.core_mem_static = (self.neuron_static + self.layer_static + self.syn_static +
                         self.compute_static + self.output_static) * voltage
-        self.router_mem_static = 5 * \
-            mem_static(self.router_input_mem) + 5 * mem_static(self.router_output_mem)
-        self.chip_static = size * self.core_mem_static + size * self.router_mem_static
+        self.chip_static = size * self.core_mem_static
         self.alu_static = {}
         for name, amount in m["CoreALU"].items():
             self.alu_static[name] = amount * alu_units[name]["Static"] / 1E6
@@ -107,17 +104,17 @@ class Stats():
         self.core_static = self.core_mem_static + self.alu_static_total
 
         # Dynamic: Depends on memory + layer operations using Aladdin
-        l = (self.core_area/1000000)**(0.5)  # calculate dimensions of meory
+        l = (self.core_area/1E6)**(0.5)  # calculate dimensions of cores
         technology = voltage**2 / 1.2**2
         self.wolkotte_mesh = (1.37 + 0.12 * l) * technology
         self.router_dyn = self.wolkotte_mesh  # Depends on formula from Wolkotte
 
         # TODO: Find better formulas for memory reads
         def dynamic_read_sram(bits, word_size):
-            return (0.012 * bits**(0.5) + 4.61) / 16 * word_size
+            return ((0.012 * bits**(0.5) + 4.61) / 16 * word_size) / 1E12
 
         def dynamic_write_sram(bits, word_size):
-            return (0.012 * bits**(0.5) + 4.61) / 16 * word_size
+            return ((0.012 * bits**(0.5) + 4.61) / 16 * word_size) / 1E12
 
         # memory energies
         self.layer_mem_read = dynamic_read_sram(self.layer_mem, self.layer_mem_width)
@@ -183,13 +180,17 @@ class Stats():
         print(f"  Chip: {self.chip_area:,} um^2 ({self.chip_area / 1000000:,} mm^2)")
 
         print(f"Static power:")
-        print(f"  Chip: {self.chip_static*10E6:,} uW")
-        print(f"    Core: {self.core_static*10E6:,} uW")
-        print(f"      Mem: {self.core_mem_static*10E6:,} uW")
-        print(f"      ALU: {self.alu_static_total*10E6:,} uW")
+        print(f"  Chip: {self.chip_static*1E6:,} uW")
+        print(f"    Core: {self.core_static*1E6:,} uW")
+        print(f"      Mem: {self.core_mem_static*1E6:,} uW")
+        print(f"        Syn: {self.syn_static*1E6:,} uW")
+        print(f"        Neuron: {self.neuron_static*1E6:,} uW")
+        print(f"        Layer: {self.layer_static*1E6:,} uW")
+        print(f"        Compute buffer: {self.compute_static*1E6:,} uW")
+        print(f"        Output bufffer: {self.output_static*1E6:,} uW")
+        print(f"      ALU:")
         for name, power in self.alu_static.items():
-            print(f"        {name}: {power*10E6} uW")
-        print(f"    Router mem: {self.router_mem_static*10E6:,} uW")
+            print(f"        {name}: {power*1E6} uW")
 
         print(f"Dynamic energy:")
         print(f"  Router:")
@@ -198,14 +199,14 @@ class Stats():
         print(f"  Core:")
         print(f"    Memories:")
         print(f"      Layer:")
-        print(f"        Read: {self.layer_mem_read} pJ / read")
-        print(f"        Write: {self.layer_mem_write} pJ / write")
+        print(f"        Read: {self.layer_mem_read * 1E12} pJ / read")
+        print(f"        Write: {self.layer_mem_write * 1E12} pJ / write")
         print(f"      Neuron:")
-        print(f"        Read: {self.neuron_mem_read} pJ / read")
-        print(f"        Write: {self.neuron_mem_write} pj / write")
+        print(f"        Read: {self.neuron_mem_read * 1E12} pJ / read")
+        print(f"        Write: {self.neuron_mem_write * 1E12} pj / write")
         print(f"      Synapse:")
-        print(f"        Read: {self.syn_mem_read} pJ / read")
-        print(f"        Write: {self.syn_mem_write} pJ / write")
+        print(f"        Read: {self.syn_mem_read * 1E12} pJ / read")
+        print(f"        Write: {self.syn_mem_write * 1E12} pJ / write")
         print(f"    Operations:")
         for layer, values in self.layer_energies.items():
             print(f"      {layer}:")
