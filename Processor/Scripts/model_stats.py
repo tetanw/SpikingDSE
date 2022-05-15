@@ -210,8 +210,8 @@ class Stats():
         print(f"    Operations:")
         for layer, values in self.layer_energies.items():
             print(f"      {layer}:")
-            print(f"        Integrate: {values['Integrate']} pJ / Axon")
-            print(f"        Sync: {values['Sync']} pJ / neuron")
+            print(f"        Integrate: {values['Integrate'] * 1E12} pJ / Axon")
+            print(f"        Sync: {values['Sync'] * 1E12} pJ / neuron")
         print(f"Delays:")
         print(f"  Packet transfer: {self.router_transfer_delay} cycles ({self.router_transfer_delay * self.period} ps)")
         for layer, values in self.m["LayerDelays"].items():
