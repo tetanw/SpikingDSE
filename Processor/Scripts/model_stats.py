@@ -19,16 +19,16 @@ class Stats():
             return math.ceil(math.log2(x))
 
 
-        width = m["NoC"]["Width"]
-        height = m["NoC"]["Height"]
-        size = width * height
+        self.width = m["NoC"]["Width"]
+        self.height = m["NoC"]["Height"]
+        self.size = self.width * self.height
         feedback = 1
         voltage = 1.1
         self.period = 10
 
         # address size calculations
-        dx = addr(width)
-        dy = addr(height)
+        dx = addr(self.width)
+        dy = addr(self.height)
         neuron_bits = addr(m["MaxNeurons"])
         syn_bits = addr(m["MaxSynapses"])
         layer_bits = addr(m["MaxLayers"])
@@ -80,7 +80,7 @@ class Stats():
         self.router_input_area = calc_area(self.router_input_mem)
         self.router_output_area = calc_area(self.output_mem)
         self.router_area = 5 * self.router_input_area + 5 * self.router_output_area
-        self.chip_area = self.core_area * size + self.router_area * size
+        self.chip_area = self.core_area * self.size + self.router_area * self.size
 
 
         def mem_static(bits):
@@ -96,7 +96,7 @@ class Stats():
         self.output_static = mem_static(self.output_mem)
         self.core_mem_static = (self.neuron_static + self.layer_static + self.syn_static +
                         self.compute_static + self.output_static) * voltage
-        self.chip_static = size * self.core_mem_static
+        self.chip_static = self.size * self.core_mem_static
         self.alu_static = {}
         for name, amount in m["CoreALU"].items():
             self.alu_static[name] = amount * alu_units[name]["Static"] / 1E6

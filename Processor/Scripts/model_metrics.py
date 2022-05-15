@@ -5,8 +5,12 @@ from model_stats import *
 class Metrics():
     def __init__(self, stats: Stats, exp):
         self.exp = exp
+
+        self.cores = [f"core{core_id}" for core_id in range(1, stats.size) if f"core{core_id}_neuronReads" in exp]
+        self.routers = [f"router({x}_{y})" for x in range(0, stats.width) for y in range(0, stats.height) if f"router({x}_{y})_nrHops" in exp]
         self.latency = exp["latency"] / 100_000_000
-        self.static_energy = self.latency * stats.chip_static
+        nr_active_cores = len(self.cores)
+        self.static_energy = self.latency * stats.core_static * nr_active_cores
 
         self.dyn_layer_read = 0.0
         self.dyn_layer_write = 0.0
@@ -14,7 +18,7 @@ class Metrics():
         self.dyn_neuron_write = 0.0
         self.dyn_syn_read = 0.0
         self.dyn_syn_write = 0.0
-        for c in self.cores():
+        for c in self.cores:
             self.dyn_neuron_read += exp[f"{c}_neuronReads"] * \
                 stats.neuron_mem_read
             self.dyn_neuron_write += exp[f"{c}_neuronWrites"] * \
@@ -31,7 +35,7 @@ class Metrics():
             self.dyn_layer_write + self.dyn_syn_read + self.dyn_syn_write
 
         self.dynamic_alu = 0.0
-        for c in self.cores():
+        for c in self.cores:
             for l in self.layers(c):
                 self.dynamic_alu += exp[f"{c}_{l}_integrates"] * \
                     s.layer_energies[l]["Integrate"]
@@ -39,7 +43,7 @@ class Metrics():
                     s.layer_energies[l]["Integrate"]
 
         self.dynamic_router = 0.0
-        for r in self.routers():
+        for r in self.routers:
             self.dynamic_router += exp[f"{r}_nrHops"] * stats.router_dyn / 1E12
 
         self.total_energy = self.static_energy.sum() + self.dynamic_mem.sum() + \
@@ -48,18 +52,13 @@ class Metrics():
         self.nr_samples = exp.shape[0]
         self.accuracy = (exp["predicted"] == exp["correct"]).sum() / self.nr_samples
 
-    def routers(self):
-        return ["router(0_0)", "router(0_1)", "router(0_2)", "router(0_3)", "router(1_0)", "router(1_1)", "router(1_2)", "router(1_3)"]
-
-    def cores(self):
-        return ["core1", "core2", "core3", "core4", "core5"]
-        # return ["core1"]
-
     def layers(self, c):
-        if c != "core5":
-            return ["ALIF"]
-        else:
-            return ["output"]
+        layers = []
+        if f"{c}_ALIF_syncs" in exp:
+            layers.append("ALIF")
+        if f"{c}_output_syncs" in exp:
+            layers.append("output")
+        return layers
 
     def print_summary(self):
         print(f"Total duration: {self.latency.sum()} s")
