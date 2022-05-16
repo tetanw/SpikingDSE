@@ -169,29 +169,29 @@ class Stats():
 
         print(f"Area:")
         print(
-            f"  Core: {self.core_area:,} um^2 ({self.core_area / 1000000:,} mm^2)")
+            f"  Core: {self.core_area:,} um^2 ({self.core_area*1E-6:,} mm^2)")
         print(
-            f"    Neuron mem: {self.neuron_area:,} um^2 ({self.neuron_area / 1000000:,} mm^2)")
+            f"    Neuron mem: {self.neuron_area:,} um^2 ({self.neuron_area*1E-6:,} mm^2)")
         print(
-            f"    Synapse mem: {self.syn_area:,} um^2 ({self.syn_area / 1000000:,} mm^2)")
+            f"    Synapse mem: {self.syn_area:,} um^2 ({self.syn_area*1E-6:,} mm^2)")
         print(
-            f"    Layer mem: {self.layer_area:,} um^2 ({self.layer_area / 1000000:,} mm^2)")
+            f"    Layer mem: {self.layer_area:,} um^2 ({self.layer_area*1E-6:,} mm^2)")
         print(
-            f"    Compute buffer: {self.compute_area:,} um^2 ({self.compute_area / 1000000:,} mm^2)")
+            f"    Compute buffer: {self.compute_area:,} um^2 ({self.compute_area*1E-6:,} mm^2)")
         print(
-            f"    Output buffer: {self.output_area:,} um^2 ({self.output_area / 1000000:,} mm^2)")
+            f"    Output buffer: {self.output_area:,} um^2 ({self.output_area*1E-6:,} mm^2)")
         print(
-            f"    ALU: {self.alu_area_total:,} um^2 ({self.alu_area_total / 1000000:,} mm^2)")
+            f"    ALU: {self.alu_area_total:,} um^2 ({self.alu_area_total*1E-6:,} mm^2)")
         for name, power in self.alu_area.items():
-            print(f"      {name}: {power} um^2 ({power / 10E6:,} mm^2)")
+            print(f"      {name}: {power} um^2 ({power*1E-6:,} mm^2)")
         print(
-            f"  Router: {self.router_area:,} um^2 ({self.router_area / 1000000:,} mm^2)")
+            f"  Router: {self.router_area:,} um^2 ({self.router_area*1E-6:,} mm^2)")
         print(
-            f"    Input: {self.router_input_area:,} um^2 ({self.router_input_area / 1000000:,} mm^2)")
+            f"    Input: {self.router_input_area:,} um^2 ({self.router_input_area*1E-6:,} mm^2)")
         print(
-            f"    Output: {self.router_output_area:,} um^2 ({self.router_output_area / 1000000:,} mm^2)")
+            f"    Output: {self.router_output_area:,} um^2 ({self.router_output_area*1E-6:,} mm^2)")
         print(
-            f"  Chip: {self.chip_area:,} um^2 ({self.chip_area / 1000000:,} mm^2)")
+            f"  Chip: {self.chip_area:,} um^2 ({self.chip_area*1E-6:,} mm^2)")
 
         print(f"Static power:")
         print(f"  Chip: {self.chip_static*1E6:,} uW")
