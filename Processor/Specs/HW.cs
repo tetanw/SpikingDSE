@@ -53,7 +53,10 @@ public class HWSpec
                 NrParallel = instance["NrParallel"].GetInt32(),
                 ReportSyncEnd = instance["ReportSyncEnd"].GetBoolean(),
                 OutputBufferDepth = instance["OutputBufferDepth"].GetInt32(),
-                DisableIfIdle = instance["DisableIfIdle"].GetBoolean()
+                DisableIfIdle = instance["DisableIfIdle"].GetBoolean(),
+                ShowLayerStats = instance.GetOptional("ShowLayerStats")?.GetBoolean() ?? false,
+                ShowMemStats = instance.GetOptional("ShowMemStats")?.GetBoolean() ?? false,
+                ShowALUStats = instance.GetOptional("ShowALUStats")?.GetBoolean() ?? false,
             };
             coreV1Spec.LayerCosts = new();
             if (instance.ContainsKey("LayerCosts"))
@@ -190,6 +193,9 @@ public class CoreV1Spec : CoreSpec
     public int OutputBufferDepth { get; set; }
     public bool ReportSyncEnd { get; set; }
     public bool DisableIfIdle { get; set; }
+    public bool ShowLayerStats { get; set; }
+    public bool ShowMemStats { get; set; }
+    public bool ShowALUStats { get; set; }
     public Dictionary<string, LayerCost> LayerCosts { get; set; }
 }
 

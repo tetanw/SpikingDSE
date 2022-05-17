@@ -37,6 +37,9 @@ def save_hw(model_path: str, hw_path: str, stats: Stats):
         "ReportSyncEnd": True,
         "OutputBufferDepth": m["OutputBufferDepth"],
         "DisableIfIdle": True,
+        "ShowMemStats": True,
+        "ShowLayerStats": False,
+        "ShowALUStats": True,
         "LayerCosts": {
             "ALIF": {
                 "SyncII": 2,

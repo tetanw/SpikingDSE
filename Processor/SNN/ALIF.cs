@@ -52,6 +52,8 @@ public class ALIFLayer : HiddenLayer
         {
             Pots[dst] += InWeights[neuron, dst]; // +
         }
+
+        Ops.AddCount("Addf32", Size);
     }
 
     public override void Feedback(int neuron)
@@ -60,6 +62,8 @@ public class ALIFLayer : HiddenLayer
         {
             Pots[dst] += RecWeights[neuron, dst]; // +
         }
+
+        Ops.AddCount("Addf32", Size);
     }
 
     public override bool Sync(int dst)
@@ -106,6 +110,13 @@ public class ALIFLayer : HiddenLayer
     public override void FinishSync()
     {
         TS++;
+
+        // Ops.AddCount("Addf32", Size);
+        // Ops.AddCount("Addf32", Size);
+        // Ops.AddCount("Addf32", Size);
+        // Ops.AddCount("Addf32", Size);
+        // Ops.AddCount("Addf32", Size);
+        // Ops.AddCount("Addf32", Size);
     }
 
     public override string ToString()

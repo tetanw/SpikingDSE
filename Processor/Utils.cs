@@ -5,6 +5,16 @@ using System.Text.Json;
 
 namespace SpikingDSE;
 
+public class StringUtils
+{
+    public static string JoinComma(params string[] values)
+    {
+        var newValues = values.Where(v => !string.IsNullOrEmpty(v));
+        return string.Join(",", newValues);
+    }
+}
+
+
 public static class MathUtils
 {
     public static int CeilDivide(int numerator, int denumerator)

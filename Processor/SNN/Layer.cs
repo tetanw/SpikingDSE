@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Collections.Generic;
 
 namespace SpikingDSE;
@@ -63,13 +64,42 @@ public abstract class OdinHiddenLayer : Layer
     public abstract void Integrate(int neuron);
 }
 
+public class OpCounter
+{
+    private Dictionary<string, int> stats = new Dictionary<string, int>();
+
+    public void AddCount(string op, int amount)
+    {
+        stats.AddCount(op, amount);
+    }
+
+    public IEnumerable<(string name, int amount)> AllCounts()
+    {
+        return stats.Select((kv) => (kv.Key, kv.Value));
+    }
+
+    public static OpCounter Merge(IEnumerable<OpCounter> counters)
+    {
+        var masterCounter = new OpCounter();
+        foreach (var counter in counters)
+        {
+            foreach (var (name, count) in counter.AllCounts())
+            {
+                masterCounter.AddCount(name, count);
+            }
+        }
+        return masterCounter;
+    }
+}
+
 public abstract class HiddenLayer : Layer
 {
+    public OpCounter Ops = new();
     public abstract float[] Readout();
     public abstract void Forward(int neuron);
     public abstract void Feedback(int neuron);
     public abstract bool Sync(int neuron);
-    public virtual void StartSync() {}
-    public virtual void FinishSync() {}
+    public virtual void StartSync() { }
+    public virtual void FinishSync() { }
     public abstract int Offset();
 }

@@ -301,39 +301,69 @@ public sealed class CoreV1 : Actor, ICore
         if (mapping.GetAllLayers(this).Count == 0)
             return string.Empty;
 
+        var masterCounter = OpCounter.Merge(mapping.GetAllLayers(this).Select(l => (l as HiddenLayer).Ops));
+        string layerStr = "";
+        string memStr = "";
+        string opStr = "";
+        string baseStr = "";
         if (header)
         {
-            var layers = layerSyncs.Keys.SelectMany((layer) => new string[] { $"{Name}_{layer}_integrates", $"{Name}_{layer}_syncs" });
-            var layerStr = string.Join(",", layers);
+            baseStr = $"{Name}_sops";
 
-            var coreStr = string.Join(",", $"{Name}_sops",
-                $"{Name}_layerReads,{Name}_layerWrites",
-                $"{Name}_neuronReads,{Name}_neuronWrites",
-                $"{Name}_synapseReads,{Name}_synapseWrites",
-                $"{Name}_computePops,{Name}_computePushes",
-                $"{Name}_outputPops,{Name}_outputPushes");
+            if (spec.ShowLayerStats)
+            {
+                var layers = layerSyncs.Keys.SelectMany((layer) => new string[] { $"{Name}_{layer}_integrates", $"{Name}_{layer}_syncs" });
+                layerStr = string.Join(",", layers);
+            }
 
+            if (spec.ShowMemStats)
+            {
+                memStr = string.Join(",",
+                    $"{Name}_layerReads,{Name}_layerWrites",
+                    $"{Name}_neuronReads,{Name}_neuronWrites",
+                    $"{Name}_synapseReads,{Name}_synapseWrites",
+                    $"{Name}_computePops,{Name}_computePushes",
+                    $"{Name}_outputPops,{Name}_outputPushes");
+            }
 
-            return string.Join(",", layerStr, coreStr);
+            if (spec.ShowALUStats)
+            {
+                opStr = string.Join(",", masterCounter.AllCounts().Select((p) => $"{Name}_ops_{p.name}"));
+            }
+
         }
         else
         {
-            var layers = new List<string>();
-            foreach (var name in layerSyncs.Keys)
+            baseStr = $"{nrSOPs}";
+
+            if (spec.ShowLayerStats)
             {
-                layers.Add(layerIntegrates[name].ToString());
-                layers.Add(layerSyncs[name].ToString());
+                var layers = new List<string>();
+                foreach (var name in layerSyncs.Keys)
+                {
+                    layers.Add(layerIntegrates[name].ToString());
+                    layers.Add(layerSyncs[name].ToString());
+                }
+                layerStr = string.Join(",", layers);
             }
-            var layerStr = string.Join(",", layers);
 
-            var coreStr = string.Join(",", $"{nrSOPs}",
-                $"{layerReads},{layerWrites}",
-                $"{neuronReads},{neuronWrites}",
-                $"{synapseReads},{synapseWrites}",
-                $"{computePushes},{computePops}",
-                $"{outputPushes},{outputPops}");
+            if (spec.ShowMemStats)
+            {
+                memStr = string.Join(",",
+                    $"{layerReads},{layerWrites}",
+                    $"{neuronReads},{neuronWrites}",
+                    $"{synapseReads},{synapseWrites}",
+                    $"{computePushes},{computePops}",
+                    $"{outputPushes},{outputPops}");
+            }
 
-            return string.Join(",", layerStr, coreStr);
+            if (spec.ShowALUStats)
+            {
+                opStr = string.Join(",", masterCounter.AllCounts().Select((p) => p.amount));
+            }
         }
+
+        return StringUtils.JoinComma(baseStr, layerStr, memStr, opStr);
+
     }
 }
