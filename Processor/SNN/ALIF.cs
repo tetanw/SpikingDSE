@@ -84,6 +84,12 @@ public class ALIFLayer : HiddenLayer
         if (Spiked[dst])
             pot -= resetPot; // -
 
+        if (Spiked[dst])
+        {
+            Ops.AddCount("Addf32", 1);
+            Ops.AddCount("Subf32", 2); // One also for 1 - x
+        }
+
         // Readout
         ReadoutArr[dst] = pot;
 
@@ -111,12 +117,10 @@ public class ALIFLayer : HiddenLayer
     {
         TS++;
 
-        // Ops.AddCount("Addf32", Size);
-        // Ops.AddCount("Addf32", Size);
-        // Ops.AddCount("Addf32", Size);
-        // Ops.AddCount("Addf32", Size);
-        // Ops.AddCount("Addf32", Size);
-        // Ops.AddCount("Addf32", Size);
+        Ops.AddCount("Multf32", Size);
+        Ops.AddCount("Addf32", Size);
+        Ops.AddCount("Subf32", Size);
+        Ops.AddCount("Cmpf32", Size);
     }
 
     public override string ToString()

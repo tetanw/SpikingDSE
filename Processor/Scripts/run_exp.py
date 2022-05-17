@@ -16,4 +16,4 @@ models = [
     # ("ssc3", "ssc-4")
 ]
 
-run_experiments(runs, models, max_samples=100)
+run_experiments(runs, models)
