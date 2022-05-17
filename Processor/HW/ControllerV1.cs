@@ -148,15 +148,49 @@ public sealed class ControllerV1 : Actor, ICore
         {
             var rcv = env.Receive(Input);
             yield return rcv;
-            var syncDone = (rcv.Message as Packet).Message as SyncDone;
+            var packet = rcv.Message as Packet;
 
-            coresDone.Add(syncDone.Core);
-            if (coresDone.Count == nrCores)
+            if (packet.Message is SyncDone syncDone)
             {
-                syncSignal.Notify();
-                coresDone.Clear();
+                coresDone.Add(syncDone.Core);
+                if (coresDone.Count == nrCores)
+                {
+                    syncSignal.Notify();
+                    Sync(); // also simulate myself but no type is accounted for that
+                    coresDone.Clear();
+                }
+            }
+            else if (packet.Message is SpikeEvent spike)
+            {
+                OnSpikeReceived(spike);
             }
         }
+    }
+
+    private void Sync()
+    {
+        var myLayers = mapping.GetAllLayers(this);
+        foreach (var layer in myLayers)
+        {
+            if (layer is HiddenLayer hidden)
+            {
+                hidden.StartSync();
+                for (int i = 0; i < hidden.Size; i++)
+                {
+                    hidden.Sync(i);
+                }
+                hidden.FinishSync();
+            }
+        }
+    }
+
+    private void OnSpikeReceived(SpikeEvent spike)
+    {
+        var layer = (HiddenLayer)spike.Layer;
+        if (spike.Feedback)
+            layer.Feedback(spike.Neuron);
+        else
+            layer.Forward(spike.Neuron);
     }
 
     string ICore.Name() => Name;
