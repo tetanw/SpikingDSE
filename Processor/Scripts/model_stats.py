@@ -24,7 +24,7 @@ class Stats():
         self.size = self.width * self.height
         feedback = 1
         voltage = 1.1
-        self.period = 10
+        self.period = 1E4
 
         # address size calculations
         dx = addr(self.width)
@@ -143,7 +143,8 @@ class Stats():
                 "Sync": sync
             }
 
-        self.router_transfer_delay = self.packet_size / m["NoC"]["DataWires"]
+        # should be in PS
+        self.router_transfer_delay = (1.05 + 6.366 * l) * 1E3
 
     def print_summary(self):
         print(f"Core memory:")
@@ -237,8 +238,10 @@ class Stats():
                 f"    Integrate: {values['IntegrateII']} cycles II, {values['IntegrateLat']} cycles Lat")
 
 # TODO: Find timing for router transfers
+# TODO: Find out ALU layout for two layers
 # TODO: Find timing for layer computations
-# TODO: Find dynamic energy for output
+
+# Later:
 # TODO: Move more stuff to cost file
 # TODO: Add bus model
 
