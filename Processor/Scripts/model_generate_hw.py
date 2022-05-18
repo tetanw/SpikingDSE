@@ -3,6 +3,7 @@ import math
 
 from model_stats import Stats
 
+
 def save_hw(model_path: str, hw_path: str, stats: Stats):
     f = open(model_path)
     m = json.load(f)
@@ -40,21 +41,16 @@ def save_hw(model_path: str, hw_path: str, stats: Stats):
         "ShowMemStats": True,
         "ShowLayerStats": False,
         "ShowALUStats": True,
-        "LayerCosts": {
-            "ALIF": {
-                "SyncII": 2,
-                "SyncLat": 5,
-                "IntegrateII": 2,
-                "IntegrateLat": 5
-            },
-            "output": {
-                "SyncII": 2,
-                "SyncLat": 5,
-                "IntegrateII": 2,
-                "IntegrateLat": 5
-            }
-        }
     }
+    hw["CoreTemplates"]["Core"]["LayerCosts"] = {}
+    for layer, latencies in m["LayerDelays"].items():
+        hw["CoreTemplates"]["Core"]["LayerCosts"][layer] = {
+            "SyncII": int(latencies["SyncII"]) ,
+            "SyncLat": int(latencies["SyncLat"]) ,
+            "IntegrateII": int(latencies["IntegrateII"]) ,
+            "IntegrateLat": int(latencies["IntegrateLat"]) 
+        }
+
     hw["Cores"] = []
     prio = m["NoC"]["Width"]*m["NoC"]["Height"]
     coreNumber = 0
@@ -84,7 +80,8 @@ def save_hw(model_path: str, hw_path: str, stats: Stats):
             prio = prio - 1
     json.dump(hw, open(hw_path, mode="w"), indent=4, sort_keys=False)
 
-if __name__  == "__main__":
+
+if __name__ == "__main__":
     model_path = "res/exp/exp1/model.json"
     cost_path = "Scripts/cost.json"
     hw_path = "res/exp/exp1/hw.json"

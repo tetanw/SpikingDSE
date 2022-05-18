@@ -92,9 +92,9 @@ public class MultiCoreDataset : BatchExperiment<MultiCore>
         double maxLat = latencies.Max();
         double minLat = latencies.Min();
         Report($"Latency:");
-        Report($"  Avg: {avgLat:n} cycles");
-        Report($"  Min: {minLat:n} cycles");
-        Report($"  Max: {maxLat:n} cycles");
+        Report($"  Avg: {avgLat:n}");
+        Report($"  Min: {minLat:n}");
+        Report($"  Max: {maxLat:n}");
 
         logFile.Dispose();
         dataset.Dispose();

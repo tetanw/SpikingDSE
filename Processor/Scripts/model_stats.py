@@ -12,9 +12,7 @@ class Stats():
         # parse costs
         cost = json.load(open(cost_path))
         self.cost = cost
-
-        alu_ops = cost["ALU"]["Ops"]
-        alu_units = cost["ALU"]["Units"]
+        alu = cost["ALU"]
 
         def addr(x):
             return math.ceil(math.log2(x))
@@ -72,7 +70,7 @@ class Stats():
         self.compute_area = calc_area(self.compute_mem)
         self.alu_area = {}
         for name, amount in m["CoreALU"].items():
-            self.alu_area[name] = amount * alu_units[name]["Area"]
+            self.alu_area[name] = amount * alu[name]["Area"]
         self.alu_area_total = sum(v for _, v in self.alu_area.items())
         core_mem_area = self.neuron_area + self.syn_area + \
             self.layer_area + self.output_area + self.compute_area
@@ -99,7 +97,7 @@ class Stats():
         self.chip_static = self.size * self.core_mem_static
         self.alu_static = {}
         for name, amount in m["CoreALU"].items():
-            self.alu_static[name] = amount * alu_units[name]["Static"] / 1E6
+            self.alu_static[name] = amount * alu[name]["Static"] / 1E6
         self.alu_static_total = sum(v for _, v in self.alu_static.items())
         self.core_static = self.core_mem_static + self.alu_static_total
 
@@ -127,21 +125,6 @@ class Stats():
         self.syn_mem_read = dynamic_read_sram(self.syn_mem, self.syn_mem_width)
         self.syn_mem_write = dynamic_write_sram(
             self.syn_mem, self.syn_mem_width)
-
-        self.layer_energies = {}
-        for layer, layer_values in m["LayerOperations"].items():
-            integrate = 0.0
-            sync = 0.0
-            for unit, amount in layer_values["Integrate"].items():
-                integrate += amount * alu_ops[unit]
-
-            for unit, amount in layer_values["Sync"].items():
-                sync += amount * alu_ops[unit]
-
-            self.layer_energies[layer] = {
-                "Integrate": integrate,
-                "Sync": sync
-            }
 
         # should be in PS
         self.router_transfer_delay = (1.05 + 6.366 * l) * 1E3
@@ -222,11 +205,6 @@ class Stats():
         print(f"      Synapse:")
         print(f"        Read: {self.syn_mem_read * 1E12} pJ / read")
         print(f"        Write: {self.syn_mem_write * 1E12} pJ / write")
-        print(f"    Operations:")
-        for layer, values in self.layer_energies.items():
-            print(f"      {layer}:")
-            print(f"        Integrate: {values['Integrate'] * 1E12} pJ / Axon")
-            print(f"        Sync: {values['Sync'] * 1E12} pJ / neuron")
         print(f"Delays:")
         print(
             f"  Packet transfer: {self.router_transfer_delay} cycles ({self.router_transfer_delay * self.period} ps)")
@@ -236,15 +214,6 @@ class Stats():
                 f"    Sync: {values['SyncII']} cycles II, {values['SyncLat']} cycles Lat")
             print(
                 f"    Integrate: {values['IntegrateII']} cycles II, {values['IntegrateLat']} cycles Lat")
-
-# TODO: Find timing for router transfers
-# TODO: Find out ALU layout for two layers
-# TODO: Find timing for layer computations
-
-# Later:
-# TODO: Move more stuff to cost file
-# TODO: Add bus model
-
 
 if __name__ == "__main__":
     s = Stats("res/exp/exp1/model.json", "Scripts\cost.json")

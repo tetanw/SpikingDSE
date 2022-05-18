@@ -1,20 +1,25 @@
 {
     "ALU": {
-        "Units": {
-            "Addf32": {
-                "Static": 15,
-                "Area": 2060
-            },
-            "Multf32": {
-                "Static": 44.8,
-                "Area": 2060
-            }
+        "Addf32": {
+            "Static": 15,
+            "Area": 2060,
+            "Dynamic": 7.701E-12
         },
-        "Ops": {
-            "Addf32": 7.701E-12,
-            "Subf32": 7.701E-12,
-            "Cmpf32": 7.701E-12,
-            "Multf32": 26.6E-12
+        "Subf32": {
+            "Static": 15,
+            "Area": 2060,
+            "Dynamic": 7.701E-12
+        },
+        "Multf32": {
+            "Static": 44.8,
+            "Area": 2060,
+            "Dynamic": 7.701E-12
+        },
+        "Cmpf32": {
+            "Dynamic": 7.701E-12
+        },
+        "Multif32": {
+            "Dynamic": 26.6E-12
         }
     }
 }

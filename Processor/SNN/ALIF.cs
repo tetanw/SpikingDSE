@@ -117,10 +117,10 @@ public class ALIFLayer : HiddenLayer
     {
         TS++;
 
-        Ops.AddCount("Multf32", Size);
-        Ops.AddCount("Addf32", Size);
-        Ops.AddCount("Subf32", Size);
-        Ops.AddCount("Cmpf32", Size);
+        Ops.AddCount("Multf32", 3 * Size);
+        Ops.AddCount("Addf32", 2 * Size);
+        Ops.AddCount("Subf32", 3 * Size);
+        Ops.AddCount("Cmpf32", 1 * Size);
     }
 
     public override string ToString()
