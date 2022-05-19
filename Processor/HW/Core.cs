@@ -8,7 +8,7 @@ public interface ICore
     public string Name();
     public OutPort Output();
     public InPort Input();
-    public string Report(bool header);
+    public string Report(long now, bool header);
 }
 
 public class CoreEvent { }

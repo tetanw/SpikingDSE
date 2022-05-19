@@ -67,7 +67,8 @@ def save_hw(model_path: str, hw_path: str, stats: Stats):
                     "Priority": prio,
                     "GlobalSync": False,
                     "ConnectsTo": f"mesh,{x},{y}",
-                    "IgnoreIdleCores": True
+                    "IgnoreIdleCores": True,
+                    "SyncDelay": int(m["SyncDelay"])
                 })
             else:
                 hw["Cores"].append({

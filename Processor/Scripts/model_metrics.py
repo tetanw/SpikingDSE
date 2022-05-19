@@ -1,19 +1,21 @@
+from pyexpat import model
+import sys
 import pandas
 from model_stats import *
 
 
 class Metrics():
-    def __init__(self, stats: Stats, exp):
+    def __init__(self, stats: Stats, cost_path: str, exp):
         self.exp = exp
-        self.cost = json.load(open("Scripts/cost.json"))
+        self.cost = json.load(open(cost_path))
 
         self.cores = [f"core{core_id}" for core_id in range(
-            1, stats.size) if f"core{core_id}_neuronReads" in exp]
+            0, stats.size) if f"core{core_id}_neuronReads" in exp]
         self.routers = [f"router({x}_{y})" for x in range(0, stats.width) for y in range(
             0, stats.height) if f"router({x}_{y})_nrHops" in exp]
         self.latency = exp["latency"] * 1E-12
-        nr_active_cores = len(self.cores)
-        self.static_energy = self.latency * stats.core_static * nr_active_cores
+        self.nr_active_cores = len(self.cores)
+        self.static_energy = self.latency * stats.core_static * self.nr_active_cores
 
         self.dyn_layer_read = 0.0
         self.dyn_layer_write = 0.0
@@ -41,7 +43,9 @@ class Metrics():
         self.dynamic_alu_total = 0.0
         for c in self.cores:
             for op in self.ops(c):
-                energy = exp[f"{c}_ops_{op}"] * self.cost["ALU"][op]["Dynamic"]
+                nr_ops = exp[f"{c}_ops_{op}"].sum()
+                energy_per_op = self.cost["ALU"][op]["Dynamic"]
+                energy = nr_ops * energy_per_op
                 self.dynamic_alu_total += energy
                 if op in self.dynamic_alu:
                     self.dynamic_alu[op] += energy
@@ -54,10 +58,18 @@ class Metrics():
 
         self.total_energy = self.static_energy.sum() + self.dynamic_mem.sum() + \
             self.dynamic_alu_total.sum() + self.dynamic_router.sum()
+        self.total_power = self.total_energy.sum() / self.latency.sum()
 
         self.nr_samples = exp.shape[0]
         self.accuracy = (exp["predicted"] == exp["correct"]
                          ).sum() / self.nr_samples
+        self.nr_sops = 0
+        for c in self.cores:
+            self.nr_sops += exp[f"{c}_sops"].sum()
+        self.sop_energy = self.total_energy / self.nr_sops
+
+        self.inferences_per_second = self.nr_samples / self.latency.sum()
+        self.sops_per_second = self.nr_sops.sum() / self.latency.sum()
 
     def layers(self, c):
         layers = []
@@ -74,10 +86,15 @@ class Metrics():
         return cols
 
     def print_summary(self):
-        print(f"Total duration: {self.latency.sum()} s")
-        print(f"Accuracy: {self.accuracy} ({self.accuracy*100}%)")
+        print(
+            f"Total duration: {self.latency.sum()} s ({self.inferences_per_second} inferences/s)")
+        print(f"Throughput:")
+        print(f"  SOP: {self.sops_per_second:,.0f} SOP/s")
+        print(f"Accuracy: {self.accuracy:.4f} ({self.accuracy*100:.2f}%)")
         print(f"Energy:")
-        print(f"  Static: {self.static_energy.sum()} J")
+        print(f"  Synaptic energy: {self.sop_energy * 1E12} pJ")
+        print(
+            f"  Static: {self.static_energy.sum()} J ({s.core_static * self.nr_active_cores * 1E6} uW)")
         print(f"  Dynamic:")
         print(f"    Core Mem: {self.dynamic_mem.sum()} J")
         print(f"      Layer read: {self.dyn_layer_read.sum()} J")
@@ -88,16 +105,24 @@ class Metrics():
         print(f"      Synapse write: {self.dyn_syn_write.sum()} J")
         print(f"    Core ALU: {self.dynamic_alu_total.sum()} J")
         for op, op_energy in self.dynamic_alu.items():
-            print(f"      {op}: {op_energy.sum()} J")
+            print(f"      {op}: {op_energy} J")
         print(f"    Router: {self.dynamic_router.sum()} J")
-        print(f"  Total: {self.total_energy} J")
+        print(
+            f"  Total: {self.total_energy:.3f} J ({self.total_power*1E3:.2f} mW)")
 
 
 if __name__ == "__main__":
-    exp = pandas.read_csv("res/exp/exp1/results/ssc2/experiments.csv")
+    expName = sys.argv[1]
+    modelName = sys.argv[2]
 
-    s = Stats("res/exp/exp1/model.json", "Scripts\cost.json")
+    cost_path = f"res/exp/{expName}/cost.json"
+
+    exp = pandas.read_csv(
+        f"res/exp/{expName}/results/{modelName}/experiments.csv")
+
+    s = Stats(f"res/exp/{expName}/model.json", cost_path)
     s.print_summary()
-    exp = pandas.read_csv("res/exp/exp1/results/ssc2/experiments.csv")
-    m = Metrics(s, exp)
+    exp = pandas.read_csv(
+        f"res/exp/{expName}/results/{modelName}/experiments.csv")
+    m = Metrics(s, cost_path, exp)
     m.print_summary()

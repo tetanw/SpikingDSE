@@ -295,7 +295,7 @@ public sealed class CoreV1 : Actor, ICore
 
     public InPort Input() => input;
 
-    public string Report(bool header)
+    public string Report(long now, bool header)
     {
         // Cores that do not have any layers should just stay silent
         if (mapping.GetAllLayers(this).Count == 0)
@@ -308,7 +308,7 @@ public sealed class CoreV1 : Actor, ICore
         string baseStr = "";
         if (header)
         {
-            baseStr = $"{Name}_sops";
+            baseStr = $"{Name}_sops,{Name}_util";
 
             if (spec.ShowLayerStats)
             {
@@ -334,7 +334,8 @@ public sealed class CoreV1 : Actor, ICore
         }
         else
         {
-            baseStr = $"{nrSOPs}";
+            double aluUtil = (double)ALUBusy / now;
+            baseStr = $"{nrSOPs},{aluUtil}";
 
             if (spec.ShowLayerStats)
             {

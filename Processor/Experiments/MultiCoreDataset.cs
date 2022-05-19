@@ -122,7 +122,7 @@ public class MultiCoreDataset : BatchExperiment<MultiCore>
     {
         var parts = new List<string>();
         parts.Add($"expNr,runningTime,latency,correct,predicted");
-        parts.AddRange(exp.Cores.Select(c => c.Report(first)).Where(s => !string.IsNullOrEmpty(s)));
+        parts.AddRange(exp.Cores.Select(c => c.Report(exp.Latency, first)).Where(s => !string.IsNullOrEmpty(s)));
         parts.AddRange(Flatten(exp.Routers).Select(c => c.Report(first)).Where(s => !string.IsNullOrEmpty(s)));
         return string.Join(',', parts);
     }
@@ -146,7 +146,7 @@ public class MultiCoreDataset : BatchExperiment<MultiCore>
 
         var parts = new List<string>();
         parts.Add($"{expNr},{runningTime},{exp.Latency},{correct},{exp.Predict()}");
-        parts.AddRange(exp.Cores.Select(c => c.Report(first)).Where(s => !string.IsNullOrEmpty(s)));
+        parts.AddRange(exp.Cores.Select(c => c.Report(exp.Latency, first)).Where(s => !string.IsNullOrEmpty(s)));
         parts.AddRange(Flatten(exp.Routers).Select(c => c.Report(first)).Where(s => !string.IsNullOrEmpty(s)));
         expRep.ReportLine(string.Join(',', parts));
 

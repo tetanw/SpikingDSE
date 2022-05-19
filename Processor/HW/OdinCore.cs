@@ -155,7 +155,7 @@ public sealed class OdinCore : Actor, ICore
 
     public InPort Input() => input;
 
-    public string Report(bool header) => string.Empty;
+    public string Report(long now, bool header) => string.Empty;
 }
 
 

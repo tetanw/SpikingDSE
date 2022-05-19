@@ -41,7 +41,8 @@ public class HWSpec
                 Interval = instance.GetOptional("Interval")?.GetInt64() ?? -1,
                 GlobalSync = instance.GetOptional("GlobalSync")?.GetBoolean() ?? false,
                 ConnectsTo = instance["ConnectsTo"].GetString(),
-                IgnoreIdleCores = instance["IgnoreIdleCores"].GetBoolean()
+                IgnoreIdleCores = instance["IgnoreIdleCores"].GetBoolean(),
+                SyncDelay = instance.GetOptional("SyncDelay")?.GetInt64() ?? 0
             };
         }
         else if (type == "core-v1")
@@ -205,6 +206,7 @@ public class ControllerV1Spec : CoreSpec
     public long Interval { get; set; }
     public bool GlobalSync { get; set; }
     public bool IgnoreIdleCores { get; set; }
+    public long SyncDelay { get; set; }
 }
 
 public class NoCSpec

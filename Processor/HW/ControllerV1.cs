@@ -155,6 +155,7 @@ public sealed class ControllerV1 : Actor, ICore
                 coresDone.Add(syncDone.Core);
                 if (coresDone.Count == nrCores)
                 {
+                    yield return env.Delay(spec.SyncDelay);
                     syncSignal.Notify();
                     Sync(); // also simulate myself but no type is accounted for that
                     coresDone.Clear();
@@ -199,5 +200,5 @@ public sealed class ControllerV1 : Actor, ICore
 
     InPort ICore.Input() => Input;
 
-    public string Report(bool header) => string.Empty;
+    public string Report(long now, bool header) => string.Empty;
 }

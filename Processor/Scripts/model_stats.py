@@ -1,5 +1,6 @@
 import json
 import math
+import sys
 import pandas
 
 
@@ -94,12 +95,12 @@ class Stats():
         self.output_static = mem_static(self.output_mem)
         self.core_mem_static = (self.neuron_static + self.layer_static + self.syn_static +
                                 self.compute_static + self.output_static) * voltage
-        self.chip_static = self.size * self.core_mem_static
         self.alu_static = {}
         for name, amount in m["CoreALU"].items():
             self.alu_static[name] = amount * alu[name]["Static"] / 1E6
         self.alu_static_total = sum(v for _, v in self.alu_static.items())
         self.core_static = self.core_mem_static + self.alu_static_total
+        self.chip_static = (self.size - 1) * self.core_static
 
         # Dynamic: Depends on memory + layer operations using Aladdin
         l = (self.core_area/1E6)**(0.5)  # calculate dimensions of cores
@@ -186,7 +187,7 @@ class Stats():
         print(f"        Layer: {self.layer_static*1E6:,} uW")
         print(f"        Compute buffer: {self.compute_static*1E6:,} uW")
         print(f"        Output bufffer: {self.output_static*1E6:,} uW")
-        print(f"      ALU:")
+        print(f"      ALU: {self.alu_static_total * 1E6} uW")
         for name, power in self.alu_static.items():
             print(f"        {name}: {power*1E6} uW")
 
@@ -207,14 +208,16 @@ class Stats():
         print(f"        Write: {self.syn_mem_write * 1E12} pJ / write")
         print(f"Delays:")
         print(
-            f"  Packet transfer: {self.router_transfer_delay} cycles ({self.router_transfer_delay * self.period} ps)")
+            f"  Packet transfer: {self.router_transfer_delay} ps")
         for layer, values in self.m["LayerDelays"].items():
             print(f"  {layer}:")
             print(
-                f"    Sync: {values['SyncII']} cycles II, {values['SyncLat']} cycles Lat")
+                f"    Sync: {values['SyncII']} ps II, {values['SyncLat']} ps Lat")
             print(
-                f"    Integrate: {values['IntegrateII']} cycles II, {values['IntegrateLat']} cycles Lat")
+                f"    Integrate: {values['IntegrateII']} ps II, {values['IntegrateLat']} ps Lat")
 
 if __name__ == "__main__":
-    s = Stats("res/exp/exp1/model.json", "Scripts\cost.json")
+    expName = sys.argv[1]
+
+    s = Stats(f"res/exp/{expName}/model.json", f"res/exp/{expName}/cost.json")
     s.print_summary()
