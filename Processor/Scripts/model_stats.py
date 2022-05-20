@@ -154,39 +154,39 @@ class Stats():
 
         print(f"Area:")
         print(
-            f"  Core: {self.core_area:,} um^2 ({self.core_area*1E-6:,} mm^2)")
+            f"  Core: {self.core_area:,} um^2 ({self.core_area*1E-6:,.2f} mm^2)")
         print(
-            f"    Neuron mem: {self.neuron_area:,} um^2 ({self.neuron_area*1E-6:,} mm^2)")
+            f"    Neuron mem: {self.neuron_area:,.2f} um^2 ({self.neuron_area*1E-6:,.2f} mm^2)")
         print(
-            f"    Synapse mem: {self.syn_area:,} um^2 ({self.syn_area*1E-6:,} mm^2)")
+            f"    Synapse mem: {self.syn_area:,.2f} um^2 ({self.syn_area*1E-6:,.2f} mm^2)")
         print(
-            f"    Layer mem: {self.layer_area:,} um^2 ({self.layer_area*1E-6:,} mm^2)")
+            f"    Layer mem: {self.layer_area:,.2f} um^2 ({self.layer_area*1E-6:,.2f} mm^2)")
         print(
-            f"    Compute buffer: {self.compute_area:,} um^2 ({self.compute_area*1E-6:,} mm^2)")
+            f"    Compute buffer: {self.compute_area:,.2f} um^2 ({self.compute_area*1E-6:,.2f} mm^2)")
         print(
-            f"    Output buffer: {self.output_area:,} um^2 ({self.output_area*1E-6:,} mm^2)")
+            f"    Output buffer: {self.output_area:,.2f} um^2 ({self.output_area*1E-6:,.2f} mm^2)")
         print(
-            f"    ALU: {self.alu_area_total:,} um^2 ({self.alu_area_total*1E-6:,} mm^2)")
+            f"    ALU: {self.alu_area_total:,.2f} um^2 ({self.alu_area_total*1E-6:,.2f} mm^2)")
         for name, power in self.alu_area.items():
-            print(f"      {name}: {power} um^2 ({power*1E-6:,} mm^2)")
+            print(f"      {name}: {power} um^2 ({power*1E-6:,.2f} mm^2)")
         print(
-            f"  Router: {self.router_area:,} um^2 ({self.router_area*1E-6:,} mm^2)")
+            f"  Router: {self.router_area:,.2f} um^2 ({self.router_area*1E-6:,.2f} mm^2)")
         print(
-            f"    Input: {self.router_input_area:,} um^2 ({self.router_input_area*1E-6:,} mm^2)")
+            f"    Input: {self.router_input_area:,.2f} um^2 ({self.router_input_area*1E-6:,.2f} mm^2)")
         print(
-            f"    Output: {self.router_output_area:,} um^2 ({self.router_output_area*1E-6:,} mm^2)")
+            f"    Output: {self.router_output_area:,.2f} um^2 ({self.router_output_area*1E-6:,.2f} mm^2)")
         print(
-            f"  Chip: {self.chip_area:,} um^2 ({self.chip_area*1E-6:,} mm^2)")
+            f"  Chip: {self.chip_area:,.2f} um^2 ({self.chip_area*1E-6:,.2f} mm^2)")
 
         print(f"Static power:")
-        print(f"  Chip: {self.chip_static*1E6:,} uW")
-        print(f"    Core: {self.core_static*1E6:,} uW")
-        print(f"      Mem: {self.core_mem_static*1E6:,} uW")
-        print(f"        Syn: {self.syn_static*1E6:,} uW")
-        print(f"        Neuron: {self.neuron_static*1E6:,} uW")
-        print(f"        Layer: {self.layer_static*1E6:,} uW")
-        print(f"        Compute buffer: {self.compute_static*1E6:,} uW")
-        print(f"        Output bufffer: {self.output_static*1E6:,} uW")
+        print(f"  Chip: {self.chip_static*1E6:,.2f} uW")
+        print(f"    Core: {self.core_static*1E6:,.2f} uW")
+        print(f"      Mem: {self.core_mem_static*1E6:,.2f} uW")
+        print(f"        Syn: {self.syn_static*1E6:,.2f} uW")
+        print(f"        Neuron: {self.neuron_static*1E6:,.2f} uW")
+        print(f"        Layer: {self.layer_static*1E6:,.2f} uW")
+        print(f"        Compute buffer: {self.compute_static*1E6:,.2f} uW")
+        print(f"        Output bufffer: {self.output_static*1E6:,.2f} uW")
         print(f"      ALU: {self.alu_static_total * 1E6} uW")
         for name, power in self.alu_static.items():
             print(f"        {name}: {power*1E6} uW")
@@ -194,27 +194,27 @@ class Stats():
         print(f"Dynamic energy:")
         print(f"  Router:")
         print(
-            f"    Hop: {self.wolkotte_mesh * 1E12} pJ/b ({self.wolkotte_mesh * self.packet_size * 1E12} pJ/packet)")
+            f"    Hop: {self.wolkotte_mesh * 1E12:,.2f} pJ/b ({self.wolkotte_mesh * self.packet_size * 1E12:,.2f} pJ/packet)")
         print(f"  Core:")
         print(f"    Memories:")
         print(f"      Layer:")
-        print(f"        Read: {self.layer_mem_read * 1E12} pJ / read")
-        print(f"        Write: {self.layer_mem_write * 1E12} pJ / write")
+        print(f"        Read: {self.layer_mem_read * 1E12:,.2f} pJ / read")
+        print(f"        Write: {self.layer_mem_write * 1E12:,.2f} pJ / write")
         print(f"      Neuron:")
-        print(f"        Read: {self.neuron_mem_read * 1E12} pJ / read")
-        print(f"        Write: {self.neuron_mem_write * 1E12} pj / write")
+        print(f"        Read: {self.neuron_mem_read * 1E12:,.2f} pJ / read")
+        print(f"        Write: {self.neuron_mem_write * 1E12:,.2f} pj / write")
         print(f"      Synapse:")
-        print(f"        Read: {self.syn_mem_read * 1E12} pJ / read")
-        print(f"        Write: {self.syn_mem_write * 1E12} pJ / write")
+        print(f"        Read: {self.syn_mem_read * 1E12:,.2f} pJ / read")
+        print(f"        Write: {self.syn_mem_write * 1E12:,.2f} pJ / write")
         print(f"Delays:")
         print(
-            f"  Packet transfer: {self.router_transfer_delay} ps")
+            f"  Packet transfer: {self.router_transfer_delay:,.2f} ps")
         for layer, values in self.m["LayerDelays"].items():
             print(f"  {layer}:")
             print(
-                f"    Sync: {values['SyncII']} ps II, {values['SyncLat']} ps Lat")
+                f"    Sync: {values['SyncII']:,} ps II, {values['SyncLat']:,} ps Lat")
             print(
-                f"    Integrate: {values['IntegrateII']} ps II, {values['IntegrateLat']} ps Lat")
+                f"    Integrate: {values['IntegrateII']:,} ps II, {values['IntegrateLat']:,} ps Lat")
 
 if __name__ == "__main__":
     expName = sys.argv[1]

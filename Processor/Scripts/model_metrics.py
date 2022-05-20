@@ -87,26 +87,26 @@ class Metrics():
 
     def print_summary(self):
         print(
-            f"Total duration: {self.latency.sum()} s ({self.inferences_per_second} inferences/s)")
+            f"Total duration: {self.latency.sum():.2f} s ({self.inferences_per_second:.2f} inferences/s)")
         print(f"Throughput:")
         print(f"  SOP: {self.sops_per_second:,.0f} SOP/s")
         print(f"Accuracy: {self.accuracy:.4f} ({self.accuracy*100:.2f}%)")
         print(f"Energy:")
-        print(f"  Synaptic energy: {self.sop_energy * 1E12} pJ")
+        print(f"  Synaptic energy: {self.sop_energy * 1E12:.2f} pJ")
         print(
-            f"  Static: {self.static_energy.sum()} J ({s.core_static * self.nr_active_cores * 1E6} uW)")
+            f"  Static: {self.static_energy.sum():.2f} J ({s.core_static * self.nr_active_cores * 1E6:.2f} uW)")
         print(f"  Dynamic:")
-        print(f"    Core Mem: {self.dynamic_mem.sum()} J")
-        print(f"      Layer read: {self.dyn_layer_read.sum()} J")
-        print(f"      Layer write: {self.dyn_layer_write.sum()} J")
-        print(f"      Neuron read: {self.dyn_neuron_read.sum()} J")
-        print(f"      Neuron write: {self.dyn_neuron_write.sum()} J")
-        print(f"      Synapse read: {self.dyn_syn_read.sum()} J")
-        print(f"      Synapse write: {self.dyn_syn_write.sum()} J")
-        print(f"    Core ALU: {self.dynamic_alu_total.sum()} J")
+        print(f"    Core Mem: {self.dynamic_mem.sum():.2f} J")
+        print(f"      Layer read: {self.dyn_layer_read.sum():.2f} J")
+        print(f"      Layer write: {self.dyn_layer_write.sum():.2f} J")
+        print(f"      Neuron read: {self.dyn_neuron_read.sum():.2f} J")
+        print(f"      Neuron write: {self.dyn_neuron_write.sum():.2f} J")
+        print(f"      Synapse read: {self.dyn_syn_read.sum():.2f} J")
+        print(f"      Synapse write: {self.dyn_syn_write.sum():.2f} J")
+        print(f"    Core ALU: {self.dynamic_alu_total.sum():.2f} J")
         for op, op_energy in self.dynamic_alu.items():
-            print(f"      {op}: {op_energy} J")
-        print(f"    Router: {self.dynamic_router.sum()} J")
+            print(f"      {op}: {op_energy:.2f} J")
+        print(f"    Router: {self.dynamic_router.sum():.2f} J")
         print(
             f"  Total: {self.total_energy:.3f} J ({self.total_power*1E3:.2f} mW)")
 
