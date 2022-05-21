@@ -115,6 +115,7 @@ class Stats():
             return (0.0000467955605*bits+0.305233644*word_size+3.23205817)*1E-12
 
         # memory energies
+        # TODO: Add 2 other buffers to memory
         self.layer_mem_read = dynamic_read_sram(
             self.layer_mem, self.layer_mem_width)
         self.layer_mem_write = dynamic_write_sram(
