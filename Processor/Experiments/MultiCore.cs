@@ -10,11 +10,8 @@ public class MultiCore : Experiment
     public Action SetupDone;
     public SNN snn;
 
-    public MeshRouter[,] Routers;
-    private MergeSplit mergeSplit;
-    public Bus Bus;
-    public ControllerV1 Controller;
-    public List<ICore> Cores = new();
+    public List<Core> Cores = new();
+    public Comm Comm;
 
     private readonly Mapping mapping;
     private readonly ISpikeSource source;
@@ -30,56 +27,15 @@ public class MultiCore : Experiment
         this.spec = spec;
     }
 
-    private void CreateRouters(int width, int height, MeshUtils.ConstructRouter createRouters)
+    private Core FindCore(string name)
     {
-        Routers = MeshUtils.CreateMesh(sim, width, height, createRouters);
-    }
-
-    private static object ToCoord(string connectsTo)
-    {
-        var parts = connectsTo.Split(",");
-        var type = parts[0];
-
-        if (type == "mesh")
-        {
-            var x = int.Parse(parts[1]);
-            var y = int.Parse(parts[2]);
-            return new MeshCoord(x, y);
-        }
-        else if (type == "bus")
-        {
-            return int.Parse(parts[1]);
-        }
-        else
-        {
-            throw new Exception($"Unknown type: {type}");
-        }
-    }
-
-    private void AddController(ControllerV1Spec spec)
-    {
-        var loc = ToCoord(spec.ConnectsTo);
-        var input = snn.GetInputLayer();
-        Controller = sim.AddActor(new ControllerV1(input, source, loc, spec));
-        Cores.Add(Controller);
-    }
-
-    private void AddCore(CoreV1Spec coreSpec)
-    {
-        var loc = ToCoord(coreSpec.ConnectsTo);
-        var core = sim.AddActor(new CoreV1(loc, coreSpec));
-        Cores.Add(core);
-    }
-
-    private ICore FindCore(string name)
-    {
-        var core = Cores.Find(c => c.Name() == name);
+        var core = Cores.Find(c => c.Name == name);
         return core;
     }
 
     private void ApplyMapping()
     {
-        var mappingTable = new MappingTable(snn);
+        var mappingMan = new MappingManager(snn);
         foreach (var entry in mapping.Mapped)
         {
             var core = FindCore(entry.Core);
@@ -94,97 +50,35 @@ public class MultiCore : Experiment
                 string name = $"{entry.Layer}-1";
                 layer = snn.FindLayer(name);
             }
-            mappingTable.Map(core, layer);
+            mappingMan.Map(core, layer);
         }
-        mappingTable.ControllerCoord = Controller.GetLocation();
-        mappingTable.Cores = Cores;
+        mappingMan.ControllerCoord = Cores.Find(c => c is Controller).Location;
+        mappingMan.Cores = Cores;
 
         // Load stuff
-        foreach (var core in mappingTable.Cores)
-        {
-            switch (core)
-            {
-                case CoreV1 coreV1:
-                    coreV1.LoadMapping(mappingTable);
-                    break;
-                case ControllerV1 contV1:
-                    contV1.LoadMapping(mappingTable);
-                    break;
-                default:
-                    throw new Exception("Unknown core type: " + core);
-            }
-
-        }
-    }
-
-    private void BuildNoc()
-    {
-        if (spec.NoC is MeshSpec)
-        {
-            var mesh = spec.NoC as MeshSpec;
-            CreateRouters(mesh.Width, mesh.Height, (x, y) => new XYRouter(x, y, mesh));
-        }
-        else if (spec.NoC is BusSpec)
-        {
-            var busSpec = spec.NoC as BusSpec;
-            this.Bus = sim.AddActor(new Bus(busSpec));
-        }
-    }
-
-    private void ConnectNoC()
-    {
-        if (Routers != null)
-        {
-            mergeSplit = MeshUtils.ConnectMergeSplit(sim, Routers);
-            var meshSpec = spec.NoC as MeshSpec;
-            foreach (var core in Cores)
-            {
-                var meshLoc = (MeshCoord)core.GetLocation();
-                var (x, y) = meshLoc;
-
-                int width = meshSpec.Width;
-                int height = meshSpec.Height;
-                if (MeshUtils.InMesh(width, height, meshLoc))
-                {
-                    sim.AddChannel(core.Output(), Routers[x, y].inLocal);
-                    sim.AddChannel(Routers[x, y].outLocal, core.Input());
-                }
-                else
-                {
-                    sim.AddChannel(mergeSplit.ToController, core.Input());
-                    sim.AddChannel(core.Output(), mergeSplit.FromController);
-                    // TODO: Do not hardcode router that it is connected to
-                    sim.AddChannel(mergeSplit.ToMesh, Routers[0, 0].inWest);
-                }
-            }
-        }
-        else if (Bus != null)
-        {
-            foreach (var core in Cores)
-            {
-                var busLoc = (int)core.GetLocation();
-                sim.AddChannel(core.Output(), Bus.Inputs[busLoc]);
-                sim.AddChannel(Bus.Outputs[busLoc], core.Input());
-            }
-        }
+        foreach (var core in mappingMan.Cores)
+            core.Mapping = mappingMan;
     }
 
     public override void Setup()
     {
-        // Build NoC
-        BuildNoc();
-
         // Build all cores
         foreach (var coreSpec in spec.Cores)
         {
-            if (coreSpec is CoreV1Spec)
-                AddCore(coreSpec as CoreV1Spec);
-            else if (coreSpec is ControllerV1Spec)
-                AddController(coreSpec as ControllerV1Spec);
+            var location = spec.NoC.ToCoord(coreSpec.ConnectsTo);
+            var core = coreSpec.Build();
+            core.Location = location;
+            core.Input = new();
+            core.Output = new();
+            core.Name = coreSpec.Name;
+            if (core is Controller cont)
+                cont.AddSource(source);
+            sim.AddActor(core);
+            Cores.Add(core);
         }
 
-        // Connect cores to NoC
-        ConnectNoC();
+        // Build NoC
+        Comm = spec.NoC.Build(sim, Cores);
 
         // Mapping
         ApplyMapping();

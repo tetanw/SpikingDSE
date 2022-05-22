@@ -14,7 +14,7 @@ def save_hw(model_path: str, hw_path: str, stats: Stats):
 
     hw = {"Global": {}, "CoreTemplates": {}}
     hw["NoC"] = {
-        "Type": "Mesh",
+        "Type": "XYMesh",
         "Width": m["NoC"]["Width"],
         "Height": m["NoC"]["Height"],
         "InputSize": m["NoC"]["InputSize"],
@@ -66,7 +66,7 @@ def save_hw(model_path: str, hw_path: str, stats: Stats):
                     ],
                     "Priority": prio,
                     "GlobalSync": False,
-                    "ConnectsTo": f"mesh,{x},{y}",
+                    "ConnectsTo": f"{x},{y}",
                     "IgnoreIdleCores": True,
                     "SyncDelay": int(m["SyncDelay"])
                 })
@@ -75,7 +75,7 @@ def save_hw(model_path: str, hw_path: str, stats: Stats):
                     "$Template": "Core",
                     "Name": f"core{coreNumber}",
                     "Priority": prio,
-                    "ConnectsTo": f"mesh,{x},{y}"
+                    "ConnectsTo": f"{x},{y}"
                 })
                 coreNumber = coreNumber + 1
             prio = prio - 1
@@ -84,7 +84,7 @@ def save_hw(model_path: str, hw_path: str, stats: Stats):
 
 if __name__ == "__main__":
     model_path = "res/exp/exp1/model.json"
-    cost_path = "Scripts/cost.json"
+    cost_path = "res/exp/exp1//cost.json"
     hw_path = "res/exp/exp1/hw.json"
     stats = Stats(model_path, cost_path)
     save_hw(model_path, hw_path, stats)

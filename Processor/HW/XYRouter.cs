@@ -12,7 +12,7 @@ public sealed class XYRouter : MeshRouter
     public Transfer OnTransfer;
     public Blocking OnBlocking;
 
-    private readonly MeshSpec spec;
+    private readonly XYSpec spec;
     private Buffer<Packet>[] inBuffers;
     private Buffer<Packet>[] outBuffers;
     private bool eventsReady = false;
@@ -25,7 +25,7 @@ public sealed class XYRouter : MeshRouter
     public long nrHops = 0;
     private readonly Dictionary<string, int> Operations = new();
 
-    public XYRouter(int x, int y, MeshSpec spec)
+    public XYRouter(int x, int y, XYSpec spec)
     {
         this.x = x;
         this.y = y;

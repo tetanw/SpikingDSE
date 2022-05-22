@@ -7,7 +7,7 @@ public record struct MeshCoord(int X, int Y);
 
 public sealed class Packet
 {
-    public object Src { get; set;}
+    public object Src { get; set; }
     public object Dest { get; set; }
     public object Message { get; set; }
     public int NrHops { get; set; } = 0;
@@ -22,52 +22,9 @@ public sealed class MeshDir
     public const int Local = 4;
 }
 
-public sealed class MeshUtils
+public class MeshComm : Comm
 {
-    public delegate MeshRouter ConstructRouter(int x, int y);
-
-    public static MeshRouter[,] CreateMesh(Simulator sim, int width, int height, ConstructRouter constructRouter)
-    {
-        MeshRouter[,] routers = new MeshRouter[width, height];
-
-        for (int y = 0; y < height; y++)
-        {
-            for (int x = 0; x < width; x++)
-            {
-                routers[x, y] = sim.AddActor(constructRouter(x, y));
-            }
-        }
-
-        ConnectRouters(sim, routers);
-        return routers;
-    }
-
-    public static MergeSplit ConnectMergeSplit(Simulator sim, MeshRouter[,] routers)
-    {
-        int width = routers.GetLength(0);
-        int height = routers.GetLength(1);
-        var mergeSplit = new MergeSplit(width * 2 + height * 2, "MergeSplit");
-        sim.AddActor(mergeSplit);
-        int i = 0;
-        for (int y = 0; y < height; y++)
-        {
-            sim.AddChannel(mergeSplit.FromMesh[i++], routers[0, y].outWest);
-
-            if (width - 1 > 0)
-                sim.AddChannel(mergeSplit.FromMesh[i++], routers[width - 1, y].outEast);
-        }
-
-        for (int x = 0; x < width; x++)
-        {
-            sim.AddChannel(mergeSplit.FromMesh[i++], routers[x, 0].outSouth);
-
-            if (height - 1 > 0)
-                sim.AddChannel(mergeSplit.FromMesh[i++], routers[x, height - 1].outNorth);
-        }
-        return mergeSplit;
-    }
-
-    public static void ConnectRouters(Simulator sim, MeshRouter[,] routers)
+    private static void ConnectRouters(Simulator sim, MeshRouter[,] routers)
     {
         int width = routers.GetLength(0);
         int height = routers.GetLength(1);
@@ -103,9 +60,55 @@ public sealed class MeshUtils
         }
     }
 
-    public static bool InMesh(int width, int height, MeshCoord coord)
+    private static bool InMesh(int width, int height, MeshCoord coord)
     {
         var (x, y) = coord;
         return x >= 0 && x < width && y >= 0 && y < height;
+    }
+
+    private MeshRouter[,] routers;
+    private int width, height;
+
+    public MeshComm(Simulator env, int width, int height, List<Core> cores, Func<int, int, MeshRouter> constructRouter)
+    {
+        routers = new MeshRouter[width, height];
+        for (int y = 0; y < height; y++)
+        {
+            for (int x = 0; x < width; x++)
+            {
+                routers[x, y] = constructRouter(x, y);
+                env.AddActor(routers[x, y]);
+            }
+        }
+        ConnectRouters(env, routers);
+
+        foreach (var core in cores)
+        {
+            var meshLoc = (MeshCoord)core.Location;
+            var (x, y) = meshLoc;
+
+            if (!InMesh(width, height, meshLoc))
+                throw new Exception("Not in mesh");
+
+            env.AddChannel(core.Output, routers[x, y].inLocal);
+            env.AddChannel(routers[x, y].outLocal, core.Input);
+        }
+
+        this.width = width;
+        this.height = height;
+    }
+
+    public override string Report(bool header)
+    {
+        List<string> parts = new();
+        for (int y = 0; y < height; y++)
+        {
+            for (int x = 0; x < width; x++)
+            {
+                string part = routers[x, y].Report(header);
+                parts.Add(part);
+            }
+        }
+        return StringUtils.JoinComma(parts.ToArray());
     }
 }

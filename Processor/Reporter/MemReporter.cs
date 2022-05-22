@@ -26,14 +26,14 @@ public class MemReporter
 
     public void RegisterSNN(SNN snn)
     {
-        foreach (var layer in snn.GetAllLayers())
+        foreach (var layer in snn.GetAllLayers().Where(l => l is HiddenLayer))
             RegisterLayer(layer);
     }
 
-    public void AdvanceLayer(Layer layer, int ts, float[] pots)
+    public void AdvanceLayer(HiddenLayer layer)
     {
         var file = memFiles[layer];
-        file.WriteLine($"{ts},{string.Join(",", pots)}");
+        file.WriteLine($"{layer.TS},{string.Join(",", layer.Readout())}");
         file.Flush();
     }
 

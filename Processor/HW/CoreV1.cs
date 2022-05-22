@@ -6,7 +6,7 @@ using System.Linq;
 
 namespace SpikingDSE;
 
-public sealed class CoreV1 : Actor, ICore
+public sealed class CoreV1 : Core
 {
     record struct ComputeElement(bool IsLast, SpikeEvent Spike);
 
@@ -46,27 +46,16 @@ public sealed class CoreV1 : Actor, ICore
     public SyncEnded OnSyncEnded;
     public SpikeComputed OnSpikeComputed;
 
-    public InPort input = new();
-    public OutPort output = new();
-
     private readonly CoreV1Spec spec;
-    private readonly object loc;
-    private MappingTable mapping;
     private Buffer<Packet> outputBuffer;
-
     private Queue<ComputeElement> computeBuffer;
     private Buffer<SyncEvent> syncs;
 
-    public CoreV1(object location, CoreV1Spec spec)
+    public CoreV1(CoreV1Spec spec)
     {
-        loc = location;
         Name = spec.Name;
         this.spec = spec;
     }
-
-    public object GetLocation() => loc;
-
-    public void LoadMapping(MappingTable mapping) => this.mapping = mapping;
 
     private IEnumerable<Event> Receiver(Simulator env)
     {
@@ -75,7 +64,7 @@ public sealed class CoreV1 : Actor, ICore
         while (true)
         {
             // Delay is determined by the NoC by setting a transfer time on the send side
-            var rcv = env.Receive(input);
+            var rcv = env.Receive(Input);
             yield return rcv;
             var packet = (Packet)rcv.Message;
             var @event = packet.Message as CoreEvent;
@@ -138,8 +127,8 @@ public sealed class CoreV1 : Actor, ICore
                 yield return outputBuffer.RequestWrite();
                 outputBuffer.Write(new Packet
                 {
-                    Dest = mapping.ControllerCoord,
-                    Src = loc,
+                    Dest = Mapping.ControllerCoord,
+                    Src = Location,
                     Message = new SyncDone
                     {
                         TS = sync.TS,
@@ -162,7 +151,7 @@ public sealed class CoreV1 : Actor, ICore
             long before = env.Now;
             var packet = outputBuffer.Read();
             outputPops++;
-            yield return env.Send(output, packet);
+            yield return env.Send(Output, packet);
             outputBuffer.ReleaseRead();
             senderBusy += env.Now - before;
         }
@@ -170,7 +159,7 @@ public sealed class CoreV1 : Actor, ICore
 
     public override IEnumerable<Event> Run(Simulator env)
     {
-        bool isEmpty = mapping.GetAllLayers(this).Count == 0;
+        bool isEmpty = Mapping.GetAllLayers(this).Count == 0;
         if (isEmpty && spec.DisableIfIdle)
             yield break;
 
@@ -216,13 +205,13 @@ public sealed class CoreV1 : Actor, ICore
                 TS = TS + 1,
                 CreatedAt = env.Now
             };
-            var destCoord = mapping.CoordOf(destLayer);
+            var destCoord = Mapping.CoordOf(destLayer);
 
 
             yield return outputBuffer.RequestWrite();
             var flit = new Packet
             {
-                Src = loc,
+                Src = Location,
                 Dest = destCoord,
                 Message = spikeOut
             };
@@ -236,11 +225,11 @@ public sealed class CoreV1 : Actor, ICore
         foreach (var (layer, neuron) in pendingSpikes)
         {
             if (layer.Recurrent)
-                foreach (var ev in SendSpikes(env, mapping.GetSiblings(layer).Cast<HiddenLayer>(), true, TS, layer.Offset() + neuron))
+                foreach (var ev in SendSpikes(env, Mapping.GetSiblings(layer).Cast<HiddenLayer>(), true, TS, layer.Offset() + neuron))
                     yield return ev;
 
             // Forward spikes
-            foreach (var ev in SendSpikes(env, mapping.GetDestLayers(layer).Cast<HiddenLayer>(), false, TS, layer.Offset() + neuron))
+            foreach (var ev in SendSpikes(env, Mapping.GetDestLayers(layer).Cast<HiddenLayer>(), false, TS, layer.Offset() + neuron))
                 yield return ev;
 
             OnSpikeSent?.Invoke(env.Now, layer, neuron);
@@ -289,19 +278,13 @@ public sealed class CoreV1 : Actor, ICore
         }
     }
 
-    string ICore.Name() => Name;
-
-    public OutPort Output() => output;
-
-    public InPort Input() => input;
-
-    public string Report(long now, bool header)
+    public override string Report(long now, bool header)
     {
         // Cores that do not have any layers should just stay silent
-        if (mapping.GetAllLayers(this).Count == 0)
+        if (Mapping.GetAllLayers(this).Count == 0)
             return string.Empty;
 
-        var masterCounter = OpCounter.Merge(mapping.GetAllLayers(this).Select(l => (l as HiddenLayer).Ops));
+        var masterCounter = OpCounter.Merge(Mapping.GetAllLayers(this).Select(l => (l as HiddenLayer).Ops));
         string layerStr = "";
         string memStr = "";
         string opStr = "";

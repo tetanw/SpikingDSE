@@ -5,35 +5,21 @@ using System.Linq;
 namespace SpikingDSE;
 
 
-public sealed class ControllerV1 : Actor, ICore
+public sealed class ControllerV1 : Controller
 {
     public Action<Actor, long, SpikeEvent> SpikeSent;
     public Action<Actor, long, SpikeEvent> SpikeReceived;
     public Action<Actor, long, int> TimeAdvanced;
 
-    public InPort Input = new();
-    public OutPort Output = new();
-
-    private readonly object location;
-    private readonly InputLayer inputLayer;
-    private readonly ISpikeSource source;
-    private MappingTable mapping;
     public ControllerV1Spec spec;
 
     private Signal syncSignal;
 
-    public ControllerV1(InputLayer inputLayer, ISpikeSource source, object location, ControllerV1Spec spec)
+    public ControllerV1(ControllerV1Spec spec)
     {
-        this.inputLayer = inputLayer;
-        this.source = source;
-        this.location = location;
         this.spec = spec;
         Name = spec.Name;
     }
-
-    public void LoadMapping(MappingTable mapping) => this.mapping = mapping;
-
-    public object GetLocation() => location;
 
     public override IEnumerable<Event> Run(Simulator env)
     {
@@ -47,13 +33,14 @@ public sealed class ControllerV1 : Actor, ICore
     private IEnumerable<Event> Sender(Simulator env)
     {
         int TS = 0;
-        var destLayers = mapping.GetDestLayers(inputLayer);
+        var inputLayer = Mapping.GetInputLayer();
+        var destLayers = Mapping.GetDestLayers(inputLayer);
 
         yield return env.SleepUntil(spec.StartTime);
-        while (source.NextTimestep())
+        while (spikeSource.NextTimestep())
         {
             // Do spike sending
-            var inputSpikes = source.NeuronSpikes();
+            var inputSpikes = spikeSource.NeuronSpikes();
             foreach (var neuron in inputSpikes)
             {
                 foreach (var destLayer in destLayers)
@@ -66,10 +53,10 @@ public sealed class ControllerV1 : Actor, ICore
                         TS = TS,
                         CreatedAt = env.Now
                     };
-                    var dest = mapping.CoordOf(spike.Layer);
+                    var dest = Mapping.CoordOf(spike.Layer);
                     var packet = new Packet
                     {
-                        Src = location,
+                        Src = Location,
                         Dest = dest,
                         Message = spike
                     };
@@ -110,24 +97,24 @@ public sealed class ControllerV1 : Actor, ICore
 
     private IEnumerable<Event> Sync(Simulator env, int TS)
     {
-        foreach (var core in mapping.Cores)
+        foreach (var core in Mapping.Cores)
         {
             if (core is ControllerV1)
                 continue;
 
-            if (spec.IgnoreIdleCores && mapping.GetAllLayers(core).Count == 0)
+            if (spec.IgnoreIdleCores && Mapping.GetAllLayers(core).Count == 0)
                 continue;
 
             var sync = new SyncEvent()
             {
                 TS = TS,
                 CreatedAt = env.Now,
-                Layers = mapping.GetAllLayers(core) ?? new List<Layer>()
+                Layers = Mapping.GetAllLayers(core) ?? new List<Layer>()
             };
             var flit = new Packet
             {
-                Src = location,
-                Dest = core.GetLocation(),
+                Src = Location,
+                Dest = core.Location,
                 Message = sync,
             };
             yield return env.Send(Output, flit);
@@ -140,9 +127,9 @@ public sealed class ControllerV1 : Actor, ICore
         var coresDone = new HashSet<object>();
         int nrCores;
         if (spec.IgnoreIdleCores)
-            nrCores = mapping.Cores.Where(c => mapping.GetAllLayers(c).Count > 0 && c is not ControllerV1).Count();
+            nrCores = Mapping.Cores.Where(c => Mapping.GetAllLayers(c).Count > 0 && c is not ControllerV1).Count();
         else
-            nrCores = mapping.Cores.Count - 1;
+            nrCores = Mapping.Cores.Count - 1;
 
         while (true)
         {
@@ -170,7 +157,7 @@ public sealed class ControllerV1 : Actor, ICore
 
     private void Sync()
     {
-        var myLayers = mapping.GetAllLayers(this);
+        var myLayers = Mapping.GetAllLayers(this);
         foreach (var layer in myLayers)
         {
             if (layer is HiddenLayer hidden)
@@ -193,12 +180,4 @@ public sealed class ControllerV1 : Actor, ICore
         else
             layer.Forward(spike.Neuron);
     }
-
-    string ICore.Name() => Name;
-
-    OutPort ICore.Output() => Output;
-
-    InPort ICore.Input() => Input;
-
-    public string Report(long now, bool header) => string.Empty;
 }

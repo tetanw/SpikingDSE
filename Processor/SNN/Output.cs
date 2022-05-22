@@ -57,6 +57,7 @@ public class OutputLayer : HiddenLayer
 
     public override void FinishSync()
     {
+        base.FinishSync();
         UpdateOutput();
         TS++;
     }

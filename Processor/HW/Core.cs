@@ -2,13 +2,24 @@ using System.Collections.Generic;
 
 namespace SpikingDSE;
 
-public interface ICore
+public abstract class Controller : Core
 {
-    public object GetLocation();
-    public string Name();
-    public OutPort Output();
-    public InPort Input();
-    public string Report(long now, bool header);
+    protected ISpikeSource spikeSource;
+
+    public void AddSource(ISpikeSource spikeSource)
+    {
+        this.spikeSource = spikeSource;
+    }
+}
+
+public abstract class Core : Actor
+{
+    public object Location { get; set; }
+    public OutPort Output { get; set; }
+    public InPort Input { get; set; }
+    public MappingManager Mapping { get; set; }
+
+    public virtual string Report(long now, bool header) { return ""; }
 }
 
 public class CoreEvent { }

@@ -60,7 +60,7 @@ public sealed class Simulator
         outPort.ChannelHandle = newId;
     }
 
-    public void AddChannel(OutPort outPort, InPort inPort) => AddChannel(inPort, outPort);
+    public void AddChannel([NotNull] OutPort outPort, [NotNull] InPort inPort) => AddChannel(inPort, outPort);
 
 
     public T AddActor<T>(T actor) where T : Actor

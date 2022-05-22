@@ -8,7 +8,6 @@ namespace SpikingDSE;
 
 class HWFile
 {
-    public Dictionary<string, JsonElement> Global { get; set; }
     public Dictionary<string, JsonElement> NoC { get; set; }
     public Dictionary<string, JsonElement> CoreTemplates { get; set; }
     public List<Dictionary<string, JsonElement>> Cores { get; set; }
@@ -16,11 +15,10 @@ class HWFile
 
 public class HWSpec
 {
-    public GlobalSpec Global { get; set; }
     public List<CoreSpec> Cores { get; set; }
     public NoCSpec NoC { get; set; }
 
-    private static CoreSpec CreateCoreSpec(Dictionary<string, JsonElement> instance, Dictionary<string, JsonElement> templates, GlobalSpec global)
+    private static CoreSpec CreateCoreSpec(Dictionary<string, JsonElement> instance, Dictionary<string, JsonElement> templates)
     {
         var templateName = instance.GetOptional("$Template")?.GetString();
         if (templateName != null)
@@ -83,7 +81,6 @@ public class HWSpec
             throw new Exception($"Invalid instance type: {type}");
         }
 
-        core.Global = global;
         core.Name = instance["Name"].GetString();
         core.AcceptedTypes = instance.GetOptional("Accepts")?.GetStringArray() ?? Array.Empty<string>();
         core.Priority = instance.GetOptional("Priority")?.GetInt32() ?? int.MaxValue;
@@ -96,13 +93,13 @@ public class HWSpec
         return core;
     }
 
-    private static NoCSpec CreateNoCSpec(Dictionary<string, JsonElement> instance, GlobalSpec global)
+    private static NoCSpec CreateNoCSpec(Dictionary<string, JsonElement> instance)
     {
-        string type = "Mesh";
+        string type = instance["Type"].GetString();
         NoCSpec noc;
-        if (type == "Mesh")
+        if (type == "XYMesh")
         {
-            noc = new MeshSpec
+            noc = new XYSpec
             {
                 Width = instance["Width"].GetInt32(),
                 Height = instance["Height"].GetInt32(),
@@ -127,46 +124,26 @@ public class HWSpec
             throw new Exception($"Unknown NoC type: {type}");
         }
 
-        noc.Global = global;
-
         return noc;
-    }
-
-    private static GlobalSpec CreateGlobal(Dictionary<string, JsonElement> _)
-    {
-        return new GlobalSpec
-        {
-        };
     }
 
     public static HWSpec Load(string path)
     {
         var hwFile = JsonSerializer.Deserialize<HWFile>(File.ReadAllText(path));
-        var global = CreateGlobal(hwFile.Global);
-        var cores = hwFile.Cores.Select(c => CreateCoreSpec(c, hwFile.CoreTemplates, global)).ToList();
+        var cores = hwFile.Cores.Select(c => CreateCoreSpec(c, hwFile.CoreTemplates)).ToList();
 
         var type = hwFile.NoC["Type"].GetString();
-        var noc = CreateNoCSpec(hwFile.NoC, global);
+        var noc = CreateNoCSpec(hwFile.NoC);
         return new HWSpec()
         {
-            Global = global,
             Cores = cores,
             NoC = noc
         };
     }
-
-    public T FindByType<T>() where T : CoreSpec
-    {
-        var type = typeof(T);
-        return Cores.Find(c => c.GetType() == type) as T;
-    }
-
-    public CoreSpec FindByName(string name) => Cores.Find(c => c.Name == name);
 }
 
-public class CoreSpec
+public abstract class CoreSpec
 {
-    public GlobalSpec Global { get; set; }
     public string Name { get; set; }
     public int Priority { get; set; }
     public int MaxNeurons { get; set; }
@@ -176,6 +153,8 @@ public class CoreSpec
     public int MaxSplits { get; set; }
     public string ConnectsTo { get; set; }
     public string[] AcceptedTypes { get; set; }
+
+    public abstract Core Build();
 }
 
 public class LayerCost
@@ -198,6 +177,11 @@ public class CoreV1Spec : CoreSpec
     public bool ShowMemStats { get; set; }
     public bool ShowALUStats { get; set; }
     public Dictionary<string, LayerCost> LayerCosts { get; set; }
+
+    public override Core Build()
+    {
+        return new CoreV1(this);
+    }
 }
 
 public class ControllerV1Spec : CoreSpec
@@ -207,32 +191,70 @@ public class ControllerV1Spec : CoreSpec
     public bool GlobalSync { get; set; }
     public bool IgnoreIdleCores { get; set; }
     public long SyncDelay { get; set; }
+
+    public override Core Build()
+    {
+        return new ControllerV1(this);
+    }
 }
 
-public class NoCSpec
+public abstract class NoCSpec
 {
-    public GlobalSpec Global { get; set; }
+    public abstract Comm Build(Simulator env, List<Core> cores);
+    public abstract object ToCoord(string connection);
 }
 
-public class MeshSpec : NoCSpec
+public abstract class MeshSpec : NoCSpec
 {
     public int Width { get; set; }
     public int Height { get; set; }
+
+    public override object ToCoord(string connection)
+    {
+        var parts = connection.Split(",");
+        var x = int.Parse(parts[0]);
+        var y = int.Parse(parts[1]);
+        return new MeshCoord(x, y);
+    }
+}
+
+public class XYSpec : MeshSpec
+{
     public int InputSize { get; set; }
     public int OutputSize { get; set; }
     public int TransferDelay { get; set; }
     public int SwitchDelay { get; set; }
     public int InputDelay { get; set; }
     public int OutputDelay { get; set; }
+
+    public override Comm Build(Simulator env, List<Core> cores)
+    {
+        return new MeshComm(env, Width, Height, cores, (x, y) => new XYRouter(x, y, this));
+    }
+}
+
+public class VCSpec : MeshSpec
+{
+    public override Comm Build(Simulator env, List<Core> cores)
+    {
+        throw new NotImplementedException();
+    }
 }
 
 public class BusSpec : NoCSpec
 {
     public int Ports { get; set; }
     public int TransferDelay { get; set; }
-}
 
-public class GlobalSpec
-{
-    public double Frequency { get; set; } = 10_000_000.0;
+    public override Comm Build(Simulator env, List<Core> cores)
+    {
+        return new BusComm(env, this);
+    }
+
+    public override object ToCoord(string connection)
+    {
+        var parts = connection.Split(",");
+        var id = int.Parse(parts[0]);
+        return id;
+    }
 }

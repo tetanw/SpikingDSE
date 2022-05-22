@@ -7,7 +7,43 @@
             "request": "launch",
             "preLaunchTask": "build",
             "program": "bin/Debug/net6.0/SpikingDSE.dll",
-            "args": ["trace-sim", "-s", "res/snn/snn-shd1.json", "-h", "res/exp/exp1/hw.json", "-m", "res/exp/exp1/mappings/shd1.json", "-t", "res/dataset/shd-10.zip;input_0.trace", "-o", "res/results/test"],
+            "args": [
+                "trace-sim",
+                "-s",
+                "res/snn/snn-shd1.json",
+                "-h",
+                "res/exp/exp1/hw.json",
+                "-m",
+                "res/exp/exp1/mappings/shd1.json",
+                "-t",
+                "res/dataset/shd-10.zip;input_0.trace",
+                "-o",
+                "res/results/test"
+            ],
+            "cwd": "${workspaceFolder}/Processor",
+            "stopAtEntry": false,
+            "console": "internalConsole"
+        },
+        {
+            "name": "Dataset sim - HW mesh 1 and shd1",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "bin/Debug/net6.0/SpikingDSE.dll",
+            "args": [
+                "dataset-sim",
+                "-s",
+                "res/snn/snn-shd1.json",
+                "-h",
+                "res/exp/exp1/hw.json",
+                "-m",
+                "res/exp/exp1/mappings/shd1.json",
+                "-d",
+                "res/dataset/shd-10.zip",
+                "--max-samples=2147483647",
+                "-o",
+                "res/exp/exp1/results/shd1"
+            ],
             "cwd": "${workspaceFolder}/Processor",
             "stopAtEntry": false,
             "console": "internalConsole"
@@ -18,7 +54,17 @@
             "request": "launch",
             "preLaunchTask": "build",
             "program": "bin/Debug/net6.0/SpikingDSE.dll",
-            "args": ["mapping", "-s", "res/snn/snn-ssc2.json", "-h", "res/exp/exp1/hw.json", "-m", "FirstFit1", "-o", "res/exp/mappings/ssc2.json"],
+            "args": [
+                "mapping",
+                "-s",
+                "res/snn/snn-ssc2.json",
+                "-h",
+                "res/exp/exp1/hw.json",
+                "-m",
+                "FirstFit1",
+                "-o",
+                "res/exp/mappings/ssc2.json"
+            ],
             "cwd": "${workspaceFolder}/Processor",
             "stopAtEntry": false,
             "console": "internalConsole"
@@ -29,10 +75,18 @@
             "request": "launch",
             "preLaunchTask": "build",
             "program": "bin/Debug/net6.0/SpikingDSE.dll",
-            "args": ["analyze-mapping", "-s", "res/snn/snn-shd1.json", "-h", "res/exp/exp1/hw.json", "-m", "res/exp/exp1/mappings/shd1.json"],
+            "args": [
+                "analyze-mapping",
+                "-s",
+                "res/snn/snn-shd1.json",
+                "-h",
+                "res/exp/exp1/hw.json",
+                "-m",
+                "res/exp/exp1/mappings/shd1.json"
+            ],
             "cwd": "${workspaceFolder}/Processor",
             "stopAtEntry": false,
             "console": "internalConsole"
-        },
+        }
     ]
 }

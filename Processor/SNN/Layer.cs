@@ -47,23 +47,6 @@ public class InputLayer : Layer
     }
 }
 
-public enum ResetMode
-{
-    Zero,
-    Subtract
-}
-
-public abstract class OdinHiddenLayer : Layer
-{
-    public abstract void Leak();
-
-    public abstract IEnumerable<int> Threshold();
-
-    public abstract void ApplyThreshold(int neuron);
-
-    public abstract void Integrate(int neuron);
-}
-
 public class OpCounter
 {
     private Dictionary<string, int> stats = new Dictionary<string, int>();
@@ -94,12 +77,22 @@ public class OpCounter
 
 public abstract class HiddenLayer : Layer
 {
+    public int TS { get; set; } = 0;
+    public event Action SyncStarted;
+    public event Action SyncFinished;
+
     public OpCounter Ops = new();
     public abstract float[] Readout();
     public abstract void Forward(int neuron);
     public abstract void Feedback(int neuron);
     public abstract bool Sync(int neuron);
-    public virtual void StartSync() { }
-    public virtual void FinishSync() { }
+    public virtual void StartSync()
+    {
+        SyncStarted?.Invoke();
+    }
+    public virtual void FinishSync()
+    {
+        SyncFinished?.Invoke();
+    }
     public abstract int Offset();
 }

@@ -4,6 +4,18 @@ using System.Linq;
 
 namespace SpikingDSE;
 
+public class BusComm : Comm
+{
+    private Bus bus;
+
+    public BusComm(Simulator env, BusSpec spec)
+    {
+        bus = env.AddActor(new Bus(spec));
+    }
+
+    public override string Report(bool header) => string.Empty;
+}
+
 public class Bus : Actor
 {
     public delegate void Transfer(long time, int from, int to);

@@ -148,10 +148,6 @@ namespace SpikingDSE
                     {
                         new ToyProblem().Run();
                     }
-                    else if (opts.Name.Equals("SingleOdin"))
-                    {
-                        new SingleOdin().Run();
-                    }
                     else if (opts.Name.Equals("XYRouterValidation"))
                     {
                         new XYRouterValidation().Run();

@@ -13,7 +13,7 @@ public class XYRouterValidation : Experiment
         int j = 0;
         var northProd = sim.AddActor(new Producer(10, () => new Packet { Src = new MeshCoord(-1, -1), Dest = new MeshCoord(1, 1), Message = ("North", j++) }, "North"));
 
-        var spec = new MeshSpec {
+        var spec = new XYSpec {
             SwitchDelay = 5,
             InputSize = 1,
             OutputSize = 1,

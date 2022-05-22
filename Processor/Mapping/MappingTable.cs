@@ -2,20 +2,20 @@ using System.Collections.Generic;
 
 namespace SpikingDSE;
 
-public class MappingTable
+public class MappingManager
 {
-    private readonly Dictionary<ICore, List<Layer>> coreToLayer = new();
-    private readonly Dictionary<Layer, ICore> layerToCore = new();
+    private readonly Dictionary<Core, List<Layer>> coreToLayer = new();
+    private readonly Dictionary<Layer, Core> layerToCore = new();
     private readonly SNN snn;
 
-    public List<ICore> Cores { get; set; } = new();
+    public List<Core> Cores { get; set; } = new();
 
-    public MappingTable(SNN snn)
+    public MappingManager(SNN snn)
     {
         this.snn = snn;
     }
 
-    public void Map(ICore core, Layer layer)
+    public void Map(Core core, Layer layer)
     {
         if (coreToLayer.TryGetValue(core, out List<Layer> layers))
         {
@@ -28,12 +28,12 @@ public class MappingTable
         layerToCore.Add(layer, core);
     }
 
-    public IEnumerable<Layer> LayersOf(ICore core)
+    public IEnumerable<Layer> LayersOf(Core core)
     {
         return coreToLayer[core];
     }
 
-    public IEnumerable<ICore> MappedCores
+    public IEnumerable<Core> MappedCores
     {
         get => coreToLayer.Keys;
     }
@@ -43,14 +43,19 @@ public class MappingTable
         get => layerToCore.Keys;
     }
 
-    public IEnumerable<KeyValuePair<Layer, ICore>> Pairs
+    public IEnumerable<KeyValuePair<Layer, Core>> Pairs
     {
         get => layerToCore;
     }
 
+    public InputLayer GetInputLayer()
+    {
+        return snn.GetInputLayer();
+    }
+
     public object CoordOf(Layer layer)
     {
-        return layerToCore[layer].GetLocation();
+        return layerToCore[layer].Location;
     }
 
     public object ControllerCoord { get; set; }
@@ -70,7 +75,7 @@ public class MappingTable
         return snn.GetSiblingLayers(layer);
     }
 
-    public List<Layer> GetAllLayers(ICore core)
+    public List<Layer> GetAllLayers(Core core)
     {
         return coreToLayer.Optional(core) ?? new List<Layer>();
     }

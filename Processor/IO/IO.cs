@@ -14,6 +14,7 @@ public interface ISpikeSource
     public List<int> NeuronSpikes();
     public int NrNeurons();
     public int NrTimesteps();
+    public ISpikeSource Copy();
 }
 
 class DatasetInfo
@@ -117,6 +118,11 @@ public class InputTraceFile : ISpikeSource
         return file;
     }
 
+    public ISpikeSource Copy()
+    {
+        throw new NotImplementedException();
+    }
+
     public List<int> NeuronSpikes()
     {
         return allSpikes[currentTS - 1];
@@ -160,6 +166,11 @@ public class TensorFile : ISpikeSource
     }
 
     public bool IsDone { get; private set; }
+
+    public ISpikeSource Copy()
+    {
+        throw new NotImplementedException();
+    }
 
     public List<int> NeuronSpikes()
     {
@@ -249,6 +260,11 @@ public class TensorFileGroup : ISpikeSource
     public int NrNeurons() => tensorFiles.Sum((tf) => tf.NrNeurons());
 
     public int NrTimesteps() => tensorFiles[0].NrNeurons();
+
+    public ISpikeSource Copy()
+    {
+        throw new NotImplementedException();
+    }
 }
 
 public enum EventType
