@@ -17,7 +17,6 @@ public class ALIFLayer : HiddenLayer
     public float[] Alpha;
     public float[] Rho;
     private readonly int offset;
-    public int TS { get; private set; }
 
     public ALIFLayer(float[,] inWeights, float[,] recWeights, float[] bias, float[] alpha, float[] rho, float beta, float VTh, string name, int offset = 0)
     {

@@ -6,7 +6,6 @@ namespace SpikingDSE;
 
 public class OutputLayer : HiddenLayer
 {
-    public int TS = 0;
     public float[] ReadoutArr;
     public float[] Pots;
     public float[] Output;

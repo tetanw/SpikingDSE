@@ -6,12 +6,6 @@ namespace SpikingDSE;
 
 public sealed class XYRouter : MeshRouter
 {
-    public delegate void Transfer(long now, int from, int to);
-    public delegate void Blocking(long now);
-
-    public Transfer OnTransfer;
-    public Blocking OnBlocking;
-
     private readonly XYSpec spec;
     private Buffer<Packet>[] inBuffers;
     private Buffer<Packet>[] outBuffers;
@@ -110,7 +104,6 @@ public sealed class XYRouter : MeshRouter
                     {
                         lastDir = inDir;
                         yield return env.Delay(spec.SwitchDelay);
-                        OnTransfer?.Invoke(env.Now, inDir, outDir);
                         outBuffers[outDir].Push(inBuffers[inDir].Pop());
                         Operations.AddCount("Sub", 2);
                         Operations.AddCount("Cmp", 2);

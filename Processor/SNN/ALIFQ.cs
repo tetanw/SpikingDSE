@@ -17,7 +17,6 @@ public class ALIFQLayer : HiddenLayer
     public long[] Alpha;
     public long[] Rho;
     private readonly int offset;
-    public int TS { get; private set; }
     public long Scale { get; set; }
 
     public ALIFQLayer(long scale, long[,] inWeights, long[,] recWeights, long[] bias, long[] alpha, long[] rho, long VTh, long Beta, string name, int offset = 0)
