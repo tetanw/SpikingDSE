@@ -23,6 +23,10 @@ class Metrics():
         self.dyn_neuron_write = 0.0
         self.dyn_syn_read = 0.0
         self.dyn_syn_write = 0.0
+        self.dyn_compute_pop = 0.0
+        self.dyn_compute_push = 0.0
+        self.dyn_output_pop = 0.0
+        self.dyn_output_push = 0.0
         for c in self.cores:
             self.dyn_neuron_read += exp[f"{c}_neuronReads"] * \
                 stats.neuron_mem_read
@@ -36,6 +40,14 @@ class Metrics():
                 stats.syn_mem_read
             self.dyn_syn_write += exp[f"{c}_synapseWrites"] * \
                 stats.syn_mem_write
+            self.dyn_compute_pop += exp[f"{c}_computePops"] * \
+                stats.compute_buf_pops
+            self.dyn_compute_push += exp[f"{c}_computePushes"] * \
+                stats.compute_buf_pushes
+            self.dyn_output_pop += exp[f"{c}_outputPops"] * \
+                stats.output_buf_pops
+            self.dyn_output_push += exp[f"{c}_outputPushes"] * \
+                stats.output_buf_pushes
         self.dynamic_mem = self.dyn_neuron_read + self.dyn_layer_write + self.dyn_layer_read + \
             self.dyn_layer_write + self.dyn_syn_read + self.dyn_syn_write
 
@@ -103,6 +115,10 @@ class Metrics():
         print(f"      Neuron write: {self.dyn_neuron_write.sum():.2f} J")
         print(f"      Synapse read: {self.dyn_syn_read.sum():.2f} J")
         print(f"      Synapse write: {self.dyn_syn_write.sum():.2f} J")
+        print(f"      Compute pop: {self.dyn_compute_pop.sum():.2f} J")
+        print(f"      Compute push: {self.dyn_compute_push.sum():.2f} J")
+        print(f"      Output pop: {self.dyn_output_pop.sum():.2f} J")
+        print(f"      Output push: {self.dyn_output_push.sum():.2f} J")
         print(f"    Core ALU: {self.dynamic_alu_total.sum():.2f} J")
         for op, op_energy in self.dynamic_alu.items():
             print(f"      {op}: {op_energy:.2f} J")

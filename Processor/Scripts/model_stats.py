@@ -49,10 +49,11 @@ class Stats():
         self.layer_mem_width = (2 * neuron_bits + 4 *
                                 syn_bits + m["MaxSplits"] * split_mem)
         self.layer_mem = m["MaxLayers"] * self.layer_mem_width
-        self.output_mem = self.packet_size * m["OutputBufferDepth"]
+        self.output_mem_width = self.packet_size
+        self.output_mem = self.output_mem_width * m["OutputBufferDepth"]
         end = 1
-        self.compute_mem = (neuron_bits + layer_bits +
-                            feedback + end) * m["MaxFanIn"]
+        self.compute_mem_width = neuron_bits + layer_bits + feedback + end
+        self.compute_mem = self.compute_mem_width * m["MaxFanIn"]
         self.core_mem = self.neuron_mem + self.syn_mem + \
             self.layer_mem + self.output_mem + self.compute_mem
 
@@ -128,6 +129,12 @@ class Stats():
         self.syn_mem_write = dynamic_write_sram(
             self.syn_mem, self.syn_mem_width)
 
+        # Buffer energies
+        self.compute_buf_pops = dynamic_read_sram(self.compute_mem, self.compute_mem_width)
+        self.compute_buf_pushes = dynamic_write_sram(self.compute_mem, self.compute_mem_width)
+        self.output_buf_pops = dynamic_read_sram(self.output_mem, self.output_mem_width)
+        self.output_buf_pushes = dynamic_write_sram(self.output_mem, self.output_mem_width)
+
         # should be in PS
         self.router_transfer_delay = (1.05 + 6.366 * l) * 1E3
 
@@ -139,8 +146,8 @@ class Stats():
             f"  Syn: {self.syn_mem:,} bits (Width: {self.syn_mem_width} bits)")
         print(
             f"  Layer: {self.layer_mem:,} bits (Width: {self.layer_mem_width} bits)")
-        print(f"  Output: {self.output_mem:,} bits")
-        print(f"  Compute: {self.compute_mem:,} bits")
+        print(f"  Output: {self.output_mem:,} bits (Width: {self.output_mem_width} bits)")
+        print(f"  Compute: {self.compute_mem:,} bits (Width: {self.compute_mem_width} bits)")
         print(f"  Total: {self.core_mem:,} bits")
 
         print(f"Router memory:")
@@ -207,6 +214,13 @@ class Stats():
         print(f"      Synapse:")
         print(f"        Read: {self.syn_mem_read * 1E12:,.2f} pJ / read")
         print(f"        Write: {self.syn_mem_write * 1E12:,.2f} pJ / write")
+        print(f"    Buffers:")
+        print(f"      Compute:")
+        print(f"        Pop: {self.compute_buf_pops * 1E12:,.2f} pJ / pop")
+        print(f"        Push: {self.compute_buf_pushes * 1E12:,.2f} pJ / push")
+        print(f"      Output:")
+        print(f"        Pop: {self.output_buf_pops * 1E12:,.2f} pJ / pop")
+        print(f"        Push: {self.output_buf_pushes * 1E12:,.2f} pJ / push")
         print(f"Delays:")
         print(
             f"  Packet transfer: {self.router_transfer_delay:,.2f} ps")
