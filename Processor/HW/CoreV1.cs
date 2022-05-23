@@ -17,14 +17,7 @@ public sealed class CoreV1 : Core
     public delegate void SpikeComputed(long time, SpikeEvent spike);
 
     // Stats
-    public long lastSpike = 0;
-    public long lastSync = 0;
-    public int nrSpikesProduced = 0;
-    public int nrSpikesConsumed = 0;
     public int nrSOPs = 0;
-    public int nrLateSpikes = 0;
-    public int nrEarlySpikes = 0;
-    public int nrSpikesReceived = 0;
     public long receiverBusy;
     public long ALUBusy;
     public long senderBusy;
@@ -80,16 +73,15 @@ public sealed class CoreV1 : Core
             else if (@event is SpikeEvent spike)
             {
                 spike.ReceivedAt = env.Now;
-                nrSpikesReceived++;
                 OnSpikeReceived?.Invoke(env.Now, spike.Layer, spike.Neuron, spike.Feedback, spike, packet.NrHops);
 
                 if (spike.TS > TS)
                 {
-                    nrEarlySpikes++;
+                    throw new Exception("Spike too early");
                 }
                 else if (spike.TS < TS)
                 {
-                    nrLateSpikes++;
+                    throw new Exception("Spike too late");
                 }
                 else
                 {
@@ -180,7 +172,6 @@ public sealed class CoreV1 : Core
         else
             layer.Forward(spike.Neuron);
         layerIntegrates.AddCount(layer.TypeName, layer.Size);
-        nrSpikesConsumed++;
         nrSOPs += layer.Size;
         layerReads++;
         neuronReads += layer.Size;
