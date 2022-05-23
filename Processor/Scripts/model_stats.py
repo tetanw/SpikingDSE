@@ -53,7 +53,7 @@ class Stats():
         self.output_mem = self.output_mem_width * m["OutputBufferDepth"]
         end = 1
         self.compute_mem_width = neuron_bits + layer_bits + feedback + end
-        self.compute_mem = self.compute_mem_width * m["MaxFanIn"]
+        self.compute_mem = self.compute_mem_width * (2 * m["MaxFanIn"] + 1)
         self.core_mem = self.neuron_mem + self.syn_mem + \
             self.layer_mem + self.output_mem + self.compute_mem
 
@@ -130,10 +130,14 @@ class Stats():
             self.syn_mem, self.syn_mem_width)
 
         # Buffer energies
-        self.compute_buf_pops = dynamic_read_sram(self.compute_mem, self.compute_mem_width)
-        self.compute_buf_pushes = dynamic_write_sram(self.compute_mem, self.compute_mem_width)
-        self.output_buf_pops = dynamic_read_sram(self.output_mem, self.output_mem_width)
-        self.output_buf_pushes = dynamic_write_sram(self.output_mem, self.output_mem_width)
+        self.compute_buf_pops = dynamic_read_sram(
+            self.compute_mem, self.compute_mem_width)
+        self.compute_buf_pushes = dynamic_write_sram(
+            self.compute_mem, self.compute_mem_width)
+        self.output_buf_pops = dynamic_read_sram(
+            self.output_mem, self.output_mem_width)
+        self.output_buf_pushes = dynamic_write_sram(
+            self.output_mem, self.output_mem_width)
 
         # should be in PS
         self.router_transfer_delay = (1.05 + 6.366 * l) * 1E3
@@ -146,8 +150,10 @@ class Stats():
             f"  Syn: {self.syn_mem:,} bits (Width: {self.syn_mem_width} bits)")
         print(
             f"  Layer: {self.layer_mem:,} bits (Width: {self.layer_mem_width} bits)")
-        print(f"  Output: {self.output_mem:,} bits (Width: {self.output_mem_width} bits)")
-        print(f"  Compute: {self.compute_mem:,} bits (Width: {self.compute_mem_width} bits)")
+        print(
+            f"  Output: {self.output_mem:,} bits (Width: {self.output_mem_width} bits)")
+        print(
+            f"  Compute: {self.compute_mem:,} bits (Width: {self.compute_mem_width} bits)")
         print(f"  Total: {self.core_mem:,} bits")
 
         print(f"Router memory:")
@@ -230,6 +236,7 @@ class Stats():
                 f"    Sync: {values['SyncII']:,} ps II, {values['SyncLat']:,} ps Lat")
             print(
                 f"    Integrate: {values['IntegrateII']:,} ps II, {values['IntegrateLat']:,} ps Lat")
+
 
 if __name__ == "__main__":
     expName = sys.argv[1]

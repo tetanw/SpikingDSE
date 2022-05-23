@@ -101,6 +101,7 @@ public sealed class CoreV1 : Core
             syncs.ReleaseRead();
             long before = env.Now;
 
+            // Integrate all synapses
             while (true)
             {
                 var (isDone, spike) = computeBuffer.Dequeue();
@@ -111,9 +112,11 @@ public sealed class CoreV1 : Core
                     yield return ev;
             }
 
+            // Sync all neurons
             foreach (var ev in Sync(env, sync))
                 yield return ev;
 
+            // Report done if needed
             if (spec.ReportSyncEnd)
             {
                 yield return outputBuffer.RequestWrite();
@@ -206,6 +209,7 @@ public sealed class CoreV1 : Core
                 Dest = destCoord,
                 Message = spikeOut
             };
+            outputPushes++;
             outputBuffer.Write(flit);
             outputBuffer.ReleaseWrite();
         }
@@ -296,8 +300,8 @@ public sealed class CoreV1 : Core
                     $"{Name}_layerReads,{Name}_layerWrites",
                     $"{Name}_neuronReads,{Name}_neuronWrites",
                     $"{Name}_synapseReads,{Name}_synapseWrites",
-                    $"{Name}_computePops,{Name}_computePushes",
-                    $"{Name}_outputPops,{Name}_outputPushes");
+                    $"{Name}_computePushes,{Name}_computePops",
+                    $"{Name}_outputPushes,{Name}_outputPops");
             }
 
             if (spec.ShowALUStats)
