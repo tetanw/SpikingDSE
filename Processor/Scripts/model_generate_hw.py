@@ -1,5 +1,6 @@
 import json
 import math
+import sys
 
 from model_stats import Stats
 
@@ -83,8 +84,10 @@ def save_hw(model_path: str, hw_path: str, stats: Stats):
 
 
 if __name__ == "__main__":
-    model_path = "res/exp/exp1/model.json"
-    cost_path = "res/exp/exp1//cost.json"
-    hw_path = "res/exp/exp1/hw.json"
+    expName = sys.argv[1]
+
+    model_path = f"res/exp/{expName}/model.json"
+    cost_path = f"res/exp/{expName}/cost.json"
+    hw_path = f"res/exp/{expName}/hw.json"
     stats = Stats(model_path, cost_path)
     save_hw(model_path, hw_path, stats)
