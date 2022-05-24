@@ -115,7 +115,6 @@ public class ALIFLayer : HiddenLayer
     public override void FinishSync()
     {
         base.FinishSync();
-        TS++;
 
         Ops.AddCount("Multf32", 3 * Size);
         Ops.AddCount("Addf32", 2 * Size);

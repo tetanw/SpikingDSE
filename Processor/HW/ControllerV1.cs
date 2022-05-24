@@ -15,6 +15,9 @@ public sealed class ControllerV1 : Controller
 
     private Signal syncSignal;
 
+    private Queue<SpikeEvent> spikes = new();
+    private int TS = 0;
+
     public ControllerV1(ControllerV1Spec spec)
     {
         this.spec = spec;
@@ -72,14 +75,14 @@ public sealed class ControllerV1 : Controller
                 yield return env.SleepUntil(Math.Max(nextSync, env.Now));
 
                 // Sync
-                foreach (var ev in Sync(env, TS))
+                foreach (var ev in DoSync(env, TS))
                     yield return ev;
                 TS++;
             }
             else
             {
                 // Sync
-                foreach (var ev in Sync(env, TS))
+                foreach (var ev in DoSync(env, TS))
                     yield return ev;
 
                 yield return syncSignal.Wait();
@@ -90,13 +93,15 @@ public sealed class ControllerV1 : Controller
         if (!spec.GlobalSync)
         {
             // Sync
-            foreach (var ev in Sync(env, TS))
+            foreach (var ev in DoSync(env, TS))
                 yield return ev;
         }
     }
 
-    private IEnumerable<Event> Sync(Simulator env, int TS)
+    private IEnumerable<Event> DoSync(Simulator env, int TS)
     {
+        SyncMyLayers();
+
         foreach (var core in Mapping.Cores)
         {
             if (core is ControllerV1)
@@ -119,6 +124,7 @@ public sealed class ControllerV1 : Controller
             };
             yield return env.Send(Output, flit);
         }
+
         TimeAdvanced?.Invoke(this, env.Now, TS);
     }
 
@@ -143,20 +149,33 @@ public sealed class ControllerV1 : Controller
                 if (coresDone.Count == nrCores)
                 {
                     yield return env.Delay(spec.SyncDelay);
+                    TS++;
                     syncSignal.Notify();
-                    Sync(); // also simulate myself but no type is accounted for that
                     coresDone.Clear();
                 }
             }
             else if (packet.Message is SpikeEvent spike)
             {
-                OnSpikeReceived(spike);
+                spikes.Enqueue(spike);
             }
         }
     }
 
-    private void Sync()
+    private void SyncMyLayers()
     {
+        while (spikes.Count > 0)
+        {
+            var spike = spikes.Dequeue();
+            var layer = (HiddenLayer)spike.Layer;
+            if (spike.Feedback)
+                layer.Feedback(spike.Neuron);
+            else
+                layer.Forward(spike.Neuron);
+
+            if (spike.TS != TS)
+                throw new Exception("Wrongly timed spike");
+        }
+
         var myLayers = Mapping.GetAllLayers(this);
         foreach (var layer in myLayers)
         {
@@ -170,14 +189,5 @@ public sealed class ControllerV1 : Controller
                 hidden.FinishSync();
             }
         }
-    }
-
-    private void OnSpikeReceived(SpikeEvent spike)
-    {
-        var layer = (HiddenLayer)spike.Layer;
-        if (spike.Feedback)
-            layer.Feedback(spike.Neuron);
-        else
-            layer.Forward(spike.Neuron);
     }
 }

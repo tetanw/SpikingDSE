@@ -7,5 +7,7 @@
 			"path": "..\\SherifSHD"
 		}
 	],
-	"settings": {}
+	"settings": {
+		"terminal.integrated.scrollback": 10000
+	}
 }

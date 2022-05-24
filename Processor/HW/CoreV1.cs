@@ -94,6 +94,8 @@ public sealed class CoreV1 : Core
 
     private IEnumerable<Event> ALU(Simulator env)
     {
+        int TS = 0;
+
         while (true)
         {
             yield return syncs.RequestRead();
@@ -108,6 +110,8 @@ public sealed class CoreV1 : Core
                 computePops++;
                 if (isDone)
                     break;
+                if (spike.TS != TS)
+                    throw new Exception("Spike timing is wrong!");
                 foreach (var ev in Compute(env, spike))
                     yield return ev;
             }
@@ -135,6 +139,8 @@ public sealed class CoreV1 : Core
             }
 
             ALUBusy += env.Now - before;
+
+            TS++;
         }
     }
 

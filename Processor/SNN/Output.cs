@@ -6,21 +6,21 @@ namespace SpikingDSE;
 
 public class OutputLayer : HiddenLayer
 {
-    public float[] ReadoutArr;
-    public float[] Pots;
-    public float[] Output;
+    public double[] Pots;
+    public double[] Output;
     public float[,] Weights;
     public float Thr;
     public float[] Alpha;
+    public float[] Inputs;
 
     public OutputLayer(float[,] weights, float[] alpha, float threshold = 0.01f, string name = "")
     {
         InputSize = weights.GetLength(0);
         Size = weights.GetLength(1);
         Weights = weights;
-        Pots = new float[Size];
-        ReadoutArr = new float[Size];
-        Output = new float[Size];
+        Pots = new double[Size];
+        Inputs = new float[Size];
+        Output = new double[Size];
         Thr = threshold;
         Alpha = alpha;
         Name = name;
@@ -34,46 +34,40 @@ public class OutputLayer : HiddenLayer
     {
         for (int dst = 0; dst < Size; dst++)
         {
-            Pots[dst] += Weights[neuron, dst];
+            Inputs[dst] += Weights[neuron, dst];
         }
     }
 
     public override bool Sync(int dst)
     {
-        float pot = Pots[dst];
-
-        // Readout
-        ReadoutArr[dst] = pot;
-
         // Leakage for next ts
-        pot *= Alpha[dst]; // *
+        Pots[dst] = Alpha[dst] * Pots[dst] + Inputs[dst]; // *
 
-        // Writeback
-        Pots[dst] = pot;
+        // Reset inputs
+        Inputs[dst] = 0.0f;
 
         return false;
     }
 
     public override void FinishSync()
     {
-        base.FinishSync();
         UpdateOutput();
-        TS++;
+        base.FinishSync();
     }
 
     private void UpdateOutput()
     {
-        float[] softmax = Softmax(ReadoutArr);
+        double[] softmax = Softmax(Pots);
         for (int i = 0; i < Size; i++)
         {
             Output[i] += softmax[i];
         }
     }
 
-    private static float[] Softmax(float[] vector)
+    private static double[] Softmax(double[] vector)
     {
-        float[] res = new float[vector.Length];
-        float sum = 0.0f;
+        var res = new double[vector.Length];
+        var sum = 0.0;
         for (int i = 0; i < vector.Length; i++)
         {
             res[i] = (float)Math.Exp(vector[i]);
@@ -109,5 +103,5 @@ public class OutputLayer : HiddenLayer
 
     public override void Feedback(int neuron) { }
 
-    public override float[] Readout() => ReadoutArr;
+    public override float[] Readout() => Pots.Select(p => (float) p).ToArray();
 }

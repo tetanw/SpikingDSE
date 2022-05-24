@@ -93,6 +93,7 @@ public abstract class HiddenLayer : Layer
     public virtual void FinishSync()
     {
         SyncFinished?.Invoke();
+        TS++;
     }
     public abstract int Offset();
 }
