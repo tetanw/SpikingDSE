@@ -65,6 +65,7 @@ public sealed class CoreV1 : Core
 
             if (@event is SyncEvent sync)
             {
+                yield return env.Delay(spec.ReceiveSyncLat);
                 TS = sync.TS + 1;
                 computePushes++;
                 computeBuffer.Enqueue(new ComputeElement(true, null));
@@ -72,6 +73,7 @@ public sealed class CoreV1 : Core
             }
             else if (@event is SpikeEvent spike)
             {
+                yield return env.Delay(spec.ReceiveSpikeLat);
                 spike.ReceivedAt = env.Now;
                 OnSpikeReceived?.Invoke(env.Now, spike.Layer, spike.Neuron, spike.Feedback, spike, packet.NrHops);
 
@@ -106,6 +108,7 @@ public sealed class CoreV1 : Core
             // Integrate all synapses
             while (true)
             {
+                yield return env.Delay(spec.ALUReadLat);
                 var (isDone, spike) = computeBuffer.Dequeue();
                 computePops++;
                 if (isDone)
@@ -123,6 +126,7 @@ public sealed class CoreV1 : Core
             // Report done if needed
             if (spec.ReportSyncEnd)
             {
+                yield return env.Delay(spec.ALUWriteLat);
                 yield return outputBuffer.RequestWrite();
                 outputBuffer.Write(new Packet
                 {
@@ -207,7 +211,7 @@ public sealed class CoreV1 : Core
             };
             var destCoord = Mapping.CoordOf(destLayer);
 
-
+            yield return env.Delay(spec.ALUWriteLat);
             yield return outputBuffer.RequestWrite();
             var flit = new Packet
             {

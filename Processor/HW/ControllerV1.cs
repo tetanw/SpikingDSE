@@ -63,6 +63,8 @@ public sealed class ControllerV1 : Controller
                         Dest = dest,
                         Message = spike
                     };
+                    if (spec.SpikeSendDelay > 0)
+                        yield return env.Delay(spec.SpikeSendDelay);
                     yield return env.Send(Output, packet);
                     SpikeSent?.Invoke(this, env.Now, spike);
                 }

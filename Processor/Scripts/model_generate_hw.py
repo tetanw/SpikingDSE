@@ -41,15 +41,18 @@ def save_hw(model_path: str, hw_path: str, stats: Stats):
         "DisableIfIdle": True,
         "ShowMemStats": True,
         "ShowLayerStats": False,
-        "ShowALUStats": True,
+        "ReceiveSpikeLat": m["ReceiveSpikeLat"],
+        "ReceiveSyncLat": m["ReceiveSyncLat"],
+        "ALUReadLat": m["ALUReadLat"],
+        "ALUWriteLat": m["ALUWriteLat"],
     }
     hw["CoreTemplates"]["Core"]["LayerCosts"] = {}
     for layer, latencies in m["LayerDelays"].items():
         hw["CoreTemplates"]["Core"]["LayerCosts"][layer] = {
-            "SyncII": int(latencies["SyncII"]) ,
-            "SyncLat": int(latencies["SyncLat"]) ,
-            "IntegrateII": int(latencies["IntegrateII"]) ,
-            "IntegrateLat": int(latencies["IntegrateLat"]) 
+            "SyncII": int(latencies["SyncII"]),
+            "SyncLat": int(latencies["SyncLat"]),
+            "IntegrateII": int(latencies["IntegrateII"]),
+            "IntegrateLat": int(latencies["IntegrateLat"])
         }
 
     hw["Cores"] = []
@@ -69,7 +72,8 @@ def save_hw(model_path: str, hw_path: str, stats: Stats):
                     "GlobalSync": False,
                     "ConnectsTo": f"{x},{y}",
                     "IgnoreIdleCores": True,
-                    "SyncDelay": int(m["SyncDelay"])
+                    "SyncDelay": int(m["SyncDelay"]),
+                    "SpikeSendDelay": int(m["SpikeSendDelay"])
                 })
             else:
                 hw["Cores"].append({
