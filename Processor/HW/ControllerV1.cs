@@ -12,9 +12,7 @@ public sealed class ControllerV1 : Controller
     public Action<Actor, long, int> TimeAdvanced;
 
     public ControllerV1Spec spec;
-
     private Signal syncSignal;
-
     private Queue<SpikeEvent> spikes = new();
     private int TS = 0;
 
@@ -27,13 +25,13 @@ public sealed class ControllerV1 : Controller
     public override IEnumerable<Event> Run(Simulator env)
     {
         syncSignal = new(env);
-        env.Process(Sender(env));
+        env.Process(Main(env));
         env.Process(Receiver(env));
 
         yield break;
     }
 
-    private IEnumerable<Event> Sender(Simulator env)
+    private IEnumerable<Event> Main(Simulator env)
     {
         int TS = 0;
         var inputLayer = Mapping.GetInputLayer();

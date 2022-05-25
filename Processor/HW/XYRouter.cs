@@ -17,7 +17,6 @@ public sealed class XYRouter : MeshRouter
     public long[] outBusy = new long[5];
     public long switchBusy = 0;
     public long nrHops = 0;
-    private readonly Dictionary<string, int> Operations = new();
 
     public XYRouter(int x, int y, XYSpec spec)
     {
@@ -105,8 +104,6 @@ public sealed class XYRouter : MeshRouter
                         lastDir = inDir;
                         yield return env.Delay(spec.SwitchDelay);
                         outBuffers[outDir].Push(inBuffers[inDir].Pop());
-                        Operations.AddCount("Sub", 2);
-                        Operations.AddCount("Cmp", 2);
                         break;
                     }
                 }

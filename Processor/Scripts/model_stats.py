@@ -141,7 +141,7 @@ class Stats():
 
         # should be in PS
         noc = m["NoC"]
-        self.router_transfer_delay = noc["TransferDelay"] if noc["NrDataWires"] == -1 \
+        self.router_transfer_delay = noc["TransferDelay"] if "NrDataWires" not in noc \
              else math.ceil(self.packet_size / noc["NrDataWires"]) * noc["TransferDelay"]
 
     def print_summary(self):
@@ -231,7 +231,7 @@ class Stats():
         print(f"        Push: {self.output_buf_pushes * 1E12:,.2f} pJ / push")
         print(f"Delays:")
         print(
-            f"  Packet transfer: {self.router_transfer_delay:,.2f} ps")
+            f"  Packet transfer: {self.router_transfer_delay:,} ps")
         for layer, values in self.m["LayerDelays"].items():
             print(f"  {layer}:")
             print(

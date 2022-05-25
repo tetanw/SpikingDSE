@@ -143,7 +143,6 @@ public sealed class CoreV1 : Core
             }
 
             ALUBusy += env.Now - before;
-
             TS++;
         }
     }
@@ -229,6 +228,7 @@ public sealed class CoreV1 : Core
     {
         foreach (var (layer, neuron) in pendingSpikes)
         {
+            // Recurrent spikes
             if (layer.Recurrent)
                 foreach (var ev in SendSpikes(env, Mapping.GetSiblings(layer).Cast<HiddenLayer>(), true, TS, layer.Offset() + neuron))
                     yield return ev;
@@ -240,6 +240,7 @@ public sealed class CoreV1 : Core
             OnSpikeSent?.Invoke(env.Now, layer, neuron);
         }
 
+        // No more pending spikes they are all sent
         pendingSpikes.Clear();
     }
 
@@ -255,7 +256,6 @@ public sealed class CoreV1 : Core
             long startTime = env.Now;
             for (int line = 0; line < layer.Size; line += spec.NrParallel)
             {
-                int spikesLeft = spec.NrParallel - nrSpikesProcessed;
                 for (int neuron = line; neuron < Math.Min(line + spec.NrParallel, layer.Size); neuron++)
                 {
                     if (layer.Sync(neuron))
@@ -296,7 +296,7 @@ public sealed class CoreV1 : Core
         string baseStr = "";
         if (header)
         {
-            baseStr = $"{Name}_sops,{Name}_util";
+            baseStr = $"{Name}_sops,{Name}_alu_util,{Name}_recv_util,{Name}_snd_util";
 
             if (spec.ShowLayerStats)
             {
@@ -323,7 +323,9 @@ public sealed class CoreV1 : Core
         else
         {
             double aluUtil = (double)ALUBusy / now;
-            baseStr = $"{nrSOPs},{aluUtil}";
+            double recvUtil = (double)receiverBusy / now;
+            double sndUtil = (double) senderBusy / now;
+            baseStr = $"{nrSOPs},{aluUtil},{recvUtil},{sndUtil}";
 
             if (spec.ShowLayerStats)
             {
