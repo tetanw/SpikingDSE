@@ -8,10 +8,6 @@ from model_stats import Stats
 def save_hw(model_path: str, hw_path: str, stats: Stats):
     f = open(model_path)
     m = json.load(f)
-    noc = m["NoC"]
-
-    # Assumption: two-phase handshake, changing values on req and ack each take 1 cycle
-    # transfer_latency = 1 if noc["NrDataWires"] == -1 else math.ceil(stats.packet_size / noc["NrDataWires"])
 
     hw = {"Global": {}, "CoreTemplates": {}}
     hw["NoC"] = {
@@ -20,10 +16,10 @@ def save_hw(model_path: str, hw_path: str, stats: Stats):
         "Height": m["NoC"]["Height"],
         "InputSize": m["NoC"]["InputSize"],
         "OutputSize": m["NoC"]["OutputSize"],
-        "SwitchDelay": 0,
+        "SwitchDelay": m["NoC"]["SwitchDelay"],
         "TransferDelay": int(stats.router_transfer_delay),
-        "InputDelay": 1050,
-        "OutputDelay": 1050
+        "InputDelay": m["NoC"]["InputDelay"],
+        "OutputDelay": m["NoC"]["OutputDelay"]
     }
     hw["CoreTemplates"]["Core"] = {
         "Type": "core-v1",

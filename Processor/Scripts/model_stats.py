@@ -140,7 +140,9 @@ class Stats():
             self.output_mem, self.output_mem_width)
 
         # should be in PS
-        self.router_transfer_delay = (1.05 + 6.366 * l) * 1E3
+        noc = m["NoC"]
+        self.router_transfer_delay = noc["TransferDelay"] if noc["NrDataWires"] == -1 \
+             else math.ceil(self.packet_size / noc["NrDataWires"]) * noc["TransferDelay"]
 
     def print_summary(self):
         print(f"Core memory:")
