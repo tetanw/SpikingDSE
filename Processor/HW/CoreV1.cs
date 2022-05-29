@@ -43,6 +43,7 @@ public sealed class CoreV1 : Core
     private Buffer<Packet> outputBuffer;
     private Queue<ComputeElement> computeBuffer;
     private Buffer<SyncEvent> syncs;
+    private int nrFaultySpikes = 0;
 
     public CoreV1(CoreV1Spec spec)
     {
@@ -77,19 +78,9 @@ public sealed class CoreV1 : Core
                 spike.ReceivedAt = env.Now;
                 OnSpikeReceived?.Invoke(env.Now, spike.Layer, spike.Neuron, spike.Feedback, spike, packet.NrHops);
 
-                if (spike.TS > TS)
-                {
-                    throw new Exception("Spike too early");
-                }
-                else if (spike.TS < TS)
-                {
-                    throw new Exception("Spike too late");
-                }
-                else
-                {
-                    computePushes++;
-                    computeBuffer.Enqueue(new(false, spike));
-                }
+
+                computePushes++;
+                computeBuffer.Enqueue(new(false, spike));
             }
         }
     }
@@ -114,7 +105,7 @@ public sealed class CoreV1 : Core
                 if (isDone)
                     break;
                 if (spike.TS != TS)
-                    throw new Exception("Spike timing is wrong!");
+                    nrFaultySpikes++;
                 foreach (var ev in Compute(env, spike))
                     yield return ev;
             }
@@ -296,7 +287,7 @@ public sealed class CoreV1 : Core
         string baseStr = "";
         if (header)
         {
-            baseStr = $"{Name}_sops,{Name}_alu_util,{Name}_recv_util,{Name}_snd_util";
+            baseStr = $"{Name}_sops,{Name}_faulty_spikes,{Name}_alu_util,{Name}_recv_util,{Name}_snd_util";
 
             if (spec.ShowLayerStats)
             {
@@ -325,7 +316,7 @@ public sealed class CoreV1 : Core
             double aluUtil = (double)ALUBusy / now;
             double recvUtil = (double)receiverBusy / now;
             double sndUtil = (double) senderBusy / now;
-            baseStr = $"{nrSOPs},{aluUtil},{recvUtil},{sndUtil}";
+            baseStr = $"{nrSOPs},{nrFaultySpikes},{aluUtil},{recvUtil},{sndUtil}";
 
             if (spec.ShowLayerStats)
             {

@@ -23,7 +23,7 @@ if __name__ == "__main__":
     runs = sys.argv[1].split(",")
     models = [
         # ("best", "shd-10"),
-        ("shd1", "shd-10"),
+        # ("shd1", "shd-10"),
         # ("shd4", "shd-10"),
         # ("smnist3", "smnist-3"),
         # ("smnist4", "smnist-4"),
