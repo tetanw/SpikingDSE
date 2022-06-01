@@ -1,4 +1,3 @@
-from pyexpat import model
 import sys
 import pandas
 from model_stats import *
@@ -50,7 +49,7 @@ class Metrics():
                 stats.output_buf_pops
             self.dyn_output_push += exp[f"{c}_outputPushes"] * \
                 stats.output_buf_pushes
-            self.nr_faults += exp[f"{c}_faulty_spikes"].sum()
+            # self.nr_faults += exp[f"{c}_faultySpikes"].sum()
         self.dynamic_mem = self.dyn_neuron_read + self.dyn_layer_write + self.dyn_layer_read + \
             self.dyn_layer_write + self.dyn_syn_read + self.dyn_syn_write
 

@@ -41,9 +41,9 @@ class Stats():
             self.spike_packet, self.sync_packet, self.sync_done_packet)
 
         # core memory
-        self.neuron_mem_width = m["NeuronSize"]
+        self.neuron_mem_width = m["NrParallel"] * m["NeuronSize"]
         self.neuron_mem = m["MaxNeurons"] * self.neuron_mem_width
-        self.syn_mem_width = m["SynapseSize"]
+        self.syn_mem_width = m["NrParallel"] * m["SynapseSize"]
         self.syn_mem = m["MaxSynapses"] * self.syn_mem_width
         split_mem = dx + dy + layer_bits + feedback
         self.layer_mem_width = (2 * neuron_bits + 4 *
@@ -116,18 +116,19 @@ class Stats():
             return (0.0000467955605*bits+0.305233644*word_size+3.23205817)*1E-12
 
         # memory energies
-        # TODO: Add 2 other buffers to memory
+        nr_parallel = m["NrParallel"]
         self.layer_mem_read = dynamic_read_sram(
             self.layer_mem, self.layer_mem_width)
         self.layer_mem_write = dynamic_write_sram(
             self.layer_mem, self.layer_mem_width)
         self.neuron_mem_read = dynamic_read_sram(
-            self.neuron_mem, self.neuron_mem_width)
+            self.neuron_mem, self.neuron_mem_width) / nr_parallel
         self.neuron_mem_write = dynamic_write_sram(
-            self.neuron_mem, self.neuron_mem_width)
-        self.syn_mem_read = dynamic_read_sram(self.syn_mem, self.syn_mem_width)
+            self.neuron_mem, self.neuron_mem_width) / nr_parallel
+        self.syn_mem_read = dynamic_read_sram(
+            self.syn_mem, self.syn_mem_width) / nr_parallel
         self.syn_mem_write = dynamic_write_sram(
-            self.syn_mem, self.syn_mem_width)
+            self.syn_mem, self.syn_mem_width) / nr_parallel
 
         # Buffer energies
         self.compute_buf_pops = dynamic_read_sram(
@@ -142,7 +143,7 @@ class Stats():
         # should be in PS
         noc = m["NoC"]
         self.router_transfer_delay = noc["TransferDelay"] if "NrDataWires" not in noc \
-             else math.ceil(self.packet_size / noc["NrDataWires"]) * noc["TransferDelay"]
+            else math.ceil(self.packet_size / noc["NrDataWires"]) * noc["TransferDelay"]
 
     def print_summary(self):
         print(f"Core memory:")
@@ -217,11 +218,14 @@ class Stats():
         print(f"        Read: {self.layer_mem_read * 1E12:,.2f} pJ / read")
         print(f"        Write: {self.layer_mem_write * 1E12:,.2f} pJ / write")
         print(f"      Neuron:")
-        print(f"        Read: {self.neuron_mem_read * 1E12:,.2f} pJ / read")
-        print(f"        Write: {self.neuron_mem_write * 1E12:,.2f} pj / write")
+        print(
+            f"        Read: {self.neuron_mem_read * 1E12:,.2f} pJ / neuron read")
+        print(
+            f"        Write: {self.neuron_mem_write * 1E12:,.2f} pj / neuron written")
         print(f"      Synapse:")
-        print(f"        Read: {self.syn_mem_read * 1E12:,.2f} pJ / read")
-        print(f"        Write: {self.syn_mem_write * 1E12:,.2f} pJ / write")
+        print(f"        Read: {self.syn_mem_read * 1E12:,.2f} pJ / syn read")
+        print(
+            f"        Write: {self.syn_mem_write * 1E12:,.2f} pJ / syn written")
         print(f"    Buffers:")
         print(f"      Compute:")
         print(f"        Pop: {self.compute_buf_pops * 1E12:,.2f} pJ / pop")

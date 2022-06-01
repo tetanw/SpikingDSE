@@ -18,6 +18,8 @@ public sealed class CoreV1 : Core
 
     // Stats
     public int nrSOPs = 0;
+    public int nrNOPs = 0;
+    public int nrSpikesGenerated = 0;
     public long receiverBusy;
     public long ALUBusy;
     public long senderBusy;
@@ -260,13 +262,15 @@ public sealed class CoreV1 : Core
                     yield return env.Delay(costs.SyncLat);
                 else
                     yield return env.Delay(costs.SyncII);
+                nrSpikesGenerated += pendingSpikes.Count;
                 foreach (var ev in SendPendingSpikes(env, sync.TS, pendingSpikes))
                     yield return ev;
                 nrSpikesProcessed = 0;
             }
-
+            
             layerSyncs.AddCount(layer.TypeName, layer.Size);
             layerReads++;
+            nrNOPs += layer.Size;
             neuronReads += layer.Size;
             neuronWrites += layer.Size;
             layer.FinishSync();
@@ -287,7 +291,7 @@ public sealed class CoreV1 : Core
         string baseStr = "";
         if (header)
         {
-            baseStr = $"{Name}_sops,{Name}_faulty_spikes,{Name}_alu_util,{Name}_recv_util,{Name}_snd_util";
+            baseStr = $"{Name}_sops,{Name}_faultySpikes,{Name}_sparsity,{Name}_alu_util,{Name}_recv_util,{Name}_snd_util";
 
             if (spec.ShowLayerStats)
             {
@@ -316,7 +320,9 @@ public sealed class CoreV1 : Core
             double aluUtil = (double)ALUBusy / now;
             double recvUtil = (double)receiverBusy / now;
             double sndUtil = (double) senderBusy / now;
-            baseStr = $"{nrSOPs},{nrFaultySpikes},{aluUtil},{recvUtil},{sndUtil}";
+            double sparsity = (double) nrSpikesGenerated / nrNOPs;
+
+            baseStr = $"{nrSOPs},{nrFaultySpikes},{sparsity},{aluUtil},{recvUtil},{sndUtil}";
 
             if (spec.ShowLayerStats)
             {
