@@ -46,7 +46,7 @@ class Stats():
         self.syn_mem_width = m["NrParallel"] * m["SynapseSize"]
         self.syn_mem = m["MaxSynapses"] * self.syn_mem_width
         split_mem = dx + dy + layer_bits + feedback
-        self.layer_mem_width = (m["BaseLayerSize"] + 2 * neuron_bits + 4 *
+        self.layer_mem_width = (m["BaseLayerSize"] + neuron_bits + 2 * neuron_bits + 4 *
                                 syn_bits + 2 * m["MaxSplits"] * split_mem)
         self.layer_mem = m["MaxLayers"] * self.layer_mem_width
         self.output_mem_width = self.packet_size
