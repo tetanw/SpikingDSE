@@ -19,7 +19,7 @@ if __name__ == "__main__":
 
     cost_path = f"res/exp/{expName}/cost.json"
 
-    print("model,energy,duration,area")
+    print("model,energy,throughput,accuracy,sparsity,area")
     for modelName in models:
         exp = pandas.read_csv(
             f"res/exp/{expName}/results/{modelName}/experiments.csv")
@@ -28,7 +28,9 @@ if __name__ == "__main__":
         
         parts = []
         parts.append(modelName)
-        parts.append(f"{m.total_energy:2f}")
-        parts.append(f"{m.latency.sum():2f}")
-        parts.append(f"{s.chip_area*1E-6:2f}")
+        parts.append(f"{m.total_energy:.2f}")
+        parts.append(f"{m.inferences_per_second:.2f}")
+        parts.append(f"{m.accuracy:.2f}")
+        parts.append(f"{m.total_sparsity:.2f}")
+        parts.append(f"{s.chip_area*1E-6:.2f}")
         print(",".join(parts))

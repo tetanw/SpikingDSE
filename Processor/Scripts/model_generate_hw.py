@@ -37,6 +37,7 @@ def save_hw(model_path: str, hw_path: str, stats: Stats):
         "DisableIfIdle": True,
         "ShowMemStats": True,
         "ShowLayerStats": False,
+        "ShowALUStats": True,
         "ReceiveSpikeLat": m["ReceiveSpikeLat"],
         "ReceiveSyncLat": m["ReceiveSyncLat"],
         "ALUReadLat": m["ALUReadLat"],

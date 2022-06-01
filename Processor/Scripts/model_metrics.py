@@ -28,6 +28,7 @@ class Metrics():
         self.dyn_output_pop = 0.0
         self.dyn_output_push = 0.0
         self.nr_faults = 0
+        self.sparsity = {}
         for c in self.cores:
             self.dyn_neuron_read += exp[f"{c}_neuronReads"] * \
                 stats.neuron_mem_read
@@ -49,19 +50,23 @@ class Metrics():
                 stats.output_buf_pops
             self.dyn_output_push += exp[f"{c}_outputPushes"] * \
                 stats.output_buf_pushes
+            self.sparsity[c] = exp[f"{c}_sparsity"].mean()
             # self.nr_faults += exp[f"{c}_faultySpikes"].sum()
+        self.total_sparsity = sum([value for value in self.sparsity.values()]) / len(self.cores)
         self.dynamic_mem = self.dyn_neuron_read + self.dyn_layer_write + self.dyn_layer_read + \
             self.dyn_layer_write + self.dyn_syn_read + self.dyn_syn_write
 
         self.dynamic_alu = {}
         self.dynamic_alu_total = 0.0
         for c in self.cores:
+            print(self.ops(c))
             for op in self.ops(c):
                 nr_ops = exp[f"{c}_ops_{op}"].sum()
                 energy_per_op = self.cost["ALU"][op]["Dynamic"]
                 energy = nr_ops * energy_per_op
+                print(nr_ops, energy_per_op, energy)
                 self.dynamic_alu_total += energy
-                if op in self.dynamic_alu:
+                if op in self.dynamic_alu.items():
                     self.dynamic_alu[op] += energy
                 else:
                     self.dynamic_alu[op] = energy
@@ -102,6 +107,7 @@ class Metrics():
     def print_summary(self):
         # self.stats.print_summary()
         print(f"NrFaults: {self.nr_faults}")
+        print(f"Sparity: {self.total_sparsity:.4f}")
         print(
             f"Total duration: {self.latency.sum():.2f} s ({self.inferences_per_second:.2f} inferences/s)")
         print(f"Throughput:")
