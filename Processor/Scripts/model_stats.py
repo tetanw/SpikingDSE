@@ -106,8 +106,8 @@ class Stats():
         # Dynamic: Depends on memory + layer operations using Aladdin
         l = (self.core_area/1E6)**(0.5)  # calculate dimensions of cores
         technology = voltage**2 / 1.2**2
-        self.wolkotte_mesh = (1.37 + 0.12 * l) * technology / 1E12
-        self.router_dyn = self.wolkotte_mesh  # Depends on formula from Wolkotte
+        self.router_dyn_bit = (1.37 + 0.12 * l) * technology / 1E12
+        self.router_dyn_packet = self.router_dyn_bit * self.packet_size  # Depends on formula from Wolkotte
 
         def dynamic_read_sram(bits, word_size):
             return (0.0000331817313*bits+0.200534285*word_size+3.70946309)*1E-12
@@ -211,7 +211,7 @@ class Stats():
         print(f"Dynamic energy:")
         print(f"  Router:")
         print(
-            f"    Hop: {self.wolkotte_mesh * 1E12:,.2f} pJ/b ({self.wolkotte_mesh * self.packet_size * 1E12:,.2f} pJ/packet)")
+            f"    Hop: {self.router_dyn_bit * 1E12:,.2f} pJ/b ({self.router_dyn_packet * 1E12:,.2f} pJ/packet)")
         print(f"  Core:")
         print(f"    Memories:")
         print(f"      Layer:")

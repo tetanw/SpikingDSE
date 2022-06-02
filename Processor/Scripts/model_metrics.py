@@ -59,21 +59,20 @@ class Metrics():
         self.dynamic_alu = {}
         self.dynamic_alu_total = 0.0
         for c in self.cores:
-            print(self.ops(c))
             for op in self.ops(c):
                 nr_ops = exp[f"{c}_ops_{op}"].sum()
                 energy_per_op = self.cost["ALU"][op]["Dynamic"]
                 energy = nr_ops * energy_per_op
-                print(nr_ops, energy_per_op, energy)
                 self.dynamic_alu_total += energy
-                if op in self.dynamic_alu.items():
+                if op in self.dynamic_alu:
                     self.dynamic_alu[op] += energy
                 else:
                     self.dynamic_alu[op] = energy
 
         self.dynamic_router = 0.0
         for r in self.routers:
-            self.dynamic_router += exp[f"{r}_nrHops"] * stats.router_dyn
+            energy = exp[f"{r}_nrHops"] * stats.router_dyn_packet
+            self.dynamic_router += energy
 
         self.total_energy = self.static_energy.sum() + self.dynamic_mem.sum() + \
             self.dynamic_alu_total + self.dynamic_router.sum()
@@ -100,7 +99,7 @@ class Metrics():
 
     def ops(self, c):
         cols = self.exp.columns.values.tolist()
-        cols = [col.removeprefix(f"{c}_ops_")
+        cols = [col.lstrip(f"{c}_ops_")
                 for col in cols if col.startswith(f"{c}_ops_")]
         return cols
 
@@ -116,23 +115,23 @@ class Metrics():
         print(f"Energy:")
         print(f"  Synaptic energy: {self.sop_energy * 1E12:.2f} pJ")
         print(
-            f"  Static: {self.static_energy.sum():.2f} J ({s.core_static * self.nr_active_cores * 1E6:.2f} uW)")
+            f"  Static: {self.static_energy.sum():.3f} J ({s.core_static * self.nr_active_cores * 1E6:,.3f} uW)")
         print(f"  Dynamic:")
-        print(f"    Core Mem: {self.dynamic_mem.sum():.2f} J")
-        print(f"      Layer read: {self.dyn_layer_read.sum():.2f} J")
-        print(f"      Layer write: {self.dyn_layer_write.sum():.2f} J")
-        print(f"      Neuron read: {self.dyn_neuron_read.sum():.2f} J")
-        print(f"      Neuron write: {self.dyn_neuron_write.sum():.2f} J")
-        print(f"      Synapse read: {self.dyn_syn_read.sum():.2f} J")
-        print(f"      Synapse write: {self.dyn_syn_write.sum():.2f} J")
-        print(f"      Compute pop: {self.dyn_compute_pop.sum():.2f} J")
-        print(f"      Compute push: {self.dyn_compute_push.sum():.2f} J")
-        print(f"      Output pop: {self.dyn_output_pop.sum():.2f} J")
-        print(f"      Output push: {self.dyn_output_push.sum():.2f} J")
-        print(f"    Core ALU: {self.dynamic_alu_total:.2f} J")
+        print(f"    Core Mem: {self.dynamic_mem.sum():.3f} J")
+        print(f"      Layer read: {self.dyn_layer_read.sum():.3f} J")
+        print(f"      Layer write: {self.dyn_layer_write.sum():.3f} J")
+        print(f"      Neuron read: {self.dyn_neuron_read.sum():.3f} J")
+        print(f"      Neuron write: {self.dyn_neuron_write.sum():.3f} J")
+        print(f"      Synapse read: {self.dyn_syn_read.sum():.3f} J")
+        print(f"      Synapse write: {self.dyn_syn_write.sum():.3f} J")
+        print(f"      Compute pop: {self.dyn_compute_pop.sum():.3f} J")
+        print(f"      Compute push: {self.dyn_compute_push.sum():.3f} J")
+        print(f"      Output pop: {self.dyn_output_pop.sum():.3f} J")
+        print(f"      Output push: {self.dyn_output_push.sum():.3f} J")
+        print(f"    Core ALU: {self.dynamic_alu_total:.3f} J")
         for op, op_energy in self.dynamic_alu.items():
-            print(f"      {op}: {op_energy:.2f} J")
-        print(f"    Router: {self.dynamic_router.sum():.2f} J")
+            print(f"      {op}: {op_energy:.3f} J")
+        print(f"    Router: {self.dynamic_router.sum():.3f} J")
         print(
             f"  Total: {self.total_energy:.3f} J ({self.total_power*1E3:.2f} mW)")
 
