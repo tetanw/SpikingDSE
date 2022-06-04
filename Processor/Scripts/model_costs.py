@@ -4,19 +4,48 @@ import sys
 import pandas
 
 
-class Stats():
-    def __init__(self, model_path: str, cost_path: str):
+class Costs():
+    def __init__(self, model_path: str):
         # parse model
         m = json.load(open(model_path))
         self.m = m
 
         # parse costs
-        cost = json.load(open(cost_path))
-        self.cost = cost
-        alu = cost["ALU"]
+        self.alu_costs =  {
+            "Addf32": {
+                "Static": 15,
+                "Area": 2060,
+                "Dynamic": 7.701E-12
+            },
+            "Subf32": {
+                "Static": 15,
+                "Area": 2060,
+                "Dynamic": 7.701E-12
+            },
+            "Multf32": {
+                "Static": 44.8,
+                "Area": 2060,
+                "Dynamic": 7.701E-12
+            },
+            "Cmpf32": {
+                "Dynamic": 7.701E-12
+            }
+        }
 
         def addr(x):
             return math.ceil(math.log2(x))
+
+        def mem_area(bits):
+            return 0.4586 * bits + 12652
+
+        def mem_static(bits):
+            return (8E-05 * bits + 1.822) * 1E-6
+
+        def mem_dyn_read(bits, word_size):
+            return (0.0000331817313*bits+0.200534285*word_size+3.70946309)*1E-12
+
+        def mem_dyn_write(bits, word_size):
+            return (0.0000467955605*bits+0.305233644*word_size+3.23205817)*1E-12
 
         self.width = m["NoC"]["Width"]
         self.height = m["NoC"]["Height"]
@@ -61,31 +90,25 @@ class Stats():
         self.router_input_mem = m["NoC"]["InputSize"] * self.packet_size
         self.router_output_mem = m["NoC"]["OutputSize"] * self.packet_size
 
-        def calc_area(bits):
-            return 0.4586 * bits + 12652
-
         # core area
-        self.neuron_area = calc_area(self.neuron_mem)
-        self.syn_area = calc_area(self.syn_mem)
-        self.layer_area = calc_area(self.layer_mem)
-        self.output_area = calc_area(self.output_mem)
-        self.compute_area = calc_area(self.compute_mem)
+        self.neuron_area = mem_area(self.neuron_mem)
+        self.syn_area = mem_area(self.syn_mem)
+        self.layer_area = mem_area(self.layer_mem)
+        self.output_area = mem_area(self.output_mem)
+        self.compute_area = mem_area(self.compute_mem)
         self.alu_area = {}
         for name, amount in m["CoreALU"].items():
-            self.alu_area[name] = amount * alu[name]["Area"]
+            self.alu_area[name] = amount * self.alu_costs[name]["Area"]
         self.alu_area_total = sum(v for _, v in self.alu_area.items())
         core_mem_area = self.neuron_area + self.syn_area + \
             self.layer_area + self.output_area + self.compute_area
         self.core_area = core_mem_area + self.alu_area_total
 
         # router area
-        self.router_input_area = calc_area(self.router_input_mem)
-        self.router_output_area = calc_area(self.output_mem)
+        self.router_input_area = mem_area(self.router_input_mem)
+        self.router_output_area = mem_area(self.output_mem)
         self.router_area = 5 * self.router_input_area + 5 * self.router_output_area
         self.chip_area = self.core_area * self.size + self.router_area * self.size
-
-        def mem_static(bits):
-            return (8E-05 * bits + 1.822) * 1E-6
 
         # Static: In watts
         self.core_dynamic = mem_static(self.core_mem)
@@ -98,7 +121,7 @@ class Stats():
                                 self.compute_static + self.output_static) * voltage
         self.alu_static = {}
         for name, amount in m["CoreALU"].items():
-            self.alu_static[name] = amount * alu[name]["Static"] / 1E6
+            self.alu_static[name] = amount * self.alu_costs[name]["Static"] / 1E6
         self.alu_static_total = sum(v for _, v in self.alu_static.items())
         self.core_static = self.core_mem_static + self.alu_static_total
         self.chip_static = (self.size - 1) * self.core_static
@@ -109,35 +132,29 @@ class Stats():
         self.router_dyn_bit = (1.37 + 0.12 * l) * technology / 1E12
         self.router_dyn_packet = self.router_dyn_bit * self.packet_size  # Depends on formula from Wolkotte
 
-        def dynamic_read_sram(bits, word_size):
-            return (0.0000331817313*bits+0.200534285*word_size+3.70946309)*1E-12
-
-        def dynamic_write_sram(bits, word_size):
-            return (0.0000467955605*bits+0.305233644*word_size+3.23205817)*1E-12
-
         # memory energies
         nr_parallel = m["NrParallel"]
-        self.layer_mem_read = dynamic_read_sram(
+        self.layer_mem_read = mem_dyn_read(
             self.layer_mem, self.layer_mem_width)
-        self.layer_mem_write = dynamic_write_sram(
+        self.layer_mem_write = mem_dyn_write(
             self.layer_mem, self.layer_mem_width)
-        self.neuron_mem_read = dynamic_read_sram(
+        self.neuron_mem_read = mem_dyn_read(
             self.neuron_mem, self.neuron_mem_width) / nr_parallel
-        self.neuron_mem_write = dynamic_write_sram(
+        self.neuron_mem_write = mem_dyn_write(
             self.neuron_mem, self.neuron_mem_width) / nr_parallel
-        self.syn_mem_read = dynamic_read_sram(
+        self.syn_mem_read = mem_dyn_read(
             self.syn_mem, self.syn_mem_width) / nr_parallel
-        self.syn_mem_write = dynamic_write_sram(
+        self.syn_mem_write = mem_dyn_write(
             self.syn_mem, self.syn_mem_width) / nr_parallel
 
         # Buffer energies
-        self.compute_buf_pops = dynamic_read_sram(
+        self.compute_buf_pops = mem_dyn_read(
             self.compute_mem, self.compute_mem_width)
-        self.compute_buf_pushes = dynamic_write_sram(
+        self.compute_buf_pushes = mem_dyn_write(
             self.compute_mem, self.compute_mem_width)
-        self.output_buf_pops = dynamic_read_sram(
+        self.output_buf_pops = mem_dyn_read(
             self.output_mem, self.output_mem_width)
-        self.output_buf_pushes = dynamic_write_sram(
+        self.output_buf_pushes = mem_dyn_write(
             self.output_mem, self.output_mem_width)
 
         # should be in PS
@@ -247,5 +264,5 @@ class Stats():
 if __name__ == "__main__":
     expName = sys.argv[1]
 
-    s = Stats(f"res/exp/{expName}/model.json", f"res/exp/{expName}/cost.json")
-    s.print_summary()
+    c = Costs(f"res/exp/{expName}/model.json", f"res/exp/{expName}/cost.json")
+    c.print_summary()

@@ -1,21 +1,19 @@
 import sys
 import pandas
-from model_stats import *
-
+from model_costs import *
 
 class Metrics():
-    def __init__(self, stats: Stats, cost_path: str, exp):
+    def __init__(self, cost: Costs, exp):
         self.exp = exp
-        self.stats = stats
-        self.cost = json.load(open(cost_path))
+        self.cost = cost
 
         self.cores = [f"core{core_id}" for core_id in range(
-            0, stats.size) if f"core{core_id}_neuronReads" in exp]
-        self.routers = [f"router({x}_{y})" for x in range(0, stats.width) for y in range(
-            0, stats.height) if f"router({x}_{y})_nrHops" in exp]
+            0, cost.size) if f"core{core_id}_neuronReads" in exp]
+        self.routers = [f"router({x}_{y})" for x in range(0, cost.width) for y in range(
+            0, cost.height) if f"router({x}_{y})_nrHops" in exp]
         self.latency = exp["latency"] * 1E-12
         self.nr_active_cores = len(self.cores)
-        self.static_energy = self.latency * stats.core_static * self.nr_active_cores
+        self.static_energy = self.latency * cost.core_static * self.nr_active_cores
 
         self.dyn_layer_read = 0.0
         self.dyn_layer_write = 0.0
@@ -31,25 +29,25 @@ class Metrics():
         self.sparsity = {}
         for c in self.cores:
             self.dyn_neuron_read += exp[f"{c}_neuronReads"] * \
-                stats.neuron_mem_read
+                cost.neuron_mem_read
             self.dyn_neuron_write += exp[f"{c}_neuronWrites"] * \
-                stats.neuron_mem_write
+                cost.neuron_mem_write
             self.dyn_layer_read += exp[f"{c}_layerReads"] * \
-                stats.layer_mem_read
+                cost.layer_mem_read
             self.dyn_layer_write += exp[f"{c}_layerWrites"] * \
-                stats.layer_mem_write
+                cost.layer_mem_write
             self.dyn_syn_read += exp[f"{c}_synapseReads"] * \
-                stats.syn_mem_read
+                cost.syn_mem_read
             self.dyn_syn_write += exp[f"{c}_synapseWrites"] * \
-                stats.syn_mem_write
+                cost.syn_mem_write
             self.dyn_compute_pop += exp[f"{c}_computePops"] * \
-                stats.compute_buf_pops
+                cost.compute_buf_pops
             self.dyn_compute_push += exp[f"{c}_computePushes"] * \
-                stats.compute_buf_pushes
+                cost.compute_buf_pushes
             self.dyn_output_pop += exp[f"{c}_outputPops"] * \
-                stats.output_buf_pops
+                cost.output_buf_pops
             self.dyn_output_push += exp[f"{c}_outputPushes"] * \
-                stats.output_buf_pushes
+                cost.output_buf_pushes
             self.sparsity[c] = exp[f"{c}_sparsity"].mean()
             # self.nr_faults += exp[f"{c}_faultySpikes"].sum()
         self.total_sparsity = sum([value for value in self.sparsity.values()]) / len(self.cores)
@@ -61,7 +59,7 @@ class Metrics():
         for c in self.cores:
             for op in self.ops(c):
                 nr_ops = exp[f"{c}_ops_{op}"].sum()
-                energy_per_op = self.cost["ALU"][op]["Dynamic"]
+                energy_per_op = self.cost.alu_costs[op]["Dynamic"]
                 energy = nr_ops * energy_per_op
                 self.dynamic_alu_total += energy
                 if op in self.dynamic_alu:
@@ -71,7 +69,7 @@ class Metrics():
 
         self.dynamic_router = 0.0
         for r in self.routers:
-            energy = exp[f"{r}_nrHops"] * stats.router_dyn_packet
+            energy = exp[f"{r}_nrHops"] * cost.router_dyn_packet
             self.dynamic_router += energy
 
         self.total_energy = self.static_energy.sum() + self.dynamic_mem.sum() + \
@@ -115,7 +113,7 @@ class Metrics():
         print(f"Energy:")
         print(f"  Synaptic energy: {self.sop_energy * 1E12:.2f} pJ")
         print(
-            f"  Static: {self.static_energy.sum():.3f} J ({s.core_static * self.nr_active_cores * 1E6:,.3f} uW)")
+            f"  Static: {self.static_energy.sum():.3f} J ({c.core_static * self.nr_active_cores * 1E6:,.3f} uW)")
         print(f"  Dynamic:")
         print(f"    Core Mem: {self.dynamic_mem.sum():.3f} J")
         print(f"      Layer read: {self.dyn_layer_read.sum():.3f} J")
@@ -144,6 +142,6 @@ if __name__ == "__main__":
 
     exp = pandas.read_csv(
         f"res/exp/{expName}/results/{modelName}/experiments.csv")
-    s = Stats(f"res/exp/{expName}/model.json", cost_path)
-    m = Metrics(s, cost_path, exp)
+    c = Stats(f"res/exp/{expName}/model.json", cost_path)
+    m = Metrics(c, cost_path, exp)
     m.print_summary()

@@ -2,10 +2,10 @@ import json
 import math
 import sys
 
-from model_stats import Stats
+from model_costs import Costs
 
 
-def save_hw(model_path: str, hw_path: str, stats: Stats):
+def save_hw(model_path: str, hw_path: str, costs: Costs):
     f = open(model_path)
     m = json.load(f)
 
@@ -17,7 +17,7 @@ def save_hw(model_path: str, hw_path: str, stats: Stats):
         "InputSize": m["NoC"]["InputSize"],
         "OutputSize": m["NoC"]["OutputSize"],
         "SwitchDelay": m["NoC"]["SwitchDelay"],
-        "TransferDelay": int(stats.router_transfer_delay),
+        "TransferDelay": int(costs.router_transfer_delay),
         "InputDelay": m["NoC"]["InputDelay"],
         "OutputDelay": m["NoC"]["OutputDelay"]
     }
@@ -90,5 +90,5 @@ if __name__ == "__main__":
     model_path = f"res/exp/{expName}/model.json"
     cost_path = f"res/exp/{expName}/cost.json"
     hw_path = f"res/exp/{expName}/hw.json"
-    stats = Stats(model_path, cost_path)
+    stats = Costs(model_path, cost_path)
     save_hw(model_path, hw_path, stats)
