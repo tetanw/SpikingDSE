@@ -31,7 +31,7 @@ public class SyncEvent : CoreEvent
     public List<Layer> Layers = null;
 }
 
-public class SyncDone : CoreEvent
+public class ReadyEvent : CoreEvent
 {
     public int TS = -1;
     public object Core = null;

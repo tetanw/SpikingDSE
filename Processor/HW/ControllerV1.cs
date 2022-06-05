@@ -143,7 +143,7 @@ public sealed class ControllerV1 : Controller
             yield return rcv;
             var packet = rcv.Message as Packet;
 
-            if (packet.Message is SyncDone syncDone)
+            if (packet.Message is ReadyEvent syncDone)
             {
                 coresDone.Add(syncDone.Core);
                 if (coresDone.Count == nrCores)

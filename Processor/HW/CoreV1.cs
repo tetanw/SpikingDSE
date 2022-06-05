@@ -125,7 +125,7 @@ public sealed class CoreV1 : Core
                 {
                     Dest = Mapping.ControllerCoord,
                     Src = Location,
-                    Message = new SyncDone
+                    Message = new ReadyEvent
                     {
                         TS = sync.TS,
                         Core = this
