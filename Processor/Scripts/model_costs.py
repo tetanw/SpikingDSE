@@ -129,7 +129,7 @@ class Costs():
         # Dynamic: Depends on memory + layer operations using Aladdin
         l = (self.core_area/1E6)**(0.5)  # calculate dimensions of cores
         technology = voltage**2 / 1.2**2
-        self.router_dyn_bit = (1.37 + 0.12 * l) * technology / 1E12
+        self.router_dyn_bit = (2.35 + 0.12 * l) * technology / 1E12
         self.router_dyn_packet = self.router_dyn_bit * self.packet_size  # Depends on formula from Wolkotte
 
         # memory energies

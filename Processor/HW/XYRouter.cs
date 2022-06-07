@@ -17,6 +17,7 @@ public sealed class XYRouter : MeshRouter
     public long[] outBusy = new long[5];
     public long switchBusy = 0;
     public long nrHops = 0;
+    public long nrPacketSwitches = 0;
 
     public XYRouter(int x, int y, XYSpec spec)
     {
@@ -130,6 +131,7 @@ public sealed class XYRouter : MeshRouter
 
             if (dir != MeshDir.Local)
                 nrHops++;
+            nrPacketSwitches++;
 
             eventsReady = true;
             anEventReady.Update();
@@ -192,16 +194,16 @@ public sealed class XYRouter : MeshRouter
 
     public override string Report(bool header)
     {
-        if (nrHops == 0)
+        if (nrHops == 0 && nrPacketSwitches == 0)
             return string.Empty;
 
         if (header)
         {
-            return $"{Name}_nrHops";
+            return $"{Name}_nrHops,{Name}_nrPacketSwitches";
         }
         else
         {
-            return $"{nrHops}";
+            return $"{nrHops},{nrPacketSwitches}";
         }
     }
 }
