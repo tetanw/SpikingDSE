@@ -38,7 +38,7 @@ class Costs():
         def mem_area(bits):
             return 0.4586 * bits + 12652
 
-        def mem_static(bits):
+        def mem_leakage(bits):
             return (8E-05 * bits + 1.822) * 1E-6
 
         def mem_dyn_read(bits, word_size):
@@ -51,7 +51,8 @@ class Costs():
         self.height = m["NoC"]["Height"]
         self.size = self.width * self.height
         feedback = 1
-        voltage = 1.1
+        v_wolkotte = 1.1
+        v_simulator = 1.2
         self.period = 1E4
 
         # address size calculations
@@ -111,14 +112,14 @@ class Costs():
         self.chip_area = self.core_area * self.size + self.router_area * self.size
 
         # Static: In watts
-        self.core_dynamic = mem_static(self.core_mem)
-        self.neuron_static = mem_static(self.neuron_mem)
-        self.layer_static = mem_static(self.layer_mem)
-        self.syn_static = mem_static(self.syn_mem)
-        self.compute_static = mem_static(self.compute_mem)
-        self.output_static = mem_static(self.output_mem)
+        self.core_dynamic = mem_leakage(self.core_mem)
+        self.neuron_static = mem_leakage(self.neuron_mem)
+        self.layer_static = mem_leakage(self.layer_mem)
+        self.syn_static = mem_leakage(self.syn_mem)
+        self.compute_static = mem_leakage(self.compute_mem)
+        self.output_static = mem_leakage(self.output_mem)
         self.core_mem_static = (self.neuron_static + self.layer_static + self.syn_static +
-                                self.compute_static + self.output_static) * voltage
+                                self.compute_static + self.output_static) * v_wolkotte
         self.alu_static = {}
         for name, amount in m["CoreALU"].items():
             self.alu_static[name] = amount * \
@@ -129,7 +130,7 @@ class Costs():
 
         # Dynamic: Depends on memory + layer operations using Aladdin
         l = (self.core_area/1E6)**(0.5)  # calculate dimensions of cores
-        technology = voltage**2 / 1.2**2
+        technology = v_wolkotte**2 / v_simulator**2
         self.router_dyn_bit = 0.98 * technology * 1E-12
         self.link_dyn_bit = (0.39 + 0.12*l) * technology * 1E-12
         self.router_dyn_packet = self.router_dyn_bit * \
