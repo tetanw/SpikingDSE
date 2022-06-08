@@ -61,6 +61,7 @@ class Costs():
         neuron_bits = addr(m["MaxNeurons"])
         syn_bits = addr(m["MaxSynapses"])
         layer_bits = addr(m["MaxLayers"])
+        split_bits = addr(m["MaxSplits"])
         packet_disc = addr(m["NrPacketTypes"])
 
         # packet memory
@@ -71,18 +72,20 @@ class Costs():
             self.spike_packet, self.sync_packet, self.sync_done_packet)
 
         # core memory
-        self.neuron_mem_width = m["NrParallel"] * m["NeuronSize"]
-        self.neuron_mem = m["MaxNeurons"] * self.neuron_mem_width
-        self.syn_mem_width = m["NrParallel"] * m["SynapseSize"]
-        self.syn_mem = m["MaxSynapses"] * self.syn_mem_width
-        split_mem = dx + dy + layer_bits + feedback
-        self.layer_mem_width = (m["BaseLayerSize"] + neuron_bits + 2 * neuron_bits + 4 *
-                                syn_bits + 2 * m["MaxSplits"] * split_mem)
-        self.layer_mem = m["MaxLayers"] * self.layer_mem_width
+        nr_parallel = m["NrParallel"]
+        self.neuron_width = m["NrParallel"] * m["NeuronSize"]
+        self.neuron_mem_width = self.neuron_width * nr_parallel
+        self.neuron_mem = m["MaxNeurons"] * self.neuron_width
+        self.syn_width = m["NrParallel"] * m["SynapseSize"]
+        self.syn_mem_width = self.syn_width * nr_parallel
+        self.syn_mem = m["MaxSynapses"] * self.syn_width
+        split_mem = dx + dy + layer_bits + feedback 
+        self.layer_width = (m["BaseLayerSize"] + layer_bits + neuron_bits + syn_bits + syn_bits + 2 * (m["MaxSplits"] * split_mem + split_bits))
+        self.layer_mem_width = self.layer_width
+        self.layer_mem = m["MaxLayers"] * self.layer_width
         self.output_mem_width = self.packet_size
         self.output_mem = self.output_mem_width * m["OutputBufferDepth"]
-        end = 1
-        self.compute_mem_width = neuron_bits + layer_bits + feedback + end
+        self.compute_mem_width = neuron_bits + layer_bits + feedback
         self.compute_mem = self.compute_mem_width * (2 * m["MaxFanIn"] + 1)
         self.core_mem = self.neuron_mem + self.syn_mem + \
             self.layer_mem + self.output_mem + self.compute_mem
@@ -138,11 +141,10 @@ class Costs():
         self.link_dyn_packet = self.link_dyn_bit * self.packet_size
 
         # memory energies
-        nr_parallel = m["NrParallel"]
         self.layer_mem_read = mem_dyn_read(
-            self.layer_mem, self.layer_mem_width)
+            self.layer_mem, self.layer_width)
         self.layer_mem_write = mem_dyn_write(
-            self.layer_mem, self.layer_mem_width)
+            self.layer_mem, self.layer_width)
         self.neuron_mem_read = mem_dyn_read(
             self.neuron_mem, self.neuron_mem_width) / nr_parallel
         self.neuron_mem_write = mem_dyn_write(
@@ -170,11 +172,11 @@ class Costs():
     def print_summary(self):
         print(f"Core memory:")
         print(
-            f"  Neuron: {self.neuron_mem:,} bits (Width: {self.neuron_mem_width} bits)")
+            f"  Neuron: {self.neuron_mem:,} bits (Width: {self.neuron_width} bits)")
         print(
-            f"  Syn: {self.syn_mem:,} bits (Width: {self.syn_mem_width} bits)")
+            f"  Syn: {self.syn_mem:,} bits (Width: {self.syn_width} bits)")
         print(
-            f"  Layer: {self.layer_mem:,} bits (Width: {self.layer_mem_width} bits)")
+            f"  Layer: {self.layer_mem:,} bits (Width: {self.layer_width} bits)")
         print(
             f"  Output: {self.output_mem:,} bits (Width: {self.output_mem_width} bits)")
         print(
@@ -245,7 +247,7 @@ class Costs():
         print(
             f"        Read: {self.neuron_mem_read * 1E12:,.2f} pJ / neuron read")
         print(
-            f"        Write: {self.neuron_mem_write * 1E12:,.2f} pj / neuron written")
+            f"        Write: {self.neuron_mem_write * 1E12:,.2f} pJ / neuron written")
         print(f"      Synapse:")
         print(f"        Read: {self.syn_mem_read * 1E12:,.2f} pJ / syn read")
         print(
