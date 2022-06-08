@@ -69,7 +69,7 @@ class Metrics():
 
         self.dynamic_router = 0.0
         for r in self.routers:
-            energy = exp[f"{r}_nrHops"] * cost.router_dyn_packet
+            energy = exp[f"{r}_nrHops"] * cost.link_dyn_packet + exp[f"{r}_nrPacketSwitches"] * cost.router_dyn_packet
             self.dynamic_router += energy
 
         self.total_energy = self.static_energy.sum() + self.dynamic_mem.sum() + \
