@@ -11,7 +11,7 @@ class Costs():
         self.m = m
 
         # parse costs
-        self.alu_costs =  {
+        self.alu_costs = {
             "Addf32": {
                 "Static": 15,
                 "Area": 2060,
@@ -121,7 +121,8 @@ class Costs():
                                 self.compute_static + self.output_static) * voltage
         self.alu_static = {}
         for name, amount in m["CoreALU"].items():
-            self.alu_static[name] = amount * self.alu_costs[name]["Static"] / 1E6
+            self.alu_static[name] = amount * \
+                self.alu_costs[name]["Static"] / 1E6
         self.alu_static_total = sum(v for _, v in self.alu_static.items())
         self.core_static = self.core_mem_static + self.alu_static_total
         self.chip_static = (self.size - 1) * self.core_static
@@ -129,8 +130,11 @@ class Costs():
         # Dynamic: Depends on memory + layer operations using Aladdin
         l = (self.core_area/1E6)**(0.5)  # calculate dimensions of cores
         technology = voltage**2 / 1.2**2
-        self.router_dyn_bit = (2.35 + 0.12 * l) * technology / 1E12
-        self.router_dyn_packet = self.router_dyn_bit * self.packet_size  # Depends on formula from Wolkotte
+        self.router_dyn_bit = 0.98 * technology * 1E-12
+        self.link_dyn_bit = (0.39 + 0.12*l) * technology * 1E-12
+        self.router_dyn_packet = self.router_dyn_bit * \
+            self.packet_size  # Depends on formula from Wolkotte
+        self.link_dyn_packet = self.link_dyn_bit * self.packet_size
 
         # memory energies
         nr_parallel = m["NrParallel"]
@@ -229,6 +233,8 @@ class Costs():
         print(f"  Router:")
         print(
             f"    Hop: {self.router_dyn_bit * 1E12:,.2f} pJ/b ({self.router_dyn_packet * 1E12:,.2f} pJ/packet)")
+        print(
+            f"    Switch: {self.link_dyn_bit * 1E12:,.2f} pJ/b ({self.link_dyn_packet * 1E12:,.2f} pJ/packet)")
         print(f"  Core:")
         print(f"    Memories:")
         print(f"      Layer:")
