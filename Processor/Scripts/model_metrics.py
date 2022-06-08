@@ -49,7 +49,7 @@ class Metrics():
             self.dyn_output_push += exp[f"{c}_outputPushes"] * \
                 cost.output_buf_pushes
             self.sparsity[c] = exp[f"{c}_sparsity"].mean()
-            # self.nr_faults += exp[f"{c}_faultySpikes"].sum()
+            self.nr_faults += exp[f"{c}_faultySpikes"].sum()
         self.total_sparsity = sum([value for value in self.sparsity.values()]) / len(self.cores)
         self.dynamic_mem = self.dyn_neuron_read + self.dyn_layer_write + self.dyn_layer_read + \
             self.dyn_layer_write + self.dyn_syn_read + self.dyn_syn_write
