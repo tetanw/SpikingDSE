@@ -138,10 +138,8 @@ if __name__ == "__main__":
     expName = sys.argv[1]
     modelName = sys.argv[2]
 
-    cost_path = f"res/exp/{expName}/cost.json"
-
     exp = pandas.read_csv(
         f"res/exp/{expName}/results/{modelName}/experiments.csv")
-    c = Stats(f"res/exp/{expName}/model.json", cost_path)
-    m = Metrics(c, cost_path, exp)
+    c = Costs(f"res/exp/{expName}/model.json")
+    m = Metrics(c, exp)
     m.print_summary()
