@@ -141,6 +141,7 @@ class Costs():
         self.link_dyn_packet = self.link_dyn_bit * self.packet_size
 
         # memory energies
+        # per layer, per neuron, per synapse energies
         self.layer_mem_read = mem_dyn_read(
             self.layer_mem, self.layer_width)
         self.layer_mem_write = mem_dyn_write(
