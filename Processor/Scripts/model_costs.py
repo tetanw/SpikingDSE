@@ -271,5 +271,5 @@ class Costs():
 if __name__ == "__main__":
     expName = sys.argv[1]
 
-    c = Costs(f"res/exp/{expName}/model.json", f"res/exp/{expName}/cost.json")
+    c = Costs(f"res/exp/{expName}/model.json")
     c.print_summary()

@@ -17,6 +17,7 @@ def run_mappings(runs, models, mapper):
 if __name__ == "__main__":
     runs = sys.argv[1].split(",")
     models = [
+        "best",
         "shd1",
         "shd4",
         "smnist3",
