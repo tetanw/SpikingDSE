@@ -83,11 +83,7 @@ public class CoreData
 
     public bool FitsLayer(Layer layer)
     {
-        return NrNeurons + layer.Size <= Spec.MaxNeurons &&
-                        NrSynapses + layer.InputSize * layer.Size <= Spec.MaxSynapses &&
-                        NrLayers < Spec.MaxLayers &&
-                        NrFanIn + layer.InputSize <= Spec.MaxFanIn &&
-                        Spec.AcceptedTypes.Contains(layer.TypeName);
+        return MaximumCut(layer, layer.Size) == layer.Size;
     }
 
     public int MaximumCut(Layer layer, int neuronsToMap)
@@ -100,7 +96,8 @@ public class CoreData
         if (NrLayers == Spec.MaxLayers)
             return 0;
 
-        if (NrFanIn + layer.InputSize > Spec.MaxFanIn)
+        // FanIn includes the reccurrent connections
+        if (NrFanIn + layer.InputSize + (layer.Recurrent ? layer.Size : 0) > Spec.MaxFanIn)
             return 0;
 
         // What is the maximum amount of neurons that can be mapped 
@@ -116,7 +113,7 @@ public class CoreData
         else
             limitedBySynapse = freeSynapses / layer.InputSize;
 
-        int maxCut = Math.Max(Math.Min(Math.Min(limitedByNeuron, limitedBySynapse), neuronsToMap), 0);
+        int maxCut = Math.Min(Math.Min(limitedByNeuron, limitedBySynapse), neuronsToMap);
         return maxCut;
     }
 

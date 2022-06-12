@@ -79,14 +79,14 @@ class Costs():
         self.syn_width = m["NrParallel"] * m["SynapseSize"]
         self.syn_mem_width = self.syn_width * nr_parallel
         self.syn_mem = m["MaxSynapses"] * self.syn_width
-        split_mem = dx + dy + layer_bits + feedback 
+        split_mem = dx + dy + layer_bits 
         self.layer_width = (m["BaseLayerSize"] + layer_bits + neuron_bits + syn_bits + syn_bits + 2 * (m["MaxSplits"] * split_mem + split_bits))
         self.layer_mem_width = self.layer_width
         self.layer_mem = m["MaxLayers"] * self.layer_width
         self.output_mem_width = self.packet_size
         self.output_mem = self.output_mem_width * m["OutputBufferDepth"]
         self.compute_mem_width = neuron_bits + layer_bits + feedback
-        self.compute_mem = self.compute_mem_width * (2 * m["MaxFanIn"] + 1)
+        self.compute_mem = self.compute_mem_width * (2 * m["MaxFanIn"])
         self.core_mem = self.neuron_mem + self.syn_mem + \
             self.layer_mem + self.output_mem + self.compute_mem
 
