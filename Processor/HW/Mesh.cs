@@ -98,17 +98,16 @@ public class MeshComm : Comm
         this.height = height;
     }
 
-    public override string Report(bool header)
+    public override string[] Report(bool header)
     {
         List<string> parts = new();
         for (int y = 0; y < height; y++)
         {
             for (int x = 0; x < width; x++)
             {
-                string part = routers[x, y].Report(header);
-                parts.Add(part);
+                parts.AddRange(routers[x, y].Report(header));
             }
         }
-        return StringUtils.JoinComma(parts.ToArray());
+        return parts.ToArray();
     }
 }

@@ -278,40 +278,46 @@ public sealed class CoreV1 : Core
         }
     }
 
-    public override string Report(long now, bool header)
+    public override string[] Report(long now, bool header)
     {
         // Cores that do not have any layers should just stay silent
         if (Mapping.GetAllLayers(this).Count == 0)
-            return string.Empty;
+            return Array.Empty<string>();
 
         var masterCounter = OpCounter.Merge(Mapping.GetAllLayers(this).Select(l => (l as HiddenLayer).Ops));
-        string layerStr = "";
-        string memStr = "";
-        string opStr = "";
-        string baseStr = "";
+        var cols = new List<string>();
         if (header)
         {
-            baseStr = $"{Name}_sops,{Name}_faultySpikes,{Name}_sparsity,{Name}_alu_util,{Name}_recv_util,{Name}_snd_util";
+            cols.Add($"{Name}_sops");
+            cols.Add($"{Name}_faultySpikes");
+            cols.Add($"{Name}_sparsity");
+            cols.Add($"{Name}_alu_util");
+            cols.Add($"{Name}_recv_util");
+            cols.Add($"{Name}_snd_util");
 
             if (spec.ShowLayerStats)
             {
                 var layers = layerSyncs.Keys.SelectMany((layer) => new string[] { $"{Name}_{layer}_integrates", $"{Name}_{layer}_syncs" });
-                layerStr = string.Join(",", layers);
+                cols.AddRange(layers);
             }
 
             if (spec.ShowMemStats)
             {
-                memStr = string.Join(",",
-                    $"{Name}_layerReads,{Name}_layerWrites",
-                    $"{Name}_neuronReads,{Name}_neuronWrites",
-                    $"{Name}_synapseReads,{Name}_synapseWrites",
-                    $"{Name}_computePushes,{Name}_computePops",
-                    $"{Name}_outputPushes,{Name}_outputPops");
+                cols.Add($"{Name}_layerReads");
+                cols.Add($"{Name}_layerWrites");
+                cols.Add($"{Name}_neuronReads");
+                cols.Add($"{Name}_neuronWrites");
+                cols.Add($"{Name}_synapseReads");
+                cols.Add($"{Name}_synapseWrites");
+                cols.Add($"{Name}_computePushes");
+                cols.Add($"{Name}_computePops");
+                cols.Add($"{Name}_outputPushes");
+                cols.Add($"{Name}_outputPops");
             }
 
             if (spec.ShowALUStats)
             {
-                opStr = string.Join(",", masterCounter.AllCounts().Select((p) => $"{Name}_ops_{p.name}"));
+               cols.AddRange(masterCounter.AllCounts().Select((p) => $"{Name}_ops_{p.name}"));
             }
 
         }
@@ -322,36 +328,42 @@ public sealed class CoreV1 : Core
             double sndUtil = (double) senderBusy / now;
             double sparsity = (double) nrSpikesGenerated / nrNOPs;
 
-            baseStr = $"{nrSOPs},{nrFaultySpikes},{sparsity},{aluUtil},{recvUtil},{sndUtil}";
+            cols.Add($"{nrSOPs}");
+            cols.Add($"{nrFaultySpikes}");
+            cols.Add($"{sparsity}");
+            cols.Add($"{aluUtil}");
+            cols.Add($"{recvUtil}");
+            cols.Add($"{sndUtil}");
 
             if (spec.ShowLayerStats)
             {
-                var layers = new List<string>();
                 foreach (var name in layerSyncs.Keys)
                 {
-                    layers.Add(layerIntegrates[name].ToString());
-                    layers.Add(layerSyncs[name].ToString());
+                    cols.Add(layerIntegrates[name].ToString());
+                    cols.Add(layerSyncs[name].ToString());
                 }
-                layerStr = string.Join(",", layers);
             }
 
             if (spec.ShowMemStats)
             {
-                memStr = string.Join(",",
-                    $"{layerReads},{layerWrites}",
-                    $"{neuronReads},{neuronWrites}",
-                    $"{synapseReads},{synapseWrites}",
-                    $"{computePushes},{computePops}",
-                    $"{outputPushes},{outputPops}");
+                cols.Add($"{layerReads}");
+                cols.Add($"{layerWrites}");
+                cols.Add($"{neuronReads}");
+                cols.Add($"{neuronWrites}");
+                cols.Add($"{synapseReads}");
+                cols.Add($"{synapseWrites}");
+                cols.Add($"{computePushes}");
+                cols.Add($"{computePops}");
+                cols.Add($"{outputPushes}");
+                cols.Add($"{outputPops}");
             }
 
             if (spec.ShowALUStats)
             {
-                opStr = string.Join(",", masterCounter.AllCounts().Select((p) => p.amount));
+                cols.AddRange(masterCounter.AllCounts().Select((p) => $"{p.amount}"));
             }
         }
 
-        return StringUtils.JoinComma(baseStr, layerStr, memStr, opStr);
-
+        return cols.ToArray();
     }
 }

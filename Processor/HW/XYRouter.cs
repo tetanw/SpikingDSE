@@ -192,18 +192,23 @@ public sealed class XYRouter : MeshRouter
         }
     }
 
-    public override string Report(bool header)
+    public override string[] Report(bool header)
     {
         if (nrHops == 0 && nrPacketSwitches == 0)
-            return string.Empty;
+            return Array.Empty<string>();
 
+
+        var cols = new List<string>();
         if (header)
         {
-            return $"{Name}_nrHops,{Name}_nrPacketSwitches";
+            cols.Add($"{Name}_nrHops");
+            cols.Add($"{Name}_nrPacketSwitches");
         }
         else
         {
-            return $"{nrHops},{nrPacketSwitches}";
+            cols.Add($"{nrHops}");
+            cols.Add($"{nrPacketSwitches}");
         }
+        return cols.ToArray();
     }
 }
