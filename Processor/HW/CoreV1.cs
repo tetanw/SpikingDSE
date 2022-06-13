@@ -8,8 +8,6 @@ namespace SpikingDSE;
 
 public sealed class CoreV1 : Core
 {
-    record struct ComputeElement(bool IsLast, SpikeEvent Spike);
-
     public delegate void SpikeReceived(long time, Layer layer, int neuron, bool feedback, SpikeEvent spike, int nrHopsTravelled);
     public delegate void SpikeSent(long time, Layer from, int neuron);
     public delegate void SyncStarted(long time, int ts, HiddenLayer layer);
@@ -43,7 +41,7 @@ public sealed class CoreV1 : Core
 
     private readonly CoreV1Spec spec;
     private Buffer<Packet> outputBuffer;
-    private Queue<ComputeElement> computeBuffer;
+    private Queue<SpikeEvent>[] computeBuffer;
     private Buffer<SyncEvent> syncs;
     private int nrFaultySpikes = 0;
 
@@ -70,8 +68,6 @@ public sealed class CoreV1 : Core
             {
                 yield return env.Delay(spec.ReceiveSyncLat);
                 TS = sync.TS + 1;
-                computePushes++;
-                computeBuffer.Enqueue(new ComputeElement(true, null));
                 syncs.Push(sync);
             }
             else if (@event is SpikeEvent spike)
@@ -82,7 +78,7 @@ public sealed class CoreV1 : Core
 
 
                 computePushes++;
-                computeBuffer.Enqueue(new(false, spike));
+                computeBuffer[TS % 2].Enqueue(spike);
             }
         }
     }
@@ -99,13 +95,11 @@ public sealed class CoreV1 : Core
             long before = env.Now;
 
             // Integrate all synapses
-            while (true)
+            while (computeBuffer[TS % 2].Count > 0)
             {
                 yield return env.Delay(spec.ALUReadLat);
-                var (isDone, spike) = computeBuffer.Dequeue();
+                var spike = computeBuffer[TS % 2].Dequeue();
                 computePops++;
-                if (isDone)
-                    break;
                 if (spike.TS != TS)
                     nrFaultySpikes++;
                 foreach (var ev in Compute(env, spike))
@@ -161,7 +155,9 @@ public sealed class CoreV1 : Core
             yield break;
 
         outputBuffer = new(env, spec.OutputBufferDepth);
-        computeBuffer = new();
+        computeBuffer = new Queue<SpikeEvent>[2];
+        computeBuffer[0] = new();
+        computeBuffer[1] = new();
         syncs = new(env, 1);
         env.Process(Receiver(env));
         env.Process(ALU(env));
