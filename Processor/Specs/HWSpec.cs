@@ -39,8 +39,7 @@ public class HWSpec
                 Interval = instance.GetOptional("Interval")?.GetInt64() ?? -1,
                 GlobalSync = instance.GetOptional("GlobalSync")?.GetBoolean() ?? false,
                 ConnectsTo = instance["ConnectsTo"].GetString(),
-                IgnoreIdleCores = instance["IgnoreIdleCores"].GetBoolean(),
-                SyncDelay = instance.GetOptional("SyncDelay")?.GetInt64() ?? 0
+                IgnoreIdleCores = instance["IgnoreIdleCores"].GetBoolean()
             };
         }
         else if (type == "core-v1")
