@@ -64,9 +64,7 @@ def save_hw(model_path: str, hw_path: str, costs: Costs):
                     "Priority": prio,
                     "GlobalSync": False,
                     "ConnectsTo": f"{x},{y}",
-                    "IgnoreIdleCores": True,
-                    "SyncDelay": int(m["SyncDelay"]),
-                    "SpikeSendDelay": int(m["SpikeSendDelay"])
+                    "IgnoreIdleCores": True
                 })
             else:
                 hw["Cores"].append({

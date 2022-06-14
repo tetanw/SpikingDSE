@@ -190,8 +190,6 @@ public class ControllerV1Spec : CoreSpec
     public long Interval { get; set; }
     public bool GlobalSync { get; set; }
     public bool IgnoreIdleCores { get; set; }
-    public long SyncDelay { get; set; }
-    public int SpikeSendDelay { get; set; }
 
     public override Core Build()
     {

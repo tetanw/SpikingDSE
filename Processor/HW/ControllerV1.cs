@@ -61,8 +61,6 @@ public sealed class ControllerV1 : Controller
                         Dest = dest,
                         Message = spike
                     };
-                    if (spec.SpikeSendDelay > 0)
-                        yield return env.Delay(spec.SpikeSendDelay);
                     yield return env.Send(Output, packet);
                     SpikeSent?.Invoke(this, env.Now, spike);
                 }
@@ -148,7 +146,6 @@ public sealed class ControllerV1 : Controller
                 coresDone.Add(syncDone.Core);
                 if (coresDone.Count == nrCores)
                 {
-                    yield return env.Delay(spec.SyncDelay);
                     TS++;
                     syncSignal.Notify();
                     coresDone.Clear();
