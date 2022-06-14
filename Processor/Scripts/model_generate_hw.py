@@ -37,11 +37,7 @@ def save_hw(model_path: str, hw_path: str, costs: Costs):
         "DisableIfIdle": True,
         "ShowMemStats": True,
         "ShowLayerStats": False,
-        "ShowALUStats": True,
-        "ReceiveSpikeLat": m["ReceiveSpikeLat"],
-        "ReceiveSyncLat": m["ReceiveSyncLat"],
-        "ALUReadLat": m["ALUReadLat"],
-        "ALUWriteLat": m["ALUWriteLat"],
+        "ShowALUStats": True
     }
     hw["CoreTemplates"]["Core"]["LayerCosts"] = {}
     for layer, latencies in m["LayerDelays"].items():

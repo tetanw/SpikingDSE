@@ -56,10 +56,6 @@ public class HWSpec
                 ShowLayerStats = instance.GetOptional("ShowLayerStats")?.GetBoolean() ?? false,
                 ShowMemStats = instance.GetOptional("ShowMemStats")?.GetBoolean() ?? false,
                 ShowALUStats = instance.GetOptional("ShowALUStats")?.GetBoolean() ?? false,
-                ReceiveSpikeLat = instance.GetOptional("ReceiveSpikeLat")?.GetInt32() ?? 0,
-                ReceiveSyncLat = instance.GetOptional("ReceiveSyncLat")?.GetInt32() ?? 0,
-                ALUReadLat = instance.GetOptional("ALUReadLat")?.GetInt32() ?? 0,
-                ALUWriteLat = instance.GetOptional("ALUWriteLat")?.GetInt32() ?? 0,
             };
             coreV1Spec.LayerCosts = new();
             if (instance.ContainsKey("LayerCosts"))
@@ -181,10 +177,6 @@ public class CoreV1Spec : CoreSpec
     public bool ShowMemStats { get; set; }
     public bool ShowALUStats { get; set; }
     public Dictionary<string, LayerCost> LayerCosts { get; set; }
-    public int ReceiveSyncLat { get; set; }
-    public int ReceiveSpikeLat { get; set; }
-    public int ALUReadLat { get; set; }
-    public int ALUWriteLat { get; set; }
 
     public override Core Build()
     {
