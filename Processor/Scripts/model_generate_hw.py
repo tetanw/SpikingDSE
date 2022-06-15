@@ -79,10 +79,11 @@ def save_hw(model_path: str, hw_path: str, costs: Costs):
 
 
 if __name__ == "__main__":
-    expName = sys.argv[1]
+    expNames = sys.argv[1].split(",")
 
-    model_path = f"res/exp/{expName}/model.json"
-    cost_path = f"res/exp/{expName}/cost.json"
-    hw_path = f"res/exp/{expName}/hw.json"
-    stats = Costs(model_path, cost_path)
-    save_hw(model_path, hw_path, stats)
+    for expName in expNames:
+        model_path = f"res/exp/{expName}/model.json"
+        cost_path = f"res/exp/{expName}/cost.json"
+        hw_path = f"res/exp/{expName}/hw.json"
+        costs = Costs(model_path)
+        save_hw(model_path, hw_path, costs)
