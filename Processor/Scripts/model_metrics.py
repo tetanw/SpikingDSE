@@ -56,6 +56,9 @@ class Metrics():
 
         self.dynamic_alu = {}
         self.dynamic_alu_total = 0.0
+        self.alu_util = 0.0
+        self.recv_util = 0.0
+        self.snd_util = 0.0
         for c in self.cores:
             for op in self.ops(c):
                 nr_ops = exp[f"{c}_ops_{op}"].sum()
@@ -66,6 +69,12 @@ class Metrics():
                     self.dynamic_alu[op] += energy
                 else:
                     self.dynamic_alu[op] = energy
+            self.alu_util += exp[f"{c}_alu_util"].mean()
+            self.recv_util += exp[f"{c}_recv_util"].mean()
+            self.snd_util += exp[f"{c}_snd_util"].mean()
+        self.alu_util /= len(self.cores)
+        self.recv_util /= len(self.cores)
+        self.snd_util /= len(self.cores)
 
         self.dynamic_router = 0.0
         for r in self.routers:
