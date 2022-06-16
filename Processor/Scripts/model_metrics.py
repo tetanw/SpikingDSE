@@ -51,7 +51,7 @@ class Metrics():
             self.sparsity[c] = exp[f"{c}_sparsity"].mean()
             self.nr_faults += exp[f"{c}_faultySpikes"].sum()
         self.total_sparsity = sum([value for value in self.sparsity.values()]) / len(self.cores)
-        self.dynamic_mem = self.dyn_neuron_read + self.dyn_layer_write + self.dyn_layer_read + \
+        self.dynamic_mem = self.dyn_neuron_read + self.dyn_neuron_write + self.dyn_layer_read + \
             self.dyn_layer_write + self.dyn_syn_read + self.dyn_syn_write
 
         self.dynamic_alu = {}
@@ -95,6 +95,9 @@ class Metrics():
 
         self.inferences_per_second = self.nr_samples / self.latency.sum()
         self.sops_per_second = self.nr_sops.sum() / self.latency.sum()
+        self.delay_per_inference = 1.0 / self.inferences_per_second
+
+        self.edap = self.delay_per_inference * self.sop_energy * self.cost.syn_area
 
     def layers(self, c):
         layers = []
