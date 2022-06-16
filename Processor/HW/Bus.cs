@@ -13,7 +13,7 @@ public class BusComm : Comm
         bus = env.AddActor(new Bus(spec));
     }
 
-    public override string Report(bool header) => string.Empty;
+    public override string[] Report(bool header) => Array.Empty<string>();
 }
 
 public class Bus : Actor

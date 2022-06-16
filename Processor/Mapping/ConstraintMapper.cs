@@ -53,7 +53,7 @@ public abstract class ConstraintMapper : Mapper
         foreach (var c in cores)
         {
             int neuronsToMap = layer.Size - mappedNeurons;
-            int toMap = c.MaximumCut(layer, neuronsToMap);
+            int toMap = Math.Min(c.MaximumCut(layer), neuronsToMap);
             if (toMap == 0)
                 continue;
 

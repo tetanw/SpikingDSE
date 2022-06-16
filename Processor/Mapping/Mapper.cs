@@ -83,10 +83,10 @@ public class CoreData
 
     public bool FitsLayer(Layer layer)
     {
-        return MaximumCut(layer, layer.Size) == layer.Size;
+        return MaximumCut(layer) == layer.Size;
     }
 
-    public int MaximumCut(Layer layer, int neuronsToMap)
+    public int MaximumCut(Layer layer)
     {
         // Not a valid to core to use as target
         if (!Spec.AcceptedTypes.Contains(layer.TypeName))
@@ -111,9 +111,9 @@ public class CoreData
         if (layer.Recurrent)
             limitedBySynapse = freeSynapses / (layer.InputSize + layer.Size); // should be rounded down which int already does luckily
         else
-            limitedBySynapse = freeSynapses / layer.InputSize;
+            limitedBySynapse = layer.InputSize == 0 ? int.MaxValue : freeSynapses / layer.InputSize;
 
-        int maxCut = Math.Min(Math.Min(limitedByNeuron, limitedBySynapse), neuronsToMap);
+        int maxCut = Math.Min(Math.Min(limitedByNeuron, limitedBySynapse), layer.Size);
         return maxCut;
     }
 

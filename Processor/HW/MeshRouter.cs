@@ -25,9 +25,9 @@ public class MeshGrid : Comm
 
     }
 
-    public override string Report(bool header)
+    public override string[] Report(bool header)
     {
-        return StringUtils.JoinComma(routers.Select(r => r.Report(header)).ToArray());
+        return routers.SelectMany(r => r.Report(header)).ToArray();
     }
 }
 
@@ -46,6 +46,6 @@ public abstract class MeshRouter : Actor
     public OutPort outWest = new();
     public OutPort outLocal = new();
 
-    public abstract string Report(bool header);
+    public abstract string[] Report(bool header);
 }
 

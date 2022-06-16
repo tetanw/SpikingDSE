@@ -49,6 +49,7 @@ class Costs():
 
         self.width = m["NoC"]["Width"]
         self.height = m["NoC"]["Height"]
+        self.nr_cores = self.width * self.height - 1
         self.size = self.width * self.height
         feedback = 1
         v_wolkotte = 1.1
@@ -73,10 +74,10 @@ class Costs():
 
         # core memory
         nr_parallel = m["NrParallel"]
-        self.neuron_width = m["NrParallel"] * m["NeuronSize"]
+        self.neuron_width = m["NeuronSize"]
         self.neuron_mem_width = self.neuron_width * nr_parallel
         self.neuron_mem = m["MaxNeurons"] * self.neuron_width
-        self.syn_width = m["NrParallel"] * m["SynapseSize"]
+        self.syn_width = m["SynapseSize"]
         self.syn_mem_width = self.syn_width * nr_parallel
         self.syn_mem = m["MaxSynapses"] * self.syn_width
         split_mem = dx + dy + layer_bits 
@@ -113,6 +114,7 @@ class Costs():
         self.router_output_area = mem_area(self.output_mem)
         self.router_area = 5 * self.router_input_area + 5 * self.router_output_area
         self.chip_area = self.core_area * self.size + self.router_area * self.size
+        self.synaptic_area = self.chip_area / (self.nr_cores * m["MaxSynapses"])
 
         # Static: In watts
         self.core_dynamic = mem_leakage(self.core_mem)

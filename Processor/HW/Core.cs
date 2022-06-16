@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace SpikingDSE;
@@ -19,7 +20,7 @@ public abstract class Core : Actor
     public InPort Input { get; set; }
     public MappingManager Mapping { get; set; }
 
-    public virtual string Report(long now, bool header) { return ""; }
+    public virtual string[] Report(long now, bool header) { return Array.Empty<string>(); }
 }
 
 public class CoreEvent { }

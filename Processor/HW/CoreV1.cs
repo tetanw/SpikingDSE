@@ -8,8 +8,6 @@ namespace SpikingDSE;
 
 public sealed class CoreV1 : Core
 {
-    record struct ComputeElement(bool IsLast, SpikeEvent Spike);
-
     public delegate void SpikeReceived(long time, Layer layer, int neuron, bool feedback, SpikeEvent spike, int nrHopsTravelled);
     public delegate void SpikeSent(long time, Layer from, int neuron);
     public delegate void SyncStarted(long time, int ts, HiddenLayer layer);
@@ -43,7 +41,7 @@ public sealed class CoreV1 : Core
 
     private readonly CoreV1Spec spec;
     private Buffer<Packet> outputBuffer;
-    private Queue<ComputeElement> computeBuffer;
+    private Queue<SpikeEvent>[] computeBuffer;
     private Buffer<SyncEvent> syncs;
     private int nrFaultySpikes = 0;
 
@@ -68,21 +66,17 @@ public sealed class CoreV1 : Core
 
             if (@event is SyncEvent sync)
             {
-                yield return env.Delay(spec.ReceiveSyncLat);
                 TS = sync.TS + 1;
-                computePushes++;
-                computeBuffer.Enqueue(new ComputeElement(true, null));
                 syncs.Push(sync);
             }
             else if (@event is SpikeEvent spike)
             {
-                yield return env.Delay(spec.ReceiveSpikeLat);
                 spike.ReceivedAt = env.Now;
                 OnSpikeReceived?.Invoke(env.Now, spike.Layer, spike.Neuron, spike.Feedback, spike, packet.NrHops);
 
 
                 computePushes++;
-                computeBuffer.Enqueue(new(false, spike));
+                computeBuffer[TS % 2].Enqueue(spike);
             }
         }
     }
@@ -99,13 +93,10 @@ public sealed class CoreV1 : Core
             long before = env.Now;
 
             // Integrate all synapses
-            while (true)
+            while (computeBuffer[TS % 2].Count > 0)
             {
-                yield return env.Delay(spec.ALUReadLat);
-                var (isDone, spike) = computeBuffer.Dequeue();
+                var spike = computeBuffer[TS % 2].Dequeue();
                 computePops++;
-                if (isDone)
-                    break;
                 if (spike.TS != TS)
                     nrFaultySpikes++;
                 foreach (var ev in Compute(env, spike))
@@ -119,7 +110,6 @@ public sealed class CoreV1 : Core
             // Report done if needed
             if (spec.ReportSyncEnd)
             {
-                yield return env.Delay(spec.ALUWriteLat);
                 yield return outputBuffer.RequestWrite();
                 outputBuffer.Write(new Packet
                 {
@@ -161,7 +151,9 @@ public sealed class CoreV1 : Core
             yield break;
 
         outputBuffer = new(env, spec.OutputBufferDepth);
-        computeBuffer = new();
+        computeBuffer = new Queue<SpikeEvent>[2];
+        computeBuffer[0] = new();
+        computeBuffer[1] = new();
         syncs = new(env, 1);
         env.Process(Receiver(env));
         env.Process(ALU(env));
@@ -203,7 +195,6 @@ public sealed class CoreV1 : Core
             };
             var destCoord = Mapping.CoordOf(destLayer);
 
-            yield return env.Delay(spec.ALUWriteLat);
             yield return outputBuffer.RequestWrite();
             var flit = new Packet
             {
@@ -278,40 +269,46 @@ public sealed class CoreV1 : Core
         }
     }
 
-    public override string Report(long now, bool header)
+    public override string[] Report(long now, bool header)
     {
         // Cores that do not have any layers should just stay silent
         if (Mapping.GetAllLayers(this).Count == 0)
-            return string.Empty;
+            return Array.Empty<string>();
 
         var masterCounter = OpCounter.Merge(Mapping.GetAllLayers(this).Select(l => (l as HiddenLayer).Ops));
-        string layerStr = "";
-        string memStr = "";
-        string opStr = "";
-        string baseStr = "";
+        var cols = new List<string>();
         if (header)
         {
-            baseStr = $"{Name}_sops,{Name}_faultySpikes,{Name}_sparsity,{Name}_alu_util,{Name}_recv_util,{Name}_snd_util";
+            cols.Add($"{Name}_sops");
+            cols.Add($"{Name}_faultySpikes");
+            cols.Add($"{Name}_sparsity");
+            cols.Add($"{Name}_alu_util");
+            cols.Add($"{Name}_recv_util");
+            cols.Add($"{Name}_snd_util");
 
             if (spec.ShowLayerStats)
             {
                 var layers = layerSyncs.Keys.SelectMany((layer) => new string[] { $"{Name}_{layer}_integrates", $"{Name}_{layer}_syncs" });
-                layerStr = string.Join(",", layers);
+                cols.AddRange(layers);
             }
 
             if (spec.ShowMemStats)
             {
-                memStr = string.Join(",",
-                    $"{Name}_layerReads,{Name}_layerWrites",
-                    $"{Name}_neuronReads,{Name}_neuronWrites",
-                    $"{Name}_synapseReads,{Name}_synapseWrites",
-                    $"{Name}_computePushes,{Name}_computePops",
-                    $"{Name}_outputPushes,{Name}_outputPops");
+                cols.Add($"{Name}_layerReads");
+                cols.Add($"{Name}_layerWrites");
+                cols.Add($"{Name}_neuronReads");
+                cols.Add($"{Name}_neuronWrites");
+                cols.Add($"{Name}_synapseReads");
+                cols.Add($"{Name}_synapseWrites");
+                cols.Add($"{Name}_computePushes");
+                cols.Add($"{Name}_computePops");
+                cols.Add($"{Name}_outputPushes");
+                cols.Add($"{Name}_outputPops");
             }
 
             if (spec.ShowALUStats)
             {
-                opStr = string.Join(",", masterCounter.AllCounts().Select((p) => $"{Name}_ops_{p.name}"));
+               cols.AddRange(masterCounter.AllCounts().Select((p) => $"{Name}_ops_{p.name}"));
             }
 
         }
@@ -322,36 +319,42 @@ public sealed class CoreV1 : Core
             double sndUtil = (double) senderBusy / now;
             double sparsity = (double) nrSpikesGenerated / nrNOPs;
 
-            baseStr = $"{nrSOPs},{nrFaultySpikes},{sparsity},{aluUtil},{recvUtil},{sndUtil}";
+            cols.Add($"{nrSOPs}");
+            cols.Add($"{nrFaultySpikes}");
+            cols.Add($"{sparsity}");
+            cols.Add($"{aluUtil}");
+            cols.Add($"{recvUtil}");
+            cols.Add($"{sndUtil}");
 
             if (spec.ShowLayerStats)
             {
-                var layers = new List<string>();
                 foreach (var name in layerSyncs.Keys)
                 {
-                    layers.Add(layerIntegrates[name].ToString());
-                    layers.Add(layerSyncs[name].ToString());
+                    cols.Add(layerIntegrates[name].ToString());
+                    cols.Add(layerSyncs[name].ToString());
                 }
-                layerStr = string.Join(",", layers);
             }
 
             if (spec.ShowMemStats)
             {
-                memStr = string.Join(",",
-                    $"{layerReads},{layerWrites}",
-                    $"{neuronReads},{neuronWrites}",
-                    $"{synapseReads},{synapseWrites}",
-                    $"{computePushes},{computePops}",
-                    $"{outputPushes},{outputPops}");
+                cols.Add($"{layerReads}");
+                cols.Add($"{layerWrites}");
+                cols.Add($"{neuronReads}");
+                cols.Add($"{neuronWrites}");
+                cols.Add($"{synapseReads}");
+                cols.Add($"{synapseWrites}");
+                cols.Add($"{computePushes}");
+                cols.Add($"{computePops}");
+                cols.Add($"{outputPushes}");
+                cols.Add($"{outputPops}");
             }
 
             if (spec.ShowALUStats)
             {
-                opStr = string.Join(",", masterCounter.AllCounts().Select((p) => p.amount));
+                cols.AddRange(masterCounter.AllCounts().Select((p) => $"{p.amount}"));
             }
         }
 
-        return StringUtils.JoinComma(baseStr, layerStr, memStr, opStr);
-
+        return cols.ToArray();
     }
 }
