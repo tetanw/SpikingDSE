@@ -114,7 +114,7 @@ class Costs():
         self.router_output_area = mem_area(self.output_mem)
         self.router_area = 5 * self.router_input_area + 5 * self.router_output_area
         self.chip_area = self.core_area * self.size + self.router_area * self.size
-        self.synaptic_area = self.chip_area / (self.nr_cores * m["MaxSynapses"])
+        self.synaptic_dens = self.chip_area / (self.nr_cores * m["MaxSynapses"])
 
         # Static: In watts
         self.core_dynamic = mem_leakage(self.core_mem)

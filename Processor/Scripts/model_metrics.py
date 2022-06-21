@@ -97,7 +97,7 @@ class Metrics():
         self.sops_per_second = self.nr_sops.sum() / self.latency.sum()
         self.delay_per_inference = 1.0 / self.inferences_per_second
 
-        self.edap = self.delay_per_inference * self.sop_energy * self.cost.syn_area
+        self.edap = self.delay_per_inference * self.sop_energy * self.cost.synaptic_dens*1E12
 
     def layers(self, c):
         layers = []
@@ -144,6 +144,10 @@ class Metrics():
         print(f"    Router: {self.dynamic_router.sum():.3f} J")
         print(
             f"  Total: {self.total_energy:.3f} J ({self.total_power*1E3:.2f} mW)")
+        print(f"EDAP: {self.edap}")
+        print(f"  Delay: {self.delay_per_inference}")
+        print(f"  Energy: {self.sop_energy}")
+        print(f"  Area: {self.cost.synaptic_dens}")
 
 
 if __name__ == "__main__":
