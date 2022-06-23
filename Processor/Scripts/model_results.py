@@ -33,7 +33,7 @@ if __name__ == "__main__":
         parts.append(f"{m.accuracy:.3f}")
         parts.append(f"{m.total_sparsity:.2f}")
         parts.append(f"{c.chip_area*1E-6:.2f}")
-        parts.append(f"{c.synaptic_dens:.2f}")
+        parts.append(f"{c.synaptic_area:.2f}")
         parts.append(f"{m.nr_faults}")
         parts.append(f"{m.recv_util:.3f}")
         parts.append(f"{m.alu_util:.3f}")
