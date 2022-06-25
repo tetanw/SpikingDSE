@@ -1,46 +1,61 @@
-def print_2d_matrix(matrix):
-    print('\n'.join([''.join(['{:4}'.format(item) for item in row]) for row in matrix]))
+def diagonal(startX, startY, width, height):
+    values = []
+    x = startX
+    y = startY
+    while x < width and y >= 0:
+        values.append((x, y))
+        x = x + 1
+        y = y - 1
+    return values
 
-w, h = 4, 4
 
-# Source: https://www.geeksforgeeks.org/zigzag-or-diagonal-traversal-of-matrix/
-def zigzag_order(w, h):
-    matrix = [[0 for x in range(w)] for y in range(h)]
-    prio = w*h
+def zigzag(width, height):
+    values = []
 
-    # There will be ROW+COL-1 lines in the output
-    for line in range(1, (h + w)):
-        # Get column index of the first element
-        # in this line of output. The index is 0
-        # for first ROW lines and line - ROW for
-        # remaining lines
-        start_col = max(0, line - h)
+    return values
 
-        # Get count of elements in this line.
-        # The count of elements is equal to
-        # minimum of line number, COL-start_col and ROW
-        count = min(line, (w - start_col), h)
 
-        # Print elements of this line
-        for j in range(0, count):
-            matrix[min(h, line) - j - 1][start_col + j] = prio
-            prio = prio - 1
+def matrix_zigzag(width, height):
+    matrix = [[0 for _ in range(width)] for _ in range(height)]
 
+    i = 0
+    for y in range(0, height):
+        for x, y in diagonal(0, y, width, height):
+            matrix[y][x] = i
+            i = i + 1
+
+    for x in range(1, width):
+        for x, y in diagonal(x, height - 1, width, height):
+            matrix[y][x] = i
+            i = i + 1
     return matrix
 
-def col_major_order(w, h):
-    matrix = [[0 for x in range(w)] for y in range(h)]
+def matrix_vertical(width, height):
+    matrix = [[0 for _ in range(width)] for _ in range(height)]
 
-    prio = w * h
-    for x in range(0, w):
-        for y in reversed(range(0, h)):
-            matrix[y][x] = prio
-            prio = prio - 1
+    i = 0
+    for x in range(0, width):
+        for y in range(0, height):
+            matrix[y][x] = i
+            i = i + 1
 
     return matrix
 
 if __name__ == "__main__":
-    print("Zigzag:")
-    print_2d_matrix(zigzag_order(w, h))
-    print("ColMajor:")
-    print_2d_matrix(col_major_order(w, h))
+    print(diagonal(0, 0, 3, 3))
+    print(diagonal(0, 1, 3, 3))
+    print(diagonal(0, 2, 3, 3))
+    print(diagonal(1, 2, 3, 3))
+    print(diagonal(2, 2, 3, 3))
+
+    def print_matrix(A):
+        print('\n'.join([''.join(['{:4}'.format(item) for item in row])
+                        for row in A]))
+    
+    a1 = matrix_zigzag(3, 3)
+    print_matrix(a1)
+
+    a2 = matrix_vertical(3, 3)
+    print_matrix(a2)
+
+
