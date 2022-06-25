@@ -8,13 +8,6 @@ def diagonal(startX, startY, width, height):
         y = y - 1
     return values
 
-
-def zigzag(width, height):
-    values = []
-
-    return values
-
-
 def matrix_zigzag(width, height):
     matrix = [[0 for _ in range(width)] for _ in range(height)]
 
