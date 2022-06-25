@@ -20,6 +20,20 @@ public sealed class MeshDir
     public const int South = 2;
     public const int West = 3;
     public const int Local = 4;
+
+    public static string Name(int dir)
+    {
+        switch (dir)
+        {
+            case North: return "North";
+            case East: return "East";
+            case South: return "South";
+            case West: return "West";
+            case Local: return "Local";
+            default:
+                throw new Exception("Unknown dir");
+        }
+    }
 }
 
 public class MeshComm : Comm

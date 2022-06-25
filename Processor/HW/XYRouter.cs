@@ -18,6 +18,8 @@ public sealed class XYRouter : MeshRouter
     public long switchBusy = 0;
     public long nrHops = 0;
     public long nrPacketSwitches = 0;
+    private int[] inCounters = new int[5];
+    private int[] outCounters = new int[5];
 
     public XYRouter(int x, int y, XYSpec spec)
     {
@@ -128,6 +130,7 @@ public sealed class XYRouter : MeshRouter
             yield return env.Send(outPort, flit, transferTime: transferDelay);
             outBusy[dir] += env.Now - before;
             buffer.ReleaseRead();
+            outCounters[dir]++;
 
             if (dir != MeshDir.Local)
                 nrHops++;
@@ -154,6 +157,7 @@ public sealed class XYRouter : MeshRouter
             packet.NrHops++;
             buffer.Write(packet);
             buffer.ReleaseWrite();
+            inCounters[dir]++;
 
             eventsReady = true;
             anEventReady.Update();
@@ -203,11 +207,21 @@ public sealed class XYRouter : MeshRouter
         {
             cols.Add($"{Name}_nrHops");
             cols.Add($"{Name}_nrPacketSwitches");
+            for (int dir = 0; dir < 5; dir++)
+            {
+                cols.Add($"{Name}_in{MeshDir.Name(dir)}");
+                cols.Add($"{Name}_out{MeshDir.Name(dir)}");
+            }
         }
         else
         {
             cols.Add($"{nrHops}");
             cols.Add($"{nrPacketSwitches}");
+            for (int dir = 0; dir < 5; dir++)
+            {
+                cols.Add($"{inBuffers[dir]}");
+                cols.Add($"{outBuffers[dir]}");
+            }
         }
         return cols.ToArray();
     }
