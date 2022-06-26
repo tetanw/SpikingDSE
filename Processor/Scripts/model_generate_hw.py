@@ -1,6 +1,8 @@
 import json
 import math
+from multiprocessing.sharedctypes import Value
 import sys
+from orderings import matrix_colMajor, matrix_zigzag
 
 from model_costs import Costs
 
@@ -9,11 +11,15 @@ def save_hw(model_path: str, hw_path: str, costs: Costs):
     f = open(model_path)
     m = json.load(f)
 
+    width = m["NoC"]["Width"]
+    height = m["NoC"]["Height"]
+    size = width * height
+
     hw = {"Global": {}, "CoreTemplates": {}}
     hw["NoC"] = {
         "Type": "XYMesh",
-        "Width": m["NoC"]["Width"],
-        "Height": m["NoC"]["Height"],
+        "Width": width,
+        "Height": height,
         "InputSize": m["NoC"]["InputSize"],
         "OutputSize": m["NoC"]["OutputSize"],
         "SwitchDelay": m["NoC"]["SwitchDelay"],
@@ -49,10 +55,18 @@ def save_hw(model_path: str, hw_path: str, costs: Costs):
         }
 
     hw["Cores"] = []
-    prio = m["NoC"]["Width"]*m["NoC"]["Height"]
     coreNumber = 0
-    for x in range(m["NoC"]["Width"]):
-        for y in range(m["NoC"]["Height"]):
+    if "CoreOrdering" not in m:
+        ordering = matrix_colMajor(width, height)
+    elif m["CoreOrdering"] == "ColumnMajor":
+        ordering = matrix_colMajor(width, height)
+    elif m["CoreOrdering"] == "ZigZag":
+        ordering = matrix_zigzag(width, height)
+    else:
+        raise ValueError(f"Unknown ordering type: {m['CoreOrdering']}")
+    for x in range(width):
+        for y in range(height):
+            prio = size - ordering[y][x]
             if x == 0 and y == 0:
                 hw["Cores"].append({
                     "Name": "controller",
@@ -74,7 +88,6 @@ def save_hw(model_path: str, hw_path: str, costs: Costs):
                     "ConnectsTo": f"{x},{y}"
                 })
                 coreNumber = coreNumber + 1
-            prio = prio - 1
     json.dump(hw, open(hw_path, mode="w"), indent=4, sort_keys=False)
 
 

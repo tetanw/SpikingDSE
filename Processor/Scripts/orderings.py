@@ -23,7 +23,7 @@ def matrix_zigzag(width, height):
             i = i + 1
     return matrix
 
-def matrix_vertical(width, height):
+def matrix_colMajor(width, height):
     matrix = [[0 for _ in range(width)] for _ in range(height)]
 
     i = 0
@@ -48,7 +48,7 @@ if __name__ == "__main__":
     a1 = matrix_zigzag(3, 3)
     print_matrix(a1)
 
-    a2 = matrix_vertical(3, 3)
+    a2 = matrix_colMajor(3, 3)
     print_matrix(a2)
 
 
