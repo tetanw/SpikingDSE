@@ -8,7 +8,7 @@ def diagonal(startX, startY, width, height):
         y = y - 1
     return values
 
-def matrix_zigzag(width, height):
+def matrix_diagonal(width, height):
     matrix = [[0 for _ in range(width)] for _ in range(height)]
 
     i = 0
@@ -45,7 +45,7 @@ if __name__ == "__main__":
         print('\n'.join([''.join(['{:4}'.format(item) for item in row])
                         for row in A]))
     
-    a1 = matrix_zigzag(3, 3)
+    a1 = matrix_diagonal(3, 3)
     print_matrix(a1)
 
     a2 = matrix_colMajor(3, 3)

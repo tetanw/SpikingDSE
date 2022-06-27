@@ -2,7 +2,7 @@ import json
 import math
 from multiprocessing.sharedctypes import Value
 import sys
-from orderings import matrix_colMajor, matrix_zigzag
+from orderings import matrix_colMajor, matrix_diagonal
 
 from model_costs import Costs
 
@@ -60,8 +60,8 @@ def save_hw(model_path: str, hw_path: str, costs: Costs):
         ordering = matrix_colMajor(width, height)
     elif m["CoreOrdering"] == "ColumnMajor":
         ordering = matrix_colMajor(width, height)
-    elif m["CoreOrdering"] == "ZigZag":
-        ordering = matrix_zigzag(width, height)
+    elif m["CoreOrdering"] == "Diagonal":
+        ordering = matrix_diagonal(width, height)
     else:
         raise ValueError(f"Unknown ordering type: {m['CoreOrdering']}")
     for x in range(width):
