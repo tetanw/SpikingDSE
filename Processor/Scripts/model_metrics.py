@@ -81,6 +81,12 @@ class Metrics():
             energy = exp[f"{r}_nrHops"] * cost.link_dyn_packet + exp[f"{r}_nrPacketSwitches"] * cost.router_dyn_packet
             self.dynamic_router += energy
 
+        # determine average latency if it exists in the results
+        if f"{self.routers[0]}_averageLat" in exp:
+            self.averageLat = sum([exp[f"{r}_averageLat"].mean() for r in self.routers]) / len(self.routers)
+        else:
+            self.averageLat = float('NaN')
+
         self.total_energy = self.static_energy.sum() + self.dynamic_mem.sum() + \
             self.dynamic_alu_total + self.dynamic_router.sum()
         self.total_power = self.total_energy.sum() / self.latency.sum()
@@ -97,7 +103,7 @@ class Metrics():
         self.sops_per_second = self.nr_sops.sum() / self.latency.sum()
         self.delay_per_inference = 1.0 / self.inferences_per_second
 
-        self.edap = self.delay_per_inference * self.sop_energy * self.cost.synaptic_area*1E12
+        self.edap = 1.0 / (self.sops_per_second * 1E-6) * self.sop_energy * self.cost.synaptic_area*1E12
 
     def layers(self, c):
         layers = []

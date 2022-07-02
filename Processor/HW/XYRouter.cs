@@ -6,9 +6,11 @@ namespace SpikingDSE;
 
 public sealed class XYRouter : MeshRouter
 {
+    public record struct StoredPacket(Packet packet, long arrivalTime);
+
     private readonly XYSpec spec;
-    private Buffer<Packet>[] inBuffers;
-    private Buffer<Packet>[] outBuffers;
+    private Buffer<StoredPacket>[] inBuffers;
+    private Buffer<StoredPacket>[] outBuffers;
     private bool eventsReady = false;
     private Condition anEventReady;
 
@@ -20,6 +22,8 @@ public sealed class XYRouter : MeshRouter
     public long nrPacketSwitches = 0;
     private int[] inCounters = new int[5];
     private int[] outCounters = new int[5];
+    private long nrTransfers = 0;
+    private long totalTransferTime = 0;
 
     public XYRouter(int x, int y, XYSpec spec)
     {
@@ -31,8 +35,8 @@ public sealed class XYRouter : MeshRouter
 
     public override IEnumerable<Event> Run(Simulator env)
     {
-        inBuffers = new Buffer<Packet>[5];
-        outBuffers = new Buffer<Packet>[5];
+        inBuffers = new Buffer<StoredPacket>[5];
+        outBuffers = new Buffer<StoredPacket>[5];
         anEventReady = new(env, () => eventsReady);
 
         for (int dir = 0; dir < 5; dir++)
@@ -40,7 +44,7 @@ public sealed class XYRouter : MeshRouter
             var inPort = GetInputPort(dir);
             if (inPort.IsBound)
             {
-                inBuffers[dir] = new Buffer<Packet>(env, spec.InputSize);
+                inBuffers[dir] = new Buffer<StoredPacket>(env, spec.InputSize);
                 int transferDelay = dir == MeshDir.Local ? spec.InputDelay : spec.TransferDelay;
                 env.Process(InLink(env, dir, transferDelay));
             }
@@ -48,7 +52,7 @@ public sealed class XYRouter : MeshRouter
             var outPort = GetOutputPort(dir);
             if (outPort.IsBound)
             {
-                outBuffers[dir] = new Buffer<Packet>(env, spec.OutputSize);
+                outBuffers[dir] = new Buffer<StoredPacket>(env, spec.OutputSize);
                 int transferDelay = dir == MeshDir.Local ? spec.OutputDelay : 0;
                 env.Process(OutLink(env, dir, transferDelay));
             }
@@ -100,7 +104,7 @@ public sealed class XYRouter : MeshRouter
                     var inBuffer = inBuffers[inDir];
                     if (inBuffer == null || inBuffer.Count == 0)
                         continue;
-                    var packet = inBuffer.Peek();
+                    var (packet, _) = inBuffer.Peek();
                     int outDir = DetermineOutput(packet);
                     if (!outBuffers[outDir].IsFull)
                     {
@@ -125,9 +129,11 @@ public sealed class XYRouter : MeshRouter
         while (true)
         {
             yield return buffer.RequestRead();
-            var flit = buffer.Read();
+            var (packet, arrivalTime) = buffer.Read();
             long before = env.Now;
-            yield return env.Send(outPort, flit, transferTime: transferDelay);
+            yield return env.Send(outPort, packet, transferTime: transferDelay);
+            totalTransferTime += env.Now - arrivalTime;
+            nrTransfers++;
             outBusy[dir] += env.Now - before;
             buffer.ReleaseRead();
             outCounters[dir]++;
@@ -152,10 +158,11 @@ public sealed class XYRouter : MeshRouter
             // This symbolises the amount of time for the transfer to take place
             var rcv = env.Receive(inPort, transferTime: transferDelay);
             yield return rcv;
+            long arrival = env.Now;
             inBusy[dir] += env.Now - rcv.StartedReceiving;
             var packet = (Packet)rcv.Message;
             packet.NrHops++;
-            buffer.Write(packet);
+            buffer.Write(new StoredPacket(packet, arrival));
             buffer.ReleaseWrite();
             inCounters[dir]++;
 
@@ -207,20 +214,39 @@ public sealed class XYRouter : MeshRouter
         {
             cols.Add($"{Name}_nrHops");
             cols.Add($"{Name}_nrPacketSwitches");
-            for (int dir = 0; dir < 5; dir++)
+
+            if (spec.ReportTraffic)
             {
-                cols.Add($"{Name}_in{MeshDir.Name(dir)}");
-                cols.Add($"{Name}_out{MeshDir.Name(dir)}");
+                for (int dir = 0; dir < 5; dir++)
+                {
+                    cols.Add($"{Name}_in{MeshDir.Name(dir)}");
+                    cols.Add($"{Name}_out{MeshDir.Name(dir)}");
+                }
+            }
+
+            if (spec.ReportLatency)
+            {
+                cols.Add($"{Name}_averageLat");
             }
         }
         else
         {
             cols.Add($"{nrHops}");
             cols.Add($"{nrPacketSwitches}");
-            for (int dir = 0; dir < 5; dir++)
+
+            if (spec.ReportTraffic)
             {
-                cols.Add($"{inBuffers[dir]}");
-                cols.Add($"{outBuffers[dir]}");
+                for (int dir = 0; dir < 5; dir++)
+                {
+                    cols.Add($"{inBuffers[dir]}");
+                    cols.Add($"{outBuffers[dir]}");
+                }
+            }
+
+            if (spec.ReportLatency)
+            {
+                double averageLat = (double) totalTransferTime / nrTransfers;
+                cols.Add($"{averageLat}");
             }
         }
         return cols.ToArray();

@@ -108,6 +108,8 @@ public class HWSpec
                 TransferDelay = instance["TransferDelay"].GetInt32(),
                 InputDelay = instance["InputDelay"].GetInt32(),
                 OutputDelay = instance["OutputDelay"].GetInt32(),
+                ReportLatency = instance.GetOptional("ReportLatency")?.GetBoolean() ?? false,
+                ReportTraffic = instance.GetOptional("ReportTraffic")?.GetBoolean() ?? false
             };
         }
         else if (type == "Bus")
@@ -224,6 +226,8 @@ public class XYSpec : MeshSpec
     public int SwitchDelay { get; set; }
     public int InputDelay { get; set; }
     public int OutputDelay { get; set; }
+    public bool ReportLatency { get; set; }
+    public bool ReportTraffic { get; set; }
 
     public override Comm Build(Simulator env, List<Core> cores)
     {

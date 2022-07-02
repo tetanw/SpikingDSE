@@ -25,7 +25,9 @@ def save_hw(model_path: str, hw_path: str, costs: Costs):
         "SwitchDelay": m["NoC"]["SwitchDelay"],
         "TransferDelay": int(costs.router_transfer_delay),
         "InputDelay": m["NoC"]["InputDelay"],
-        "OutputDelay": m["NoC"]["OutputDelay"]
+        "OutputDelay": m["NoC"]["OutputDelay"],
+        "ReportLatency": True,
+        "ReportTraffic": False
     }
     hw["CoreTemplates"]["Core"] = {
         "Type": "core-v1",
