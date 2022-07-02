@@ -2,6 +2,7 @@ import json
 import math
 import sys
 
+
 class Costs():
     def __init__(self, model_path: str):
         # parse model
@@ -11,15 +12,21 @@ class Costs():
         # parse costs
         self.alu_costs = {
             "Addf32": {
-                "Static": 15E-6, # uW
-                "Area": 2060, #um^2
-                "Dynamic": 7.701E-12 # pJ
+                "Static": 15E-6,  # uW
+                "Area": 2060,  # um^2
+                "Dynamic": 7.701E-12  # pJ
+            },
+            "Subf32": {
+                "Dynamic": 7.701E-12  # pJ
             },
             "Multf32": {
-                "Static": 44.8E-6, # mW
-                "Area": 2060, #um^2
-                "Dynamic": 26.6E-12 # pJ
+                "Static": 44.8E-6,  # mW
+                "Area": 2060,  # um^2
+                "Dynamic": 26.6E-12  # pJ
             },
+            "Cmpf32": {
+                "Dynamic": 7.701E-12
+            }
         }
 
         self.width = m["NoC"]["Width"]
@@ -34,16 +41,16 @@ class Costs():
         def addr(x):
             return math.ceil(math.log2(x))
 
-        def mem_area(bits): # um^2
+        def mem_area(bits):  # um^2
             return 0.4586 * bits + 12652
 
-        def mem_leakage(bits): # W
+        def mem_leakage(bits):  # W
             return (8E-05 * bits + 1.822) * my_voltage * 1E-6
 
-        def mem_dyn_read(bits, word_size): # J
+        def mem_dyn_read(bits, word_size):  # J
             return (0.0000331817313*bits+0.200534285*word_size+3.70946309)*1E-12
 
-        def mem_dyn_write(bits, word_size): # J
+        def mem_dyn_write(bits, word_size):  # J
             return (0.0000467955605*bits+0.305233644*word_size+3.23205817)*1E-12
 
         # address size calculations
@@ -70,9 +77,10 @@ class Costs():
         self.syn_width = m["SynapseSize"]
         self.syn_mem_width = self.syn_width * nr_parallel
         self.syn_mem_size = m["MaxSynapses"] * self.syn_width
-        split_mem = dx + dy + layer_bits 
+        split_mem = dx + dy + layer_bits
         # TODO: Continue here
-        self.layer_width = (m["BaseLayerSize"] + layer_bits + neuron_bits + syn_bits + syn_bits + 2 * (m["MaxSplits"] * split_mem + split_bits))
+        self.layer_width = (m["BaseLayerSize"] + layer_bits + neuron_bits +
+                            syn_bits + syn_bits + 2 * (m["MaxSplits"] * split_mem + split_bits))
         self.layer_mem_width = self.layer_width
         self.layer_mem_size = m["MaxLayers"] * self.layer_width
         self.output_mem_width = self.packet_size
@@ -94,12 +102,12 @@ class Costs():
         self.compute_area = mem_area(self.compute_mem_size)
         core_mem_area = self.neuron_area + self.syn_area + \
             self.layer_area + self.output_area + self.compute_area
-        
+
         self.alu_area = {}
         for name, amount in m["CoreALU"].items():
             self.alu_area[name] = amount * self.alu_costs[name]["Area"]
         self.alu_area_total = sum(v for _, v in self.alu_area.items())
-        
+
         self.core_area = core_mem_area + self.alu_area_total
 
         # router area
@@ -107,7 +115,8 @@ class Costs():
         self.router_output_area = mem_area(self.router_output_mem_size)
         self.router_area = 5 * self.router_input_area + 5 * self.router_output_area
         self.chip_area = (self.core_area + self.router_area) * self.nr_cores
-        self.synaptic_area = self.chip_area / (self.nr_cores * m["MaxSynapses"])
+        self.synaptic_area = self.chip_area / \
+            (self.nr_cores * m["MaxSynapses"])
 
         # Static: W
         self.neuron_static = mem_leakage(self.neuron_mem_size)
@@ -117,12 +126,12 @@ class Costs():
         self.output_static = mem_leakage(self.output_mem_size)
         self.core_mem_static = (self.neuron_static + self.layer_static + self.syn_static +
                                 self.compute_static + self.output_static)
-        
+
         self.alu_static = {}
         for name, amount in m["CoreALU"].items():
             self.alu_static[name] = amount * \
                 self.alu_costs[name]["Static"]
-        
+
         self.core_alu_static = sum(v for _, v in self.alu_static.items())
         self.core_static = self.core_mem_static + self.core_alu_static
         self.chip_static = self.core_static * self.nr_cores
