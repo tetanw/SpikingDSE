@@ -29,7 +29,7 @@ if __name__ == "__main__":
         parts.append(f"{m.total_energy:.2f}")
         parts.append(f"{m.sop_energy*1E12:.2f}")
         parts.append(f"{m.sops_per_second*1E-6:.2f}")
-        parts.append(f"{m.edap:.2f}")
+        parts.append(f"{m.edap*1E18:.2f}")
         parts.append(f"{m.accuracy:.3f}")
         parts.append(f"{m.total_sparsity:.2f}")
         parts.append(f"{c.chip_area*1E-6:.2f}")

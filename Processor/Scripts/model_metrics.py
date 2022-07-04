@@ -103,7 +103,7 @@ class Metrics():
         self.sops_per_second = self.nr_sops.sum() / self.latency.sum()
         self.delay_per_inference = 1.0 / self.inferences_per_second
 
-        self.edap = 1.0 / (self.sops_per_second * 1E-6) * self.sop_energy * self.cost.synaptic_area*1E12
+        self.edap = 1.0 / (self.sops_per_second) * self.sop_energy * self.cost.synaptic_area
 
     def layers(self, c):
         layers = []
