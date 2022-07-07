@@ -125,6 +125,7 @@ class Metrics():
         print(f"Sparity: {self.total_sparsity:.4f}")
         print(
             f"Total duration: {self.latency.sum():.2f} s ({self.inferences_per_second:.2f} inferences/s)")
+        print(f"Total SOPs: {self.nr_sops.sum():,.2f}")
         print(f"Throughput:")
         print(f"  SOP: {self.sops_per_second:,.0f} SOP/s")
         print(f"Accuracy: {self.accuracy:.4f} ({self.accuracy*100:.2f}%)")
