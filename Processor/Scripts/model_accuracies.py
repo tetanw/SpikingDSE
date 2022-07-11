@@ -18,27 +18,27 @@ if __name__ == "__main__":
         "ssc3"
     ]
 
-    # ideal_accuracies = {
-    #     "shd1": 0.8441,
-    #     "shd4": 0.8542,
-    #     "smnist3": 0.9619,
-    #     "smnist4": 0.9695,
-    #     "psmnist1": 0.9117,
-    #     "psmnist2":0.9305,
-    #     "ssc2": 0.7313,
-    #     "ssc3": 0.664,
-    # }
-
     ideal_accuracies = {
-        "shd1": 0.844522968,
-        "shd4": 0.854240283,
-        "smnist3": 0.9617,
-        "smnist4": 0.9699,
-        "psmnist1": 0.9205,
-        "psmnist2": 0.9315,
-        "ssc2": 0.73128945,
-        "ssc3": 0.663560765
+        "shd1": 0.8441,
+        "shd4": 0.8542,
+        "smnist3": 0.9619,
+        "smnist4": 0.9695,
+        "psmnist1": 0.9117,
+        "psmnist2":0.9305,
+        "ssc2": 0.7313,
+        "ssc3": 0.664,
     }
+
+    # ideal_accuracies = {
+    #     "shd1": 0.844522968,
+    #     "shd4": 0.854240283,
+    #     "smnist3": 0.9617,
+    #     "smnist4": 0.9699,
+    #     "psmnist1": 0.9205,
+    #     "psmnist2": 0.9315,
+    #     "ssc2": 0.73128945,
+    #     "ssc3": 0.663560765
+    # }
 
     accuracies = {
         "shd1": [],
