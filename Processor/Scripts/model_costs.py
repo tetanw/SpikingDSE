@@ -37,6 +37,7 @@ class Costs():
         my_voltage = 1.1
         wolkotte_voltage = 1.2
         self.period = 1E4
+        neuron_offset_size = 16
 
         def addr(x):
             return math.ceil(math.log2(x))
@@ -71,15 +72,14 @@ class Costs():
 
         # core memory
         nr_parallel = m["NrParallel"]
-        self.neuron_width = m["NeuronSize"]
+        self.neuron_width = m["NeuronStateSize"]
         self.neuron_mem_width = self.neuron_width * nr_parallel
         self.neuron_mem_size = m["MaxNeurons"] * self.neuron_width
-        self.syn_width = m["SynapseSize"]
+        self.syn_width = m["SynpaseStateSize"]
         self.syn_mem_width = self.syn_width * nr_parallel
         self.syn_mem_size = m["MaxSynapses"] * self.syn_width
         split_mem = dx + dy + layer_bits
-        # TODO: Continue here
-        self.layer_width = (m["BaseLayerSize"] + layer_bits + neuron_bits +
+        self.layer_width = (m["LayerStateSize"] + neuron_offset_size + neuron_bits + neuron_bits +
                             syn_bits + syn_bits + 2 * (m["MaxSplits"] * split_mem + split_bits))
         self.layer_mem_width = self.layer_width
         self.layer_mem_size = m["MaxLayers"] * self.layer_width
