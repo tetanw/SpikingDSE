@@ -11,7 +11,7 @@ class Metrics():
             0, cost.size) if f"core{core_id}_neuronReads" in exp]
         self.routers = [f"router({x}_{y})" for x in range(0, cost.width) for y in range(
             0, cost.height) if f"router({x}_{y})_nrHops" in exp]
-        self.latency = exp["latency"] * 1E-12
+        self.latency = exp["latency"] * 1E-12 # pS to s
         self.nr_active_cores = len(self.cores)
         self.static_energy = self.latency * cost.core_static * self.nr_active_cores
 
@@ -100,10 +100,13 @@ class Metrics():
         self.sop_energy = self.total_energy / self.nr_sops
 
         self.inferences_per_second = self.nr_samples / self.latency.sum()
-        self.sops_per_second = self.nr_sops.sum() / self.latency.sum()
+        self.sops_per_second = self.nr_sops / self.latency.sum()
         self.delay_per_inference = 1.0 / self.inferences_per_second
+        self.throughput_eff = self.sops_per_second / (self.cost.chip_area / 1_000_000.0)
 
-        self.edap = 1.0 / (self.sops_per_second) * self.sop_energy * self.cost.synaptic_area
+        # SOP energy is J/SOP
+        # Throughput Eff is SOP/s/mm^2
+        self.eat = self.throughput_eff / self.sop_energy # SOP^2/s/mm^2/J
 
     def layers(self, c):
         layers = []
@@ -151,10 +154,9 @@ class Metrics():
         print(f"    Router: {self.dynamic_router.sum():.3f} J")
         print(
             f"  Total: {self.total_energy:.3f} J ({self.total_power*1E3:.2f} mW)")
-        print(f"EDAP: {self.edap}")
-        print(f"  Delay: {self.delay_per_inference}")
-        print(f"  Energy: {self.sop_energy}")
-        print(f"  Area: {self.cost.synaptic_area}")
+        print(f"EAT: {self.eat*1E-12}")
+        print(f"  Energy: {self.sop_energy*1E12} pJ / SOP")
+        print(f"  Throughput Eff: {self.throughput_eff:,} SOP/s/mm2")
 
 
 if __name__ == "__main__":

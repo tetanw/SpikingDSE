@@ -17,7 +17,7 @@ if __name__ == "__main__":
         "ssc3"
     ]
 
-    print("model,energy,sop_energy,throughput,edap,accuracy,sparsity,area,syn_area,faults,recv_util,alu_util,send_util,averageLat")
+    print("model,energy,sop_energy,throughput,eat,accuracy,sparsity,area,syn_area,faults,recv_util,alu_util,send_util,averageLat")
     for modelName in models:
         exp = pandas.read_csv(
             f"res/exp/{expName}/results/{modelName}/experiments.csv")
@@ -28,8 +28,8 @@ if __name__ == "__main__":
         parts.append(modelName)
         parts.append(f"{m.total_energy:.2f}")
         parts.append(f"{m.sop_energy*1E12:.2f}")
-        parts.append(f"{m.sops_per_second*1E-6:.2f}")
-        parts.append(f"{m.edap*1E18:.2f}")
+        parts.append(f"{m.throughput_eff*1E-6:.2f}")
+        parts.append(f"{m.eat*1E-15:.2f}")
         parts.append(f"{m.accuracy:.3f}")
         parts.append(f"{m.total_sparsity:.2f}")
         parts.append(f"{c.chip_area*1E-6:.2f}")
