@@ -20,7 +20,7 @@
                 "-o",
                 "res/results/test"
             ],
-            "cwd": "${workspaceFolder}/Processor",
+            "cwd": "${workspaceFolder}/Simulator",
             "stopAtEntry": false,
             "console": "internalConsole"
         },
@@ -43,7 +43,7 @@
                 "-o",
                 "res/results/test"
             ],
-            "cwd": "${workspaceFolder}/Processor",
+            "cwd": "${workspaceFolder}/Simulator",
             "stopAtEntry": false,
             "console": "internalConsole"
         },
@@ -67,7 +67,7 @@
                 "-o",
                 "res/exp/exp1/results/shd1"
             ],
-            "cwd": "${workspaceFolder}/Processor",
+            "cwd": "${workspaceFolder}/Simulator",
             "stopAtEntry": false,
             "console": "internalConsole"
         },
@@ -88,7 +88,7 @@
                 "-o",
                 "res/exp/mappings/ssc2.json"
             ],
-            "cwd": "${workspaceFolder}/Processor",
+            "cwd": "${workspaceFolder}/Simulator",
             "stopAtEntry": false,
             "console": "internalConsole"
         },
@@ -107,7 +107,7 @@
                 "-m",
                 "res/exp/exp1/mappings/shd1.json"
             ],
-            "cwd": "${workspaceFolder}/Processor",
+            "cwd": "${workspaceFolder}/Simulator",
             "stopAtEntry": false,
             "console": "internalConsole"
         }
