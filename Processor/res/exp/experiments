@@ -1,0 +1,51 @@
+Complete:
+Exp1: Medium core experiment: max neurons 64, Full serial, Parallel 4
+Exp2: Extreme core experiment: max neurons 512, Full serial, Parallel 4
+Exp3: Large core experiment: max neurons 256, Full serial, Parallel 4
+Exp4: Small core experiment: max neurons 32, max synapses 32768, Full serial, Parallel 4
+Exp5: Core full parallel: max neurons 64, Full parallel, Parallel 4
+Exp6: Core pipeline: max neurons 64, Pipeline, Parallel 4
+Exp7: More parallel Medium: max neurons 64, Full serial, Parallel 8
+Exp8: More parallel Medium: max neurons 64, Full serial, Parallel 16
+Exp9: More parallel Extreme: max neurons 128, Full serial, Parallel 32
+Exp10: More parallel Extreme: max neurons 128, Full serial, Parallel 16
+Exp11: More parallel Extreme: max neurons 128, Full serial, Parallel 64
+Exp12: Medium, Serial, InputBuffer 5
+Exp13: Medium, Serial, OutputBuffer 5, Input buffer 5
+Exp14: Medium, Serial, OutputBuffer 5
+Exp15: Parallelism 8, Small core, Serial
+Exp16: Parallelism 16, Small core, Serial
+Exp17: Parallelism 32, Small core, Serial
+Exp18: Small, Serial, InputBuffer 5
+Exp19: Small, Serial, OutputBuffer 5
+Exp20: Small, Serial, InputBuffer 5, OutputBuffer 5
+Exp21: Medium, Serial, InputBuffer 10
+Exp22: Medium, Serial, InputBuffer 20
+Exp23: Medium, Serial, InputBuffer 40
+Exp24: Medium, Serial, Transfer time 2 cycles
+Exp25: Medium, Serial, Transfer time 4 cycles
+Exp26: Medium, Serial, Input buffer 5, Output buffer 5, Transfer time 4 cycles
+Exp27: Medium, Serial, Input buffer 10, Output buffer 10, Transfer time 4 cycles
+Exp33: Small, Output 10
+Exp34: Small, Output 20
+Exp35: Small, Output 40
+Exp37: Medium, Serial, Transfer time 8 cycles
+Exp38: Parallel 32 version of exp8
+
+No accuracy report:
+Exp39: Exp12 but local is 1, Local Input 1
+Exp40: Exp14 but local is 1, Local Output 1
+Exp41: Exp19 but local is 1, Local Output 1
+Exp42: Exp18 but local is 1, Local Input 1
+Exp43: Cost test quantization, NO RESULTS, Taken from exp1
+Exp44: Cost test quantization, NO RESULTS, Taken from exp1
+
+Removed:
+Exp30: Small, Serial, InputBuffer 10
+Exp31: Small, Serial, InputBuffer 20
+Exp32: Small, Serial, InputBuffer 40
+Exp28: Medium, Diagonal ordering
+Exp29: Small, Diagonal ordering
+
+Used:
+exp1,exp2,exp3,exp4,exp5,exp6,exp7,exp8,exp9,exp10,exp11,exp12,exp13,exp14,exp15,exp16,exp17,exp18,exp19,exp20,exp21,exp22,exp23,exp24,exp25,exp26,exp27,exp33,exp34,exp35,exp37,exp38

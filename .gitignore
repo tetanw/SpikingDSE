@@ -1,4 +1,1 @@
-simulator.code-workspace
-SNNs/data/ssc-test.zip
-SNNs/data/ssc-train.zip
-SNNs/data/ssc-valid.zip
+*.code-workspace

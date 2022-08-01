@@ -1,0 +1,36 @@
+{
+    "NoC": {
+        "Type": "Mesh",
+        "Width": 2,
+        "Height": 2,
+        "InputSize": 1,
+        "OutputSize": 1,
+        "InputDelay": 10000,
+        "OutputDelay": 10000,
+        "SwitchDelay": 40000,
+        "TransferDelay": 10000
+    },
+    "MaxNeurons": 512,
+    "MaxSynapses": 524288,
+    "MaxFanIn": 2048,
+    "MaxLayers": 4,
+    "MaxSplits": 4,
+    "OutputBufferDepth": 1,
+    "NeuronStateSize": 161,
+    "SynpaseStateSize": 32,
+    "LayerStateSize": 64,
+    "NrPacketTypes": 8,
+    "NrParallel": 16,
+    "LayerDelays": {
+        "ALIF": {
+            "SyncII": 110000,
+            "SyncLat": 110000,
+            "IntegrateII": 30000,
+            "IntegrateLat": 30000
+        }
+    },
+    "CoreALU": {
+        "Addf32": 16,
+        "Multf32": 16
+    }
+}

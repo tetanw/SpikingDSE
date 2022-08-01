@@ -1,7 +1,9 @@
 data
 res/results
 res/odin/result.trace
-res/exp
+res/exp/**/mappings
+res/exp/**/results
+res/exp/**/hw.json
 res/snn
 res/dataset
 admin/
