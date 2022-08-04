@@ -1,6 +1,8 @@
 # SpikingDSE
 This is a simulator enabling DSE for time-multiplexed neuromorphic hardware. The simulator uses a custom HW model and uses the SRNN networks of [Efficient spiking networks](https://github.com/byin-cwi/Efficient-spiking-networks) as a benchmark.
 
+![Simulator overview](simulator_overview.png)
+
 ## Directory Structure
 ```
 ├── Simulator/ — Contains the whole simulator's code
