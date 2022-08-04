@@ -11,7 +11,7 @@ This is a simulator enabling DSE for time-multiplexed neuromorphic hardware. The
 │   │   ├── run_exp.py — Run all benchmarks for a certain experiment
 │   │   └── run_map.py — Map all networks for a certain experiment
 ├── SNNs/ — Code that was used to train the SRNN networks of Efficient spiking networks
-│   ├── model.py — PyTorch layers with the ALIF and output layer implementation
+│   ├── model.py — Custom implementation of "Efficient spiking networks"'s layers
 │   ├── train_x.py — Code to train a certain dataset's networks
 │   └── extract_x.py — Code to extract input traces for a certain dataset
 
